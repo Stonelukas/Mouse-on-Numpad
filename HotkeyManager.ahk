@@ -4,6 +4,13 @@
 ; Hotkey Manager Module - All hotkey definitions organized by category
 ; ######################################################################################################################
 
+; Ensure we're using screen coordinates globally
+CoordMode("Mouse", "Screen")
+CoordMode("Pixel", "Screen")
+CoordMode("ToolTip", "Screen")
+CoordMode("Menu", "Screen")
+CoordMode("Caret", "Screen")
+
 ; ======================================================================================================================
 ; Global Hotkeys (Always Active)
 ; ======================================================================================================================

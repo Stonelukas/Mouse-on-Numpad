@@ -4,6 +4,11 @@
 ; Main Entry Point - Mouse on Numpad Enhanced
 ; Version: 2.1.3 - Modular Structure
 ; ######################################################################################################################
+;
+; IMPORTANT: This script properly handles negative monitor coordinates.
+; CoordMode is set to "Screen" for all coordinate operations to ensure
+; proper handling of monitors positioned to the left or above the primary monitor.
+; ######################################################################################################################
 
 ; Include all modules
 #Include "Config.ahk"
@@ -21,12 +26,22 @@
 ; ======================================================================================================================
 
 initialize() {
+    ; CRITICAL: Set coordinate mode to Screen for proper negative coordinate handling
+    CoordMode("Mouse", "Screen")
+    CoordMode("Pixel", "Screen")
+    CoordMode("ToolTip", "Screen")
+    CoordMode("Menu", "Screen")
+    CoordMode("Caret", "Screen")
+    
     ; Load configuration
     Config.Load()
     StateManager.Initialize()
     
     ; Set up exit handler
     OnExit(onScriptExit)
+    
+    ; Initialize monitor system
+    MonitorUtils.Init()
     
     ; Initialize all systems
     TooltipSystem.Initialize()
@@ -55,6 +70,14 @@ onScriptExit(ExitReason, ExitCode) {
 }
 
 checkFullscreenPeriodically() {
+    ; Refresh monitor configuration periodically (every 10 checks)
+    static checkCount := 0
+    checkCount++
+    if (checkCount >= 10) {
+        MonitorUtils.Refresh()
+        checkCount := 0
+    }
+    
     StatusIndicator.UpdateVisibility()
     TooltipSystem.HandleFullscreen()
 }

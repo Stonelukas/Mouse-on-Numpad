@@ -9,6 +9,9 @@ class MouseActions {
     static mousePositionHistory := []
 
     static MoveDiagonal(key, baseDx, baseDy) {
+        ; Ensure we're using screen coordinates
+        CoordMode("Mouse", "Screen")
+        
         MouseGetPos(&currentX, &currentY)
         MouseActions.mousePositionHistory.Push({x: currentX, y: currentY})
         if (MouseActions.mousePositionHistory.Length > Config.MaxUndoLevels) {
@@ -135,6 +138,9 @@ class MouseActions {
             return
         }
         
+        ; Ensure we're using screen coordinates
+        CoordMode("Mouse", "Screen")
+        
         MouseActions.mousePositionHistory.Pop()
         pos := MouseActions.mousePositionHistory.Pop()
         MouseMove(pos.x, pos.y, 10)
@@ -152,6 +158,7 @@ class MouseActions {
     }
 
     static AddToHistory(x, y) {
+        ; x and y should already be in screen coordinates
         MouseActions.mousePositionHistory.Push({x: x, y: y})
         if (MouseActions.mousePositionHistory.Length > Config.MaxUndoLevels) {
             MouseActions.mousePositionHistory.RemoveAt(1)

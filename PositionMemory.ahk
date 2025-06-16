@@ -13,6 +13,9 @@ class PositionMemory {
             return
         }
         
+        ; Ensure we're using screen coordinates
+        CoordMode("Mouse", "Screen")
+        
         MouseGetPos(&x, &y)
         PositionMemory.savedPositions[slot] := {x: x, y: y}
 
@@ -36,6 +39,9 @@ class PositionMemory {
             }
             return
         }
+        
+        ; Ensure we're using screen coordinates
+        CoordMode("Mouse", "Screen")
         
         ; Add current position to history before moving
         MouseGetPos(&currentX, &currentY)
