@@ -14,6 +14,7 @@
 #Include "MouseActions.ahk"
 #Include "PositionMemory.ahk"
 #Include "HotkeyManager.ahk"
+#Include "SettingsGUI.ahk"
 
 ; ======================================================================================================================
 ; Main Initialization
@@ -30,6 +31,8 @@ initialize() {
     ; Initialize all systems
     TooltipSystem.Initialize()
     StatusIndicator.Initialize()
+    ; Initialize Settings GUI system (but don't show it)
+    ; The GUI will be created when first opened
     PositionMemory.LoadPositions()
     
     ; Start periodic checks

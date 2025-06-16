@@ -62,6 +62,11 @@ NumpadDiv::{
     TooltipSystem.ShowForced(result, "info")
 }
 
+; Settings GUI Show - Ctrl+Alt+s
+^!s::{
+    SettingsGUI.Show()
+}
+
 ; ======================================================================================================================
 ; Position Memory Hotkeys (Active only when in Save Mode or Load Mode)
 ; ======================================================================================================================
