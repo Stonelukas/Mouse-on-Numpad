@@ -73,6 +73,7 @@ class SettingsGUI {
 
     static _InitializeTempSettings() {
         ; Copy current settings to temp storage for preview
+        ; Movement Settings
         SettingsGUI.tempSettings["MoveStep"] := Config.MoveStep
         SettingsGUI.tempSettings["MoveDelay"] := Config.MoveDelay
         SettingsGUI.tempSettings["AccelerationRate"] := Config.AccelerationRate
@@ -86,6 +87,9 @@ class SettingsGUI {
         SettingsGUI.tempSettings["ScrollStep"] := Config.ScrollStep
         SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.ScrollAccelerationRate
         SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.MaxScrollSpeed
+        ; Visuals Settings
+        ; TODO: Add Colortheme Settings implemantation 
+        SettingsGUI.tempSettings["ColorTheme"] := Config.ColorTheme
     }
 
     static _CreateBottomButtonBar() {
@@ -339,11 +343,11 @@ class SettingsGUI {
 
         SettingsGUI.controls["StatusVisibleOnStartup"] := SettingsGUI.gui.Add("CheckBox", "x30 y75 w300",
             "Show Status on Startup")
-        SettingsGUI.controls["StatusVisibleOnStartup"].Checked := SettingsGUI.tempSettings["StatusVisibleOnStartup"]
+        SettingsGUI.controls["StatusVisibleOnStartup"].Value := SettingsGUI.tempSettings["StatusVisibleOnStartup"] ? 1 : 0
 
         SettingsGUI.controls["UseSecondaryMonitor"] := SettingsGUI.gui.Add("CheckBox", "x30 y100 w300",
             "Use Secondary Monitor")
-        SettingsGUI.controls["UseSecondaryMonitor"].Checked := SettingsGUI.tempSettings["UseSecondaryMonitor"]
+        SettingsGUI.controls["UseSecondaryMonitor"].Value := SettingsGUI.tempSettings["UseSecondaryMonitor"] ? 1 : 0
 
         ; Status Position Section
         SettingsGUI.gui.Add("Text", "x30 y140 w200 h20 +0x200", "Status Position").SetFont("s10 Bold")
@@ -376,7 +380,7 @@ class SettingsGUI {
 
         SettingsGUI.controls["EnableAudioFeedback"] := SettingsGUI.gui.Add("CheckBox", "x30 y345 w200",
             "Enable Audio Feedback")
-        SettingsGUI.controls["EnableAudioFeedback"].Checked := SettingsGUI.tempSettings["EnableAudioFeedback"]
+        SettingsGUI.controls["EnableAudioFeedback"].Value := SettingsGUI.tempSettings["EnableAudioFeedback"] ? 1 : 0
 
         ; Test Audio Button
         SettingsGUI.controls["TestAudio"] := SettingsGUI.gui.Add("Button", "x250 y343 w100 h25", "Test Audio")
@@ -386,15 +390,17 @@ class SettingsGUI {
         SettingsGUI.gui.Add("Text", "x450 y50 w200 h20 +0x200", "Color Themes").SetFont("s10 Bold")
 
         SettingsGUI.gui.Add("Text", "x450 y75 w80", "Theme:")
-        SettingsGUI.controls["ColorTheme"] := SettingsGUI.gui.Add("DropDownList", "x530 y72 w150", ["Default",
-            "Dark Mode", "High Contrast", "Colorful", "Minimal"])
+        SettingsGUI.controls["ColorTheme"] := SettingsGUI.gui.Add("DropDownList", "x530 y72 w150", 
+            ["Default", "Dark Mode", "High Contrast", "Minimal"])
         SettingsGUI.controls["ColorTheme"].Choose(1)
+        ; SettingsGUI.controls["ColorTheme"].OnEvent("ItemSelect", (*) => SettingsGUI._UpdateVisualsPreview())
 
         ; Preview Section
         SettingsGUI.gui.Add("Text", "x450 y110 w200 h20 +0x200", "Preview").SetFont("s10 Bold")
-        SettingsGUI.controls["VisualPreview"] := SettingsGUI.gui.Add("Text", "x450 y135 w300 h200 +Border")
-        SettingsGUI.controls["VisualPreview"].Text :=
-            "Status and tooltip preview will appear here...`n`nCurrent Theme: Default`nStatus Color: Green`nTooltip Style: Standard"
+        SettingsGUI.controls["VisualPreview"] := SettingsGUI.gui.Add("Edit", 
+            "x450 y135 w300 h200 +VScroll +ReadOnly +Wrap")
+        SettingsGUI.controls["VisualPreview"].SetFont("s8", "Consolas")
+        SettingsGUI._UpdateVisualsPreview()
 
         ; Position Test Buttons
         SettingsGUI.controls["TestStatusPosition"] := SettingsGUI.gui.Add("Button", "x450 y350 w140 h25",
@@ -778,6 +784,22 @@ class SettingsGUI {
         }
     }
 
+    static _UpdateVisualsPreview() {
+        try {
+            ; TODO: add the implemantation for this
+            colorTheme := SettingsGUI.controls["ColorTheme"].Text
+            previewText := "=== STATUS, TOOLTIP & COLORTHEME PREVIEW ===`r`n`r`n"
+            previewText := "COLORTHEME SETTINGS:`r`n"
+            previewText := "Current Theme: " . colorTheme "`r`n"
+            previewText := "Status Color: Green`r`n"
+            previewText := "Tooltip Style: Standard`r`n"
+
+            SettingsGUI.controls["VisualPreview"].Text := previewText
+        } catch {
+            SettingsGUI.controls["VisualPreview"].Text := "Preview will update when settings change..."
+        }
+    }
+
     static _PopulatePositionList() {
         try {
             SettingsGUI.controls["PositionList"].Delete()
@@ -839,7 +861,7 @@ class SettingsGUI {
 
     ; Action Methods
     static _TestAudio() {
-        if (SettingsGUI.controls["EnableAudioFeedback"].Checked) {
+        if (SettingsGUI.controls["EnableAudioFeedback"].Value) {
             SoundBeep(800, 200)
             MsgBox("Audio feedback test completed!", "Test Audio", "T2")
         } else {
@@ -874,9 +896,9 @@ class SettingsGUI {
             Config.MaxUndoLevels := Integer(SettingsGUI.controls["MaxUndoLevels"].Text)
 
             ; Visual Settings
-            Config.EnableAudioFeedback := SettingsGUI.controls["EnableAudioFeedback"].Checked
-            Config.StatusVisibleOnStartup := SettingsGUI.controls["StatusVisibleOnStartup"].Checked
-            Config.UseSecondaryMonitor := SettingsGUI.controls["UseSecondaryMonitor"].Checked
+            Config.EnableAudioFeedback := SettingsGUI.controls["EnableAudioFeedback"].Value ? true : false
+            Config.StatusVisibleOnStartup := SettingsGUI.controls["StatusVisibleOnStartup"].Value ? true : false
+            Config.UseSecondaryMonitor := SettingsGUI.controls["UseSecondaryMonitor"].Value ? true : false
 
             ; Scroll Settings
             Config.ScrollStep := Integer(SettingsGUI.controls["ScrollStep"].Text)
