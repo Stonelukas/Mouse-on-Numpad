@@ -35,6 +35,9 @@ class Config {
     static ScrollAccelerationRate := 1.1
     static MaxScrollSpeed := 10
 
+    ; Visuals settings
+    static ColorTheme := ""
+
     ; Hotkey settings
     static PrefixKey := ""
     static InvertModeToggleKey := "NumpadClear"
@@ -76,6 +79,7 @@ class Config {
         tempTooltipY := IniRead(Config.PersistentPositionsFile, "GUI", "TooltipY", Config.TooltipY)
         tempStatusX := IniRead(Config.PersistentPositionsFile, "GUI", "StatusX", Config.StatusX)
         tempStatusY := IniRead(Config.PersistentPositionsFile, "GUI", "StatusY", Config.StatusY)
+        tempColorTheme := IniRead(Config.PersistentPositionsFile, "Settings", "ColorTheme", Config.ColorTheme)
         
         if (tempTooltipX != "")
             Config.TooltipX := tempTooltipX
@@ -85,6 +89,8 @@ class Config {
             Config.StatusX := tempStatusX
         if (tempStatusY != "")
             Config.StatusY := tempStatusY
+        if (tempColorTheme != "")
+            Config.ColorTheme := tempColorTheme
     }
 
     static _LoadScrollSettings() {
@@ -131,6 +137,7 @@ class Config {
 
     static Save() {
         ; Save all settings to INI file
+        Config._SaveGeneralSettings()
         Config._SaveMovementSettings()
         Config._SaveGUISettings()
         Config._SaveScrollSettings()
@@ -145,6 +152,10 @@ class Config {
         IniWrite(Config.MaxSpeed, Config.PersistentPositionsFile, "Settings", "MaxSpeed")
         IniWrite(Config.MaxUndoLevels, Config.PersistentPositionsFile, "Settings", "MaxUndoLevels")
         IniWrite(Config.MaxSavedPositions, Config.PersistentPositionsFile, "Settings", "MaxSavedPositions")
+    }
+
+    static _SaveGeneralSettings() {
+        IniWrite(Config.ColorTheme, Config.PersistentPositionsFile, "Settings", "ColorTheme")
     }
 
     static _SaveGUISettings() {
