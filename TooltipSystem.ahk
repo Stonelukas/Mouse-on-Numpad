@@ -1,7 +1,11 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Tooltip System Module - Separate tooltip management for different types
+; Updated Tooltip System Module - With Color Theme Support
+; ######################################################################################################################
+; 
+; IMPORTANT: This is an updated version of TooltipSystem.ahk that integrates with ColorThemeManager.
+; Replace the existing TooltipSystem.ahk with this version.
 ; ######################################################################################################################
 
 class TooltipSystem {
@@ -19,12 +23,16 @@ class TooltipSystem {
 
     static _InitializeTooltip() {
         TooltipSystem.globalTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        TooltipSystem.globalTooltip.BackColor := "0x607D8B"
+        TooltipSystem.globalTooltip.BackColor := ColorThemeManager.GetColor("tooltipDefault")
         TooltipSystem.globalTooltip.MarginX := 5
         TooltipSystem.globalTooltip.MarginY := 2
         
         TooltipSystem.globalTooltip.textCtrl := TooltipSystem.globalTooltip.Add("Text", "cWhite Center w50 h16", "")
         TooltipSystem.globalTooltip.textCtrl.SetFont("s8 Bold", "Segoe UI")
+        
+        ; Apply text color based on theme
+        textColor := ColorThemeManager.GetColor("textDefault")
+        TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
         
         pos := MonitorUtils.GetGuiPosition("tooltip")
         TooltipSystem.globalTooltip.Move(pos[1], pos[2], 60, 22)
@@ -34,12 +42,16 @@ class TooltipSystem {
 
     static _InitializeMouseTooltip() {
         TooltipSystem.mouseTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        TooltipSystem.mouseTooltip.BackColor := "0x4CAF50"
+        TooltipSystem.mouseTooltip.BackColor := ColorThemeManager.GetColor("tooltipSuccess")
         TooltipSystem.mouseTooltip.MarginX := 8
         TooltipSystem.mouseTooltip.MarginY := 4
         
         TooltipSystem.mouseTooltip.textCtrl := TooltipSystem.mouseTooltip.Add("Text", "cWhite Center w120 h20", "")
         TooltipSystem.mouseTooltip.textCtrl.SetFont("s9 Bold", "Segoe UI")
+        
+        ; Apply text color based on theme
+        textColor := ColorThemeManager.GetColor("textDefault")
+        TooltipSystem.mouseTooltip.textCtrl.SetFont("c" . textColor)
         
         pos := MonitorUtils.GetGuiPosition("tooltip")
         TooltipSystem.mouseTooltip.Move(pos[1], pos[2] - 30, 140, 28)
@@ -56,8 +68,14 @@ class TooltipSystem {
         ; Make sure tooltip is visible before updating content
         TooltipSystem.globalTooltip.Show("NoActivate")
         
+        ; Apply theme color
         TooltipSystem.globalTooltip.BackColor := TooltipSystem._GetTooltipColor(type)
         TooltipSystem.globalTooltip.textCtrl.Text := text
+        
+        ; Update text color for contrast
+        bgColor := TooltipSystem._GetTooltipColor(type)
+        textColor := GetContrastingColor(bgColor)
+        TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
         
         ; Calculate size
         textLength := StrLen(text)
@@ -111,14 +129,13 @@ class TooltipSystem {
             TooltipSystem.mouseTooltipTimer := ""
         }
         
-        ; Set color based on type
-        switch type {
-            case "success": TooltipSystem.mouseTooltip.BackColor := "0x4CAF50"
-            case "warning": TooltipSystem.mouseTooltip.BackColor := "0xFF9800"
-            case "info": TooltipSystem.mouseTooltip.BackColor := "0x2196F3"
-            case "error": TooltipSystem.mouseTooltip.BackColor := "0xF44336"
-            default: TooltipSystem.mouseTooltip.BackColor := "0x4CAF50"
-        }
+        ; Apply theme color
+        bgColor := TooltipSystem._GetTooltipColor(type)
+        TooltipSystem.mouseTooltip.BackColor := bgColor
+        
+        ; Update text color for contrast
+        textColor := GetContrastingColor(bgColor)
+        TooltipSystem.mouseTooltip.textCtrl.SetFont("c" . textColor)
         
         TooltipSystem.mouseTooltip.textCtrl.Text := text
         
@@ -147,7 +164,14 @@ class TooltipSystem {
         ; Make sure tooltip is visible
         TooltipSystem.globalTooltip.Show("NoActivate")
         
-        TooltipSystem.globalTooltip.BackColor := TooltipSystem._GetTooltipColor(type)
+        ; Apply theme color
+        bgColor := TooltipSystem._GetTooltipColor(type)
+        TooltipSystem.globalTooltip.BackColor := bgColor
+        
+        ; Update text color for contrast
+        textColor := GetContrastingColor(bgColor)
+        TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
+        
         TooltipSystem.globalTooltip.textCtrl.Text := text
         
         textLength := StrLen(text)
@@ -165,11 +189,11 @@ class TooltipSystem {
 
     static _GetTooltipColor(type) {
         switch type {
-            case "success": return "0x4CAF50"
-            case "warning": return "0xFF9800"
-            case "info": return "0x2196F3"
-            case "error": return "0xF44336"
-            default: return "0x607D8B"
+            case "success": return ColorThemeManager.GetColor("tooltipSuccess")
+            case "warning": return ColorThemeManager.GetColor("tooltipWarning")
+            case "info": return ColorThemeManager.GetColor("tooltipInfo")
+            case "error": return ColorThemeManager.GetColor("tooltipError")
+            default: return ColorThemeManager.GetColor("tooltipDefault")
         }
     }
 
@@ -208,6 +232,22 @@ class TooltipSystem {
         }
         if (TooltipSystem.mouseTooltip != "") {
             TooltipSystem.mouseTooltip.Destroy()
+        }
+    }
+    
+    ; Apply theme colors to existing tooltips
+    static ApplyTheme() {
+        ; Re-initialize tooltips with new colors
+        if (TooltipSystem.globalTooltip != "") {
+            TooltipSystem.globalTooltip.BackColor := ColorThemeManager.GetColor("tooltipDefault")
+            textColor := GetContrastingColor(ColorThemeManager.GetColor("tooltipDefault"))
+            TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
+        }
+        
+        if (TooltipSystem.mouseTooltip != "") {
+            TooltipSystem.mouseTooltip.BackColor := ColorThemeManager.GetColor("tooltipSuccess")
+            textColor := GetContrastingColor(ColorThemeManager.GetColor("tooltipSuccess"))
+            TooltipSystem.mouseTooltip.textCtrl.SetFont("c" . textColor)
         }
     }
 }

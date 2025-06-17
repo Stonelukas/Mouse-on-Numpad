@@ -1,7 +1,11 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Status Indicator Module - Status display and temporary messages
+; Updated Status Indicator Module - With Color Theme Support
+; ######################################################################################################################
+; 
+; IMPORTANT: This is an updated version of StatusIndicator.ahk that integrates with ColorThemeManager.
+; Replace the existing StatusIndicator.ahk with this version.
 ; ######################################################################################################################
 
 class StatusIndicator {
@@ -9,12 +13,16 @@ class StatusIndicator {
 
     static Initialize() {
         StatusIndicator.statusIndicator := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        StatusIndicator.statusIndicator.BackColor := "0xF44336"
+        StatusIndicator.statusIndicator.BackColor := ColorThemeManager.GetColor("statusOff")
         StatusIndicator.statusIndicator.MarginX := 4
         StatusIndicator.statusIndicator.MarginY := 2
         
         StatusIndicator.statusIndicator.textCtrl := StatusIndicator.statusIndicator.Add("Text", "cWhite Left h18", "⌨️ OFF • 🔄 Relative")
         StatusIndicator.statusIndicator.textCtrl.SetFont("s8 Bold", "Segoe UI")
+        
+        ; Apply text color based on theme
+        textColor := ColorThemeManager.GetColor("textDefault")
+        StatusIndicator.statusIndicator.textCtrl.SetFont("c" . textColor)
         
         pos := MonitorUtils.GetGuiPosition("status")
         
@@ -31,19 +39,19 @@ class StatusIndicator {
         backgroundColor := ""
         
         if (!StateManager.IsMouseMode()) {
-            backgroundColor := "0xF44336"
+            backgroundColor := ColorThemeManager.GetColor("statusOff")
             mainStatus := "⌨️ OFF"
         } else if (StateManager.IsSaveMode()) {
-            backgroundColor := "0x9C27B0"
+            backgroundColor := ColorThemeManager.GetColor("statusSave")
             mainStatus := "💾 SAVE"
         } else if (StateManager.IsLoadMode()) {
-            backgroundColor := "0x2196F3"
+            backgroundColor := ColorThemeManager.GetColor("statusLoad")
             mainStatus := "📂 LOAD"
         } else if (StateManager.IsInvertedMode()) {
-            backgroundColor := "0xFF9800"
+            backgroundColor := ColorThemeManager.GetColor("statusInverted")
             mainStatus := "🔄 INV"
         } else {
-            backgroundColor := "0x4CAF50"
+            backgroundColor := ColorThemeManager.GetColor("statusOn")
             mainStatus := "🖱️ ON"
         }
         
@@ -75,6 +83,11 @@ class StatusIndicator {
         }
         
         StatusIndicator.statusIndicator.BackColor := backgroundColor
+        
+        ; Update text color for contrast
+        textColor := GetContrastingColor(backgroundColor)
+        StatusIndicator.statusIndicator.textCtrl.SetFont("c" . textColor)
+        
         StatusIndicator.statusIndicator.textCtrl.Text := combinedText
         StatusIndicator.statusIndicator.textCtrl.Move(2, 2, textWidth + 4, 18)
         
@@ -101,6 +114,12 @@ class StatusIndicator {
 
     static ShowTemporaryMessage(text, type := "info", duration := 800) {
         StatusIndicator.statusIndicator.BackColor := StatusIndicator._GetColorForType(type)
+        
+        ; Update text color for contrast
+        bgColor := StatusIndicator._GetColorForType(type)
+        textColor := GetContrastingColor(bgColor)
+        StatusIndicator.statusIndicator.textCtrl.SetFont("c" . textColor)
+        
         StatusIndicator.statusIndicator.textCtrl.Text := text
         
         SetTimer(() => StatusIndicator.Update(), -duration)
@@ -108,11 +127,11 @@ class StatusIndicator {
 
     static _GetColorForType(type) {
         switch type {
-            case "success": return "0x4CAF50"
-            case "warning": return "0xFF9800"
-            case "info": return "0x2196F3"
-            case "error": return "0xF44336"
-            default: return "0x607D8B"
+            case "success": return ColorThemeManager.GetColor("tooltipSuccess")
+            case "warning": return ColorThemeManager.GetColor("tooltipWarning")
+            case "info": return ColorThemeManager.GetColor("tooltipInfo")
+            case "error": return ColorThemeManager.GetColor("tooltipError")
+            default: return ColorThemeManager.GetColor("tooltipDefault")
         }
     }
 
@@ -134,12 +153,15 @@ class StatusIndicator {
         tempStatusGui.MarginY := 4
         
         if (StateManager.IsStatusVisible()) {
-            tempStatusGui.BackColor := "0x4CAF50"
+            tempStatusGui.BackColor := ColorThemeManager.GetColor("statusOn")
             statusText := "Status ON"
         } else {
-            tempStatusGui.BackColor := "0xFF9800"  
+            tempStatusGui.BackColor := ColorThemeManager.GetColor("statusInverted")
             statusText := "Status OFF"
         }
+        
+        ; Get contrasting text color
+        textColor := GetContrastingColor(tempStatusGui.BackColor)
         
         textLength := StrLen(statusText)
         guiWidth := (textLength * 8) + 20
@@ -147,7 +169,7 @@ class StatusIndicator {
         textWidth := guiWidth - 16
         
         tempStatusGui.textCtrl := tempStatusGui.Add("Text", "cWhite Center w" . textWidth . " h18", statusText)
-        tempStatusGui.textCtrl.SetFont("s9 Bold", "Segoe UI")
+        tempStatusGui.textCtrl.SetFont("s9 Bold c" . textColor, "Segoe UI")
         
         pos := MonitorUtils.GetGuiPosition("tooltip")
         tempStatusGui.Show("x" . pos[1] . " y" . pos[2] . " w" . guiWidth . " h26 NoActivate")
@@ -161,12 +183,15 @@ class StatusIndicator {
         tempGui.MarginY := 4
         
         if (Config.UseSecondaryMonitor) {
-            tempGui.BackColor := "0x4CAF50"
+            tempGui.BackColor := ColorThemeManager.GetColor("statusOn")
             statusText := "Secondary Monitor ON"
         } else {
-            tempGui.BackColor := "0xFF9800"
+            tempGui.BackColor := ColorThemeManager.GetColor("statusInverted")
             statusText := "Secondary Monitor OFF"
         }
+        
+        ; Get contrasting text color
+        textColor := GetContrastingColor(tempGui.BackColor)
         
         textLength := StrLen(statusText)
         guiWidth := (textLength * 8) + 20
@@ -174,7 +199,7 @@ class StatusIndicator {
         textWidth := guiWidth - 16
         
         tempGui.textCtrl := tempGui.Add("Text", "cWhite Center w" . textWidth . " h18", statusText)
-        tempGui.textCtrl.SetFont("s9 Bold", "Segoe UI")
+        tempGui.textCtrl.SetFont("s9 Bold c" . textColor, "Segoe UI")
         
         pos := MonitorUtils.GetGuiPosition("tooltip")
         tempGui.Show("x" . pos[1] . " y" . pos[2] . " w" . guiWidth . " h26 NoActivate")
@@ -185,6 +210,14 @@ class StatusIndicator {
     static Cleanup() {
         if (StatusIndicator.statusIndicator != "") {
             StatusIndicator.statusIndicator.Destroy()
+        }
+    }
+    
+    ; Apply theme colors to status indicator
+    static ApplyTheme() {
+        if (StatusIndicator.statusIndicator != "") {
+            ; The background color will be updated on the next Update() call
+            StatusIndicator.Update()
         }
     }
 }

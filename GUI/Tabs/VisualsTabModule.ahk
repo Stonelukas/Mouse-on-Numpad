@@ -1,7 +1,11 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Visuals Tab Module - Visual and audio settings
+; Updated Visuals Tab Module - With Working Color Theme Implementation
+; ######################################################################################################################
+; 
+; IMPORTANT: This is an updated version of VisualsTabModule.ahk that properly handles color theme changes.
+; Replace the existing VisualsTabModule.ahk in GUI/Tabs/ with this version.
 ; ######################################################################################################################
 
 class VisualsTabModule extends BaseTabModule {
@@ -59,9 +63,24 @@ class VisualsTabModule extends BaseTabModule {
 
         this.gui.Add("Text", "x450 y75 w80", "Theme:")
         this.AddControl("ColorTheme", this.gui.Add("DropDownList", "x530 y72 w150", 
-            ["Default", "Dark Mode", "High Contrast", "Minimal"]))
-        this.controls["ColorTheme"].Choose(1)
-        this.controls["ColorTheme"].OnEvent("Change", (*) => this._UpdateVisualsPreview())
+            ColorThemeManager.GetThemeList()))
+        
+        ; Select current theme
+        currentTheme := ColorThemeManager.GetCurrentTheme()
+        themeIndex := 1
+        for theme in ColorThemeManager.GetThemeList() {
+            if (theme = currentTheme) {
+                this.controls["ColorTheme"].Choose(themeIndex)
+                break
+            }
+            themeIndex++
+        }
+        
+        this.controls["ColorTheme"].OnEvent("Change", (*) => this._OnThemeChange())
+
+        ; Theme Preview Button
+        this.AddControl("PreviewTheme", this.gui.Add("Button", "x690 y71 w60 h25", "Preview"))
+        this.controls["PreviewTheme"].OnEvent("Click", (*) => this._PreviewTheme())
 
         ; Preview Section
         this.gui.Add("Text", "x450 y110 w200 h20 +0x200", "Preview").SetFont("s10 Bold")
@@ -78,6 +97,146 @@ class VisualsTabModule extends BaseTabModule {
         this.AddControl("TestTooltipPosition", this.gui.Add("Button", "x600 y350 w140 h25",
             "Test Tooltip Position"))
         this.controls["TestTooltipPosition"].OnEvent("Click", (*) => this._TestTooltipPosition())
+
+        ; Theme Demo Buttons
+        this.gui.Add("Text", "x30 y390 w200 h20 +0x200", "Theme Demonstration").SetFont("s10 Bold")
+        
+        this.AddControl("DemoTooltips", this.gui.Add("Button", "x30 y415 w120 h25", "Demo Tooltips"))
+        this.controls["DemoTooltips"].OnEvent("Click", (*) => this._DemoTooltips())
+        
+        this.AddControl("DemoStatus", this.gui.Add("Button", "x160 y415 w120 h25", "Demo Status"))
+        this.controls["DemoStatus"].OnEvent("Click", (*) => this._DemoStatus())
+        
+        this.AddControl("ResetTheme", this.gui.Add("Button", "x290 y415 w120 h25", "Reset to Default"))
+        this.controls["ResetTheme"].OnEvent("Click", (*) => this._ResetTheme())
+    }
+
+    _OnThemeChange() {
+        ; Update preview when theme changes
+        this._UpdateVisualsPreview()
+        
+        ; Get selected theme
+        selectedTheme := this.controls["ColorTheme"].Text
+        
+        ; Show notification
+        TooltipSystem.ShowStandard("Theme: " . selectedTheme . " (click Apply to save)", "info", 2000)
+    }
+
+    _PreviewTheme() {
+        ; Get selected theme
+        selectedTheme := this.controls["ColorTheme"].Text
+        
+        ; Temporarily apply theme
+        previousTheme := ColorThemeManager.GetCurrentTheme()
+        ColorThemeManager.SetTheme(selectedTheme)
+        
+        ; Show preview message
+        MsgBox("Theme '" . selectedTheme . "' preview applied!`n`n" .
+            "The theme will be active for 10 seconds.`n" .
+            "Click 'Apply' to save permanently.", 
+            "Theme Preview", "T10")
+        
+        ; Revert after preview
+        ColorThemeManager.SetTheme(previousTheme)
+    }
+
+    _DemoTooltips() {
+        ; Get selected theme
+        selectedTheme := this.controls["ColorTheme"].Text
+        
+        ; Temporarily apply theme if different
+        previousTheme := ColorThemeManager.GetCurrentTheme()
+        if (selectedTheme != previousTheme) {
+            ColorThemeManager.SetTheme(selectedTheme)
+        }
+        
+        ; Show tooltips in sequence
+        TooltipSystem.ShowStandard("ℹ️ Info Tooltip", "info", 1500)
+        SetTimer(() => TooltipSystem.ShowStandard("✅ Success Tooltip", "success", 1500), -1700)
+        SetTimer(() => TooltipSystem.ShowStandard("⚠️ Warning Tooltip", "warning", 1500), -3400)
+        SetTimer(() => TooltipSystem.ShowStandard("❌ Error Tooltip", "error", 1500), -5100)
+        
+        ; Show mouse action tooltips
+        SetTimer(() => TooltipSystem.ShowMouseAction("🖱️ Mouse Action (Success)", "success"), -7000)
+        SetTimer(() => TooltipSystem.ShowMouseAction("🖱️ Mouse Action (Warning)", "warning"), -11200)
+        
+        ; Revert theme if it was changed
+        if (selectedTheme != previousTheme) {
+            SetTimer(() => ColorThemeManager.SetTheme(previousTheme), -15500)
+        }
+    }
+
+    _DemoStatus() {
+        ; Get selected theme
+        selectedTheme := this.controls["ColorTheme"].Text
+        
+        ; Temporarily apply theme if different
+        previousTheme := ColorThemeManager.GetCurrentTheme()
+        if (selectedTheme != previousTheme) {
+            ColorThemeManager.SetTheme(selectedTheme)
+        }
+        
+        ; Show different status states
+        ; Save current state
+        savedMouseMode := StateManager.IsMouseMode()
+        savedSaveMode := StateManager.IsSaveMode()
+        savedLoadMode := StateManager.IsLoadMode()
+        savedInvertedMode := StateManager.IsInvertedMode()
+        
+        ; Demo sequence
+        MsgBox("Status indicator demonstration will show different states.`n`n" .
+            "Watch the status indicator change colors.", "Status Demo", "T2")
+        
+        ; OFF state
+        StateManager._mouseMode := false
+        StatusIndicator.Update()
+        Sleep(1500)
+        
+        ; ON state
+        StateManager._mouseMode := true
+        StateManager._saveMode := false
+        StateManager._loadMode := false
+        StateManager._invertedMode := false
+        StatusIndicator.Update()
+        Sleep(1500)
+        
+        ; SAVE state
+        StateManager._saveMode := true
+        StatusIndicator.Update()
+        Sleep(1500)
+        
+        ; LOAD state
+        StateManager._saveMode := false
+        StateManager._loadMode := true
+        StatusIndicator.Update()
+        Sleep(1500)
+        
+        ; INVERTED state
+        StateManager._loadMode := false
+        StateManager._invertedMode := true
+        StatusIndicator.Update()
+        Sleep(1500)
+        
+        ; Restore original state
+        StateManager._mouseMode := savedMouseMode
+        StateManager._saveMode := savedSaveMode
+        StateManager._loadMode := savedLoadMode
+        StateManager._invertedMode := savedInvertedMode
+        StatusIndicator.Update()
+        
+        ; Revert theme if it was changed
+        if (selectedTheme != previousTheme) {
+            ColorThemeManager.SetTheme(previousTheme)
+        }
+    }
+
+    _ResetTheme() {
+        ; Reset to default theme
+        this.controls["ColorTheme"].Choose(1)
+        ColorThemeManager.SetTheme("Default")
+        this._UpdateVisualsPreview()
+        
+        MsgBox("Theme reset to Default.", "Theme Reset", "Iconi T2")
     }
 
     GetData() {
@@ -133,27 +292,24 @@ class VisualsTabModule extends BaseTabModule {
 
             previewText := "=== VISUAL SETTINGS PREVIEW ===`r`n`r`n"
             
-            previewText .= "🎨 COLOR THEME:`r`n"
-            previewText .= "• Current Theme: " . colorTheme . "`r`n"
+            previewText .= "🎨 COLOR THEME: " . colorTheme . "`r`n"
             
-            ; Theme-specific colors
-            switch colorTheme {
-                case "Default":
-                    previewText .= "• Primary: Blue/Green`r`n"
-                    previewText .= "• Status: Multi-color`r`n"
-                    previewText .= "• Background: Light`r`n"
-                case "Dark Mode":
-                    previewText .= "• Primary: Dark Blue`r`n"
-                    previewText .= "• Status: Muted colors`r`n"
-                    previewText .= "• Background: Dark`r`n"
-                case "High Contrast":
-                    previewText .= "• Primary: Black/White`r`n"
-                    previewText .= "• Status: High visibility`r`n"
-                    previewText .= "• Background: White`r`n"
-                case "Minimal":
-                    previewText .= "• Primary: Grayscale`r`n"
-                    previewText .= "• Status: Minimal colors`r`n"
-                    previewText .= "• Background: Light gray`r`n"
+            ; Get theme description
+            themeDesc := ColorThemeManager.GetThemeDescription(colorTheme)
+            if (themeDesc != "") {
+                previewText .= "• Description: " . themeDesc . "`r`n"
+            }
+            
+            ; Show theme colors
+            if (ColorThemeManager.themes.Has(colorTheme)) {
+                previewText .= "`r`nTheme Colors:`r`n"
+                colors := ColorThemeManager.themes[colorTheme].colors
+                
+                previewText .= "• Status OFF: " . colors.statusOff . "`r`n"
+                previewText .= "• Status ON: " . colors.statusOn . "`r`n"
+                previewText .= "• Save Mode: " . colors.statusSave . "`r`n"
+                previewText .= "• Load Mode: " . colors.statusLoad . "`r`n"
+                previewText .= "• Inverted: " . colors.statusInverted . "`r`n"
             }
 
             previewText .= "`r`n📊 DISPLAY SETTINGS:`r`n"
@@ -165,14 +321,30 @@ class VisualsTabModule extends BaseTabModule {
             previewText .= "• Status: " . this.controls["StatusX"].Text . ", " . this.controls["StatusY"].Text . "`r`n"
             previewText .= "• Tooltip: " . this.controls["TooltipX"].Text . ", " . this.controls["TooltipY"].Text . "`r`n"
 
-            previewText .= "`r`n💡 TIPS:`r`n"
-            if (!statusVisible) {
-                previewText .= "• Press Ctrl+Numpad+ to toggle status`r`n"
+            previewText .= "`r`n💡 THEME FEATURES:`r`n"
+            switch colorTheme {
+                case "Default":
+                    previewText .= "• Standard colors for all modes`r`n"
+                    previewText .= "• High visibility status indicators`r`n"
+                    previewText .= "• Professional appearance`r`n"
+                case "Dark Mode":
+                    previewText .= "• Reduced eye strain`r`n"
+                    previewText .= "• Muted color palette`r`n"
+                    previewText .= "• Ideal for low-light environments`r`n"
+                case "High Contrast":
+                    previewText .= "• Maximum visibility`r`n"
+                    previewText .= "• Pure colors (no gradients)`r`n"
+                    previewText .= "• Accessibility focused`r`n"
+                case "Minimal":
+                    previewText .= "• Clean, distraction-free`r`n"
+                    previewText .= "• Grayscale color scheme`r`n"
+                    previewText .= "• Subtle visual feedback`r`n"
             }
-            if (secondaryMonitor && MonitorGetCount() < 2) {
-                previewText .= "• Only one monitor detected!`r`n"
-            }
-            previewText .= "• Position expressions support A_ScreenWidth/Height`r`n"
+
+            previewText .= "`r`n🔧 TIPS:`r`n"
+            previewText .= "• Use 'Preview' to test theme`r`n"
+            previewText .= "• 'Demo' buttons show theme in action`r`n"
+            previewText .= "• Changes apply after clicking 'Apply'`r`n"
 
             this.controls["VisualPreview"].Text := previewText
         } catch {
@@ -195,11 +367,13 @@ class VisualsTabModule extends BaseTabModule {
             x := MonitorUtils.EvaluateExpression(this.controls["StatusX"].Text)
             y := MonitorUtils.EvaluateExpression(this.controls["StatusY"].Text)
 
-            ; Create test indicator
+            ; Create test indicator with current theme colors
             testGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
-            testGui.BackColor := "0x4CAF50"
+            testGui.BackColor := ColorThemeManager.GetColor("statusOn")
             testGui.SetFont("s10 Bold", "Segoe UI")
-            testGui.Add("Text", "x5 y5 w110 h20 Center cWhite", "Status Position")
+            
+            textColor := GetContrastingColor(testGui.BackColor)
+            testGui.Add("Text", "x5 y5 w110 h20 Center c" . textColor, "Status Position")
             testGui.Show("x" . x . " y" . y . " w120 h30 NoActivate")
 
             ; Auto-destroy after 3 seconds
@@ -218,11 +392,13 @@ class VisualsTabModule extends BaseTabModule {
             x := MonitorUtils.EvaluateExpression(this.controls["TooltipX"].Text)
             y := MonitorUtils.EvaluateExpression(this.controls["TooltipY"].Text)
 
-            ; Create test tooltip
+            ; Create test tooltip with current theme colors
             testGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
-            testGui.BackColor := "0x2196F3"
+            testGui.BackColor := ColorThemeManager.GetColor("tooltipInfo")
             testGui.SetFont("s10 Bold", "Segoe UI")
-            testGui.Add("Text", "x5 y5 w110 h20 Center cWhite", "Tooltip Position")
+            
+            textColor := GetContrastingColor(testGui.BackColor)
+            testGui.Add("Text", "x5 y5 w110 h20 Center c" . textColor, "Tooltip Position")
             testGui.Show("x" . x . " y" . y . " w120 h30 NoActivate")
 
             ; Auto-destroy after 3 seconds
