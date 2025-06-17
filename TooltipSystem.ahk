@@ -1,212 +1,194 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Tooltip System Module - Separate tooltip management for different types
+; Tooltip System - Centralized tooltip management
 ; ######################################################################################################################
 
 class TooltipSystem {
-    ; GUI elements
+    ; Tooltip instances
     static globalTooltip := ""
     static mouseTooltip := ""
+    static tempTooltips := Map()
     
-    ; Timer
-    static mouseTooltipTimer := ""
-
-    static Initialize() {
-        TooltipSystem._InitializeTooltip()
-        TooltipSystem._InitializeMouseTooltip()
+    ; Tooltip settings
+    static defaultDuration := 3000
+    static mouseActionDuration := 4000
+    static arrowDuration := 200
+    
+    ; Initialize tooltip system
+    static Init() {
+        ; Create persistent tooltips
+        TooltipSystem.CreateTooltips()
     }
-
-    static _InitializeTooltip() {
-        TooltipSystem.globalTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
+    
+    ; Create tooltip GUIs
+    static CreateTooltips() {
+        ; Global tooltip (for general messages)
+        TooltipSystem.globalTooltip := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
+        TooltipSystem.globalTooltip.MarginX := 10
+        TooltipSystem.globalTooltip.MarginY := 5
         TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
-        TooltipSystem.globalTooltip.MarginX := 5
-        TooltipSystem.globalTooltip.MarginY := 2
         
-        TooltipSystem.globalTooltip.textCtrl := TooltipSystem.globalTooltip.Add("Text", "cWhite Center w50 h16", "")
-        TooltipSystem.globalTooltip.textCtrl.SetFont("s8 Bold", "Segoe UI")
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        TooltipSystem.globalTooltip.Move(pos[1], pos[2], 60, 22)
-        TooltipSystem.globalTooltip.Show("NoActivate Hide")  ; Create but keep hidden
-        WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd)
-    }
-
-    static _InitializeMouseTooltip() {
-        TooltipSystem.mouseTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
+        ; Mouse action tooltip (separate from global)
+        TooltipSystem.mouseTooltip := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
+        TooltipSystem.mouseTooltip.MarginX := 10
+        TooltipSystem.mouseTooltip.MarginY := 5
         TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
-        TooltipSystem.mouseTooltip.MarginX := 8
-        TooltipSystem.mouseTooltip.MarginY := 4
-        
-        TooltipSystem.mouseTooltip.textCtrl := TooltipSystem.mouseTooltip.Add("Text", "cWhite Center w120 h20", "")
-        TooltipSystem.mouseTooltip.textCtrl.SetFont("s9 Bold", "Segoe UI")
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        TooltipSystem.mouseTooltip.Move(pos[1], pos[2] - 30, 140, 28)
-        TooltipSystem.mouseTooltip.Show("NoActivate Hide")  ; Create but keep hidden
-        WinSetTransparent(0, TooltipSystem.mouseTooltip.Hwnd)
     }
-
-    ; Standard tooltip for movement and general feedback
-    static ShowStandard(text, type := "info", duration := "") {
-        if (!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
-            return
+    
+    ; Show tooltip
+    static Show(text, x := "", y := "") {
+        ; Get position
+        if (x == "" || y == "") {
+            ; Use configured position
+            mon := MonitorUtils.GetMonitorInfo()
+            xPos := Config.TooltipX is Number ? Config.TooltipX : MonitorUtils.EvaluateExpression(Config.TooltipX)
+            yPos := Config.TooltipY is Number ? Config.TooltipY : MonitorUtils.EvaluateExpression(Config.TooltipY)
+            x := mon.left + xPos
+            y := mon.top + yPos
         }
         
-        ; Make sure tooltip is visible before updating content
-        TooltipSystem.globalTooltip.Show("NoActivate")
+        ; Clear existing content
+        for hwnd in TooltipSystem.globalTooltip {
+            hwnd.Destroy()
+        }
         
-        TooltipSystem.globalTooltip.BackColor := TooltipSystem._GetTooltipColor(type)
-        TooltipSystem.globalTooltip.textCtrl.Text := text
+        ; Add new text
+        textCtrl := TooltipSystem.globalTooltip.Add("Text", "cWhite", text)
+        textCtrl.SetFont("s10", "Segoe UI")
         
-        ; Calculate size
-        textLength := StrLen(text)
-        if (text == "↑" || text == "↓" || text == "←" || text == "→" || text == "↖" || text == "↗" || text == "↙" || text == "↘") {
-            tooltipWidth := 40
-            textWidth := 30
+        ; Show tooltip
+        TooltipSystem.globalTooltip.Show("x" . x . " y" . y . " NoActivate")
+    }
+    
+    ; Show temporary tooltip
+    static ShowTemporary(text, type := "default", duration := 0) {
+        if (duration == 0) {
+            duration := Config.TooltipDuration
+        }
+        
+        ; Select tooltip based on context
+        if (type == "mouse") {
+            TooltipSystem.ShowMouseAction(text, duration)
         } else {
-            tooltipWidth := (textLength * 9) + 24
-            textWidth := tooltipWidth - 16
-            if (tooltipWidth < 60) {
-                tooltipWidth := 60
-                textWidth := 44
-            }
-            if (tooltipWidth > 250) {
-                tooltipWidth := 250
-                textWidth := 234
-            }
-        }
-        
-        TooltipSystem.globalTooltip.textCtrl.Move(8, 2, textWidth, 18)
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        TooltipSystem.globalTooltip.Move(pos[1], pos[2], tooltipWidth, 22)
-        
-        WinSetTransparent(255, TooltipSystem.globalTooltip.Hwnd)
-        
-        ; Determine duration
-        if (duration != "") {
-            displayDuration := duration
-        } else if (text == "↑" || text == "↓" || text == "←" || text == "→" || text == "↖" || text == "↗" || text == "↙" || text == "↘") {
-            displayDuration := Config.FeedbackDurationShort
-        } else {
-            displayDuration := Config.FeedbackDurationLong
-        }
-        
-        SetTimer(() => WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd), -displayDuration)
-    }
-
-    ; Dedicated mouse tooltip with 4-second duration
-    static ShowMouseAction(text, type := "success") {
-        if (!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
-            return
-        }
-        
-        ; Make sure mouse tooltip is visible before updating content
-        TooltipSystem.mouseTooltip.Show("NoActivate")
-        
-        ; Cancel any existing mouse tooltip timer
-        if (TooltipSystem.mouseTooltipTimer != "") {
-            SetTimer(TooltipSystem.mouseTooltipTimer, 0)
-            TooltipSystem.mouseTooltipTimer := ""
-        }
-        
-        ; Set color based on type
-        switch type {
-            case "success": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
-            case "warning": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipWarning")
-            case "info": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipInfo")
-            case "error": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipError")
-            default: TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
-        }
-        
-        TooltipSystem.mouseTooltip.textCtrl.Text := text
-        
-        ; Calculate width based on text
-        textLength := StrLen(text)
-        tooltipWidth := (textLength * 10) + 30
-        if (tooltipWidth < 120) tooltipWidth := 120
-        if (tooltipWidth > 300) tooltipWidth := 300
-        textWidth := tooltipWidth - 20
-        
-        TooltipSystem.mouseTooltip.textCtrl.Move(10, 4, textWidth, 20)
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        TooltipSystem.mouseTooltip.Move(pos[1], pos[2] - 35, tooltipWidth, 28)
-        
-        ; Show for exactly 4 seconds
-        WinSetTransparent(255, TooltipSystem.mouseTooltip.Hwnd)
-        
-        ; Set timer to hide after 4 seconds
-        TooltipSystem.mouseTooltipTimer := () => WinSetTransparent(0, TooltipSystem.mouseTooltip.Hwnd)
-        SetTimer(TooltipSystem.mouseTooltipTimer, -4000)
-    }
-
-    ; Forced tooltip that always shows (for critical messages)
-    static ShowForced(text, type := "info") {
-        ; Make sure tooltip is visible
-        TooltipSystem.globalTooltip.Show("NoActivate")
-        
-        TooltipSystem.globalTooltip.BackColor := TooltipSystem._GetTooltipColor(type)
-        TooltipSystem.globalTooltip.textCtrl.Text := text
-        
-        textLength := StrLen(text)
-        tooltipWidth := (textLength * 9) + 24
-        if (tooltipWidth < 60) tooltipWidth := 60
-        if (tooltipWidth > 250) tooltipWidth := 250
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        TooltipSystem.globalTooltip.Move(pos[1], pos[2], tooltipWidth, 22)
-        
-        WinSetTransparent(255, TooltipSystem.globalTooltip.Hwnd)
-        
-        SetTimer(() => WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd), -1000)
-    }
-
-    static _GetTooltipColor(type) {
-        switch type {
-            case "success": return Config.GetThemeColor("TooltipSuccess")
-            case "warning": return Config.GetThemeColor("TooltipWarning")
-            case "info": return Config.GetThemeColor("TooltipInfo")
-            case "error": return Config.GetThemeColor("TooltipError")
-            default: return Config.GetThemeColor("TooltipDefault")
+            TooltipSystem.ShowWithStyle(text, type, duration)
         }
     }
-
-    static HandleFullscreen() {
-        if ((!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen())) {
-            try {
-                if (TooltipSystem.globalTooltip != "") {
-                    TooltipSystem.globalTooltip.Hide()
-                }
-                if (TooltipSystem.mouseTooltip != "") {
-                    TooltipSystem.mouseTooltip.Hide()
-                }
-            }
+    
+    ; Show mouse action tooltip (separate system)
+    static ShowMouseAction(text, duration := 0) {
+        if (duration == 0) {
+            duration := TooltipSystem.mouseActionDuration
+        }
+        
+        ; Get position
+        mon := MonitorUtils.GetMonitorInfo()
+        xPos := Config.TooltipX is Number ? Config.TooltipX : MonitorUtils.EvaluateExpression(Config.TooltipX)
+        yPos := Config.TooltipY is Number ? Config.TooltipY : MonitorUtils.EvaluateExpression(Config.TooltipY)
+        x := mon.left + xPos
+        y := mon.top + yPos + 40  ; Offset to avoid overlap
+        
+        ; Clear existing content
+        for hwnd in TooltipSystem.mouseTooltip {
+            hwnd.Destroy()
+        }
+        
+        ; Set background color
+        TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
+        
+        ; Add new text
+        textCtrl := TooltipSystem.mouseTooltip.Add("Text", "cWhite", text)
+        textCtrl.SetFont("s10 Bold", "Segoe UI")
+        
+        ; Show tooltip
+        TooltipSystem.mouseTooltip.Show("x" . x . " y" . y . " NoActivate")
+        
+        ; Set timer to hide
+        SetTimer(() => TooltipSystem.HideMouseTooltip(), -duration)
+    }
+    
+    ; Show arrow tooltip (very short duration)
+    static ShowArrow(direction) {
+        arrows := Map(
+            "up", "↑",
+            "down", "↓",
+            "left", "←",
+            "right", "→",
+            "up-left", "↖",
+            "up-right", "↗",
+            "down-left", "↙",
+            "down-right", "↘"
+        )
+        
+        if (arrows.Has(direction)) {
+            TooltipSystem.ShowTemporary(arrows[direction], "default", TooltipSystem.arrowDuration)
         }
     }
-
-    static UpdateVisibility() {
-        if (!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
-            try {
-                if (TooltipSystem.globalTooltip != "") {
-                    TooltipSystem.globalTooltip.Hide()
-                }
-                if (TooltipSystem.mouseTooltip != "") {
-                    TooltipSystem.mouseTooltip.Hide()
-                }
-            }
-        } else {
-            ; Only show tooltips when they actually have content and are needed
-            ; Don't auto-show empty tooltips
+    
+    ; Show tooltip with style
+    static ShowWithStyle(text, style := "default", duration := 0) {
+        if (duration == 0) {
+            duration := Config.TooltipDuration
         }
+        
+        ; Get position
+        mon := MonitorUtils.GetMonitorInfo()
+        xPos := Config.TooltipX is Number ? Config.TooltipX : MonitorUtils.EvaluateExpression(Config.TooltipX)
+        yPos := Config.TooltipY is Number ? Config.TooltipY : MonitorUtils.EvaluateExpression(Config.TooltipY)
+        x := mon.left + xPos
+        y := mon.top + yPos
+        
+        ; Clear existing content
+        for hwnd in TooltipSystem.globalTooltip {
+            hwnd.Destroy()
+        }
+        
+        ; Set background color based on style
+        bgColor := Config.GetThemeColor("Tooltip" . StrTitle(style))
+        TooltipSystem.globalTooltip.BackColor := bgColor
+        
+        ; Add new text
+        textCtrl := TooltipSystem.globalTooltip.Add("Text", "cWhite", text)
+        textCtrl.SetFont("s10", "Segoe UI")
+        
+        ; Show tooltip
+        TooltipSystem.globalTooltip.Show("x" . x . " y" . y . " NoActivate")
+        
+        ; Set timer to hide
+        SetTimer(() => TooltipSystem.Hide(), -duration)
     }
-
-    static Cleanup() {
-        if (TooltipSystem.globalTooltip != "") {
+    
+    ; Hide global tooltip
+    static Hide() {
+        TooltipSystem.globalTooltip.Hide()
+    }
+    
+    ; Hide mouse tooltip
+    static HideMouseTooltip() {
+        TooltipSystem.mouseTooltip.Hide()
+    }
+    
+    ; Hide all tooltips
+    static HideAll() {
+        TooltipSystem.globalTooltip.Hide()
+        TooltipSystem.mouseTooltip.Hide()
+        
+        ; Hide any temporary tooltips
+        for id, tooltip in TooltipSystem.tempTooltips {
+            tooltip.Destroy()
+        }
+        TooltipSystem.tempTooltips.Clear()
+    }
+    
+    ; Clean up tooltips
+    static CleanUp() {
+        TooltipSystem.HideAll()
+        
+        if (TooltipSystem.globalTooltip) {
             TooltipSystem.globalTooltip.Destroy()
         }
-        if (TooltipSystem.mouseTooltip != "") {
+        
+        if (TooltipSystem.mouseTooltip) {
             TooltipSystem.mouseTooltip.Destroy()
         }
     }

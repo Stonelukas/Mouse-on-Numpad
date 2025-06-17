@@ -1,193 +1,181 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Status Indicator Module - Status display and temporary messages
+; Status Indicator - Status bar display and management
 ; ######################################################################################################################
 
 class StatusIndicator {
-    static statusIndicator := ""
-
-    static Initialize() {
-        StatusIndicator.statusIndicator := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        StatusIndicator.statusIndicator.BackColor := Config.GetThemeColor("StatusOff")
-        StatusIndicator.statusIndicator.MarginX := 4
-        StatusIndicator.statusIndicator.MarginY := 2
+    ; Status GUI
+    static gui := ""
+    static textCtrl := ""
+    static isVisible := false
+    static lastStatus := ""
+    static hideTimer := ""
+    
+    ; Initialize status indicator
+    static Init() {
+        ; Create status GUI
+        StatusIndicator.gui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
+        StatusIndicator.gui.BackColor := Config.GetThemeColor("StatusOff")
+        StatusIndicator.gui.MarginX := 4
+        StatusIndicator.gui.MarginY := 2
         
-        StatusIndicator.statusIndicator.textCtrl := StatusIndicator.statusIndicator.Add("Text", "cWhite Left h18", "⌨️ OFF • 🔄 Relative")
-        StatusIndicator.statusIndicator.textCtrl.SetFont("s8 Bold", "Segoe UI")
+        ; Add text control
+        StatusIndicator.textCtrl := StatusIndicator.gui.Add("Text", "cWhite Left w140 h18", "🖱️ OFF")
+        StatusIndicator.textCtrl.SetFont("s8 Bold", "Segoe UI")
         
-        pos := MonitorUtils.GetGuiPosition("status")
+        ; Position and show if configured
+        StatusIndicator.UpdatePosition()
         
-        ; Only show if status should be visible
-        if (StateManager.IsStatusVisible()) {
-            StatusIndicator.statusIndicator.Show("x" . pos[1] . " y" . pos[2] . " w116 h22 NoActivate")
-        } else {
-            StatusIndicator.statusIndicator.Move(pos[1], pos[2], 116, 22)
+        if (Config.StatusVisibleOnStartup) {
+            StatusIndicator.Show()
         }
     }
-
+    
+    ; Update status display
     static Update() {
-        mainStatus := ""
-        backgroundColor := ""
+        if (!StatusIndicator.gui) {
+            return
+        }
         
-        if (!StateManager.IsMouseMode()) {
-            backgroundColor := Config.GetThemeColor("StatusOff")
-            mainStatus := "⌨️ OFF"
-        } else if (StateManager.IsSaveMode()) {
-            backgroundColor := Config.GetThemeColor("StatusSave")
-            mainStatus := "💾 SAVE"
-        } else if (StateManager.IsLoadMode()) {
-            backgroundColor := Config.GetThemeColor("StatusLoad")
-            mainStatus := "📂 LOAD"
-        } else if (StateManager.IsInvertedMode()) {
-            backgroundColor := Config.GetThemeColor("StatusInverted")
-            mainStatus := "🔄 INV"
+        ; Build status text
+        statusText := "🖱️ "
+        
+        if (State.mouseMode) {
+            statusText .= "ON"
+            
+            if (State.saveMode) {
+                statusText .= " | 💾 SAVE"
+                StatusIndicator.gui.BackColor := Config.GetThemeColor("StatusSave")
+            } else if (State.loadMode) {
+                statusText .= " | 📂 LOAD"
+                StatusIndicator.gui.BackColor := Config.GetThemeColor("StatusLoad")
+            } else if (State.invertMode) {
+                statusText .= " | 🔄 INV"
+                StatusIndicator.gui.BackColor := Config.GetThemeColor("StatusInverted")
+            } else {
+                StatusIndicator.gui.BackColor := Config.GetThemeColor("StatusOn")
+            }
         } else {
-            backgroundColor := Config.GetThemeColor("StatusOn")
-            mainStatus := "🖱️ ON"
+            statusText .= "OFF"
+            StatusIndicator.gui.BackColor := Config.GetThemeColor("StatusOff")
         }
         
-        movementMode := Config.EnableAbsoluteMovement ? "🎯 ABS" : "🔄 REL"
+        ; Update text
+        StatusIndicator.textCtrl.Text := statusText
+        StatusIndicator.lastStatus := statusText
         
-        heldButtons := ""
-        if (StateManager.IsLeftButtonHeld() || GetKeyState("LButton", "P")) {
-            heldButtons := heldButtons . "🖱️L"
+        ; Auto-resize window to fit text
+        StatusIndicator.gui.GetPos(, , &width)
+        textWidth := StatusIndicator.GetTextWidth(statusText)
+        if (textWidth + 8 != width) {
+            StatusIndicator.gui.Show("w" . (textWidth + 8) . " NA")
         }
-        if (StateManager.IsRightButtonHeld() || GetKeyState("RButton", "P")) {
-            heldButtons := heldButtons . "🖱️R"
-        }
-        if (StateManager.IsMiddleButtonHeld() || GetKeyState("MButton", "P")) {
-            heldButtons := heldButtons . "🖱️M"
+    }
+    
+    ; Update position
+    static UpdatePosition() {
+        if (!StatusIndicator.gui) {
+            return
         }
         
-        if (heldButtons != "") {
-            combinedText := mainStatus . "•" . movementMode . "•" . heldButtons
+        ; Get monitor info
+        mon := MonitorUtils.GetMonitorInfo()
+        
+        ; Calculate position
+        xPos := Config.StatusX is Number ? Config.StatusX : MonitorUtils.EvaluateExpression(Config.StatusX)
+        yPos := Config.StatusY is Number ? Config.StatusY : MonitorUtils.EvaluateExpression(Config.StatusY)
+        
+        ; Apply monitor offset
+        x := mon.left + xPos
+        y := mon.top + yPos
+        
+        ; Show at new position
+        if (StatusIndicator.isVisible) {
+            StatusIndicator.gui.Show("x" . x . " y" . y . " NoActivate")
+        }
+    }
+    
+    ; Show status indicator
+    static Show() {
+        if (!StatusIndicator.gui) {
+            return
+        }
+        
+        StatusIndicator.UpdatePosition()
+        StatusIndicator.gui.Show("NoActivate")
+        StatusIndicator.isVisible := true
+    }
+    
+    ; Hide status indicator
+    static Hide() {
+        if (StatusIndicator.gui) {
+            StatusIndicator.gui.Hide()
+            StatusIndicator.isVisible := false
+        }
+    }
+    
+    ; Toggle visibility
+    static Toggle() {
+        if (StatusIndicator.isVisible) {
+            StatusIndicator.Hide()
         } else {
-            combinedText := mainStatus . "•" . movementMode
+            StatusIndicator.Show()
+        }
+    }
+    
+    ; Show temporary message
+    static ShowMessage(text, duration := 0) {
+        if (!StatusIndicator.gui) {
+            return
         }
         
-        ; Calculate text width accounting for emojis
-        textWidth := StatusIndicator._CalculateTextWidth(combinedText)
-        guiWidth := textWidth + 8
-        
-        if (guiWidth < 60) {
-            guiWidth := 60
-        }
-        
-        StatusIndicator.statusIndicator.BackColor := backgroundColor
-        StatusIndicator.statusIndicator.textCtrl.Text := combinedText
-        StatusIndicator.statusIndicator.textCtrl.Move(2, 2, textWidth + 4, 18)
-        
-        pos := MonitorUtils.GetGuiPosition("status")
-        StatusIndicator.statusIndicator.Move(pos[1], pos[2], guiWidth, 22)
-        
-        StatusIndicator.UpdateVisibility()
-    }
-
-    static _CalculateTextWidth(text) {
-        ; Count emojis to calculate proper width
-        keyboardEmojis := StrLen(text) - StrLen(StrReplace(text, "⌨️", ""))
-        mouseEmojis := StrLen(text) - StrLen(StrReplace(text, "🖱️", ""))
-        arrowEmojis := StrLen(text) - StrLen(StrReplace(text, "🔄", ""))
-        targetEmojis := StrLen(text) - StrLen(StrReplace(text, "🎯", ""))
-        saveEmojis := StrLen(text) - StrLen(StrReplace(text, "💾", ""))
-        loadEmojis := StrLen(text) - StrLen(StrReplace(text, "📂", ""))
-        
-        totalEmojis := keyboardEmojis + mouseEmojis + arrowEmojis + targetEmojis + saveEmojis + loadEmojis
-        regularChars := StrLen(text) - totalEmojis
-        
-        return (regularChars * 5) + (totalEmojis * 8)
-    }
-
-    static ShowTemporaryMessage(text, type := "info") {
-        StatusIndicator.statusIndicator.BackColor := StatusIndicator._GetColorForType(type)
-        StatusIndicator.statusIndicator.textCtrl.Text := text
-        if (duration = "") {
+        if (duration == 0) {
             duration := Config.StatusMessageDuration
         }
         
-        SetTimer(() => StatusIndicator.Update(), -duration)
-    }
-
-    static _GetColorForType(type) {
-        switch type {
-            case "success": return Config.GetThemeColor("TooltipSuccess")
-            case "warning": return Config.GetThemeColor("TooltipWarning")
-            case "info": return Config.GetThemeColor("TooltipInfo")
-            case "error": return Config.GetThemeColor("TooltipError")
-            default: return Config.GetThemeColor("TooltipDefault")
-        }
-    }
-
-    static UpdateVisibility() {
-        if (!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
-            try {
-                StatusIndicator.statusIndicator.Hide()
-            }
-        } else {
-            try {
-                StatusIndicator.statusIndicator.Show("NoActivate")
-            }
-        }
-    }
-
-    static ShowToggleMessage() {
-        tempStatusGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        tempStatusGui.MarginX := 8
-        tempStatusGui.MarginY := 4
+        ; Save current status
+        savedStatus := StatusIndicator.lastStatus
+        savedColor := StatusIndicator.gui.BackColor
         
-        if (StateManager.IsStatusVisible()) {
-            tempStatusGui.BackColor := "0x4CAF50"
-            statusText := "Status ON"
-        } else {
-            tempStatusGui.BackColor := "0xFF9800"  
-            statusText := "Status OFF"
+        ; Show message
+        StatusIndicator.textCtrl.Text := text
+        StatusIndicator.gui.BackColor := Config.GetThemeColor("TooltipWarning")
+        
+        ; Clear any existing timer
+        if (StatusIndicator.hideTimer) {
+            SetTimer(StatusIndicator.hideTimer, 0)
         }
         
-        textLength := StrLen(statusText)
-        guiWidth := (textLength * 8) + 20
-        if (guiWidth < 80) guiWidth := 80
-        textWidth := guiWidth - 16
-        
-        tempStatusGui.textCtrl := tempStatusGui.Add("Text", "cWhite Center w" . textWidth . " h18", statusText)
-        tempStatusGui.textCtrl.SetFont("s9 Bold", "Segoe UI")
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        tempStatusGui.Show("x" . pos[1] . " y" . pos[2] . " w" . guiWidth . " h26 NoActivate")
-        
-        SetTimer(() => tempStatusGui.Destroy(), -3000)
+        ; Set timer to restore
+        StatusIndicator.hideTimer := () => StatusIndicator.RestoreStatus(savedStatus, savedColor)
+        SetTimer(StatusIndicator.hideTimer, -duration)
     }
-
-    static ShowSecondaryMonitorToggle() {
-        tempGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        tempGui.MarginX := 8
-        tempGui.MarginY := 4
-        
-        if (Config.UseSecondaryMonitor) {
-            tempGui.BackColor := "0x4CAF50"
-            statusText := "Secondary Monitor ON"
-        } else {
-            tempGui.BackColor := "0xFF9800"
-            statusText := "Secondary Monitor OFF"
+    
+    ; Restore status
+    static RestoreStatus(text, color) {
+        if (StatusIndicator.gui) {
+            StatusIndicator.textCtrl.Text := text
+            StatusIndicator.gui.BackColor := color
+            StatusIndicator.Update()
+        }
+    }
+    
+    ; Get text width (approximate)
+    static GetTextWidth(text) {
+        ; Rough approximation: 7 pixels per character
+        return StrLen(text) * 7 + 20
+    }
+    
+    ; Destroy status indicator
+    static Destroy() {
+        if (StatusIndicator.hideTimer) {
+            SetTimer(StatusIndicator.hideTimer, 0)
         }
         
-        textLength := StrLen(statusText)
-        guiWidth := (textLength * 8) + 20
-        if (guiWidth < 120) guiWidth := 120
-        textWidth := guiWidth - 16
-        
-        tempGui.textCtrl := tempGui.Add("Text", "cWhite Center w" . textWidth . " h18", statusText)
-        tempGui.textCtrl.SetFont("s9 Bold", "Segoe UI")
-        
-        pos := MonitorUtils.GetGuiPosition("tooltip")
-        tempGui.Show("x" . pos[1] . " y" . pos[2] . " w" . guiWidth . " h26 NoActivate")
-        
-        SetTimer(() => tempGui.Destroy(), -3000)
-    }
-
-    static Cleanup() {
-        if (StatusIndicator.statusIndicator != "") {
-            StatusIndicator.statusIndicator.Destroy()
+        if (StatusIndicator.gui) {
+            StatusIndicator.gui.Destroy()
+            StatusIndicator.gui := ""
         }
     }
 }

@@ -1,282 +1,254 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Hotkey Manager Module - All hotkey definitions organized by category
+; Hotkey Manager - All hotkey definitions
 ; ######################################################################################################################
 
-; Ensure we're using screen coordinates globally
-CoordMode("Mouse", "Screen")
-CoordMode("Pixel", "Screen")
-CoordMode("ToolTip", "Screen")
-CoordMode("Menu", "Screen")
-CoordMode("Caret", "Screen")
-
 ; ======================================================================================================================
-; Global Hotkeys (Always Active)
+; CONTROL HOTKEYS
 ; ======================================================================================================================
 
-NumpadAdd::{
-    StateManager.ToggleMouseMode()
-    StatusIndicator.Update()
+; Toggle mouse mode on/off
+^!t:: State.ToggleMouseMode()
+
+; Toggle save mode
+^!s:: State.ToggleSaveMode()
+
+; Toggle load mode  
+^!l:: State.ToggleLoadMode()
+
+; Toggle status visibility
+^!v:: StatusIndicator.Toggle()
+
+; Undo last movement
+^!z:: {
+    if (State.mouseMode) {
+        MouseActions.Undo()
+    }
 }
 
-NumpadMult::{
-    StateManager.ToggleSaveMode()
-    StatusIndicator.Update()
-}
+; Exit script
+^!q:: ExitScript()
 
-NumpadSub::{
-    StateManager.ToggleLoadMode()
-    StatusIndicator.Update()
-}
+; Open settings
+^!+s:: SettingsGUI.Show()
 
-NumpadDiv::{
-    MouseActions.UndoLastMovement()
-}
+; ======================================================================================================================
+; MOVEMENT HOTKEYS (When mouse mode is active)
+; ======================================================================================================================
 
-^NumpadAdd::{
-    StateManager.ToggleStatusVisibility()
-    StatusIndicator.UpdateVisibility()
-    StatusIndicator.Update()
-    StatusIndicator.ShowToggleMessage()
-}
+#HotIf State.mouseMode
 
-^!r::{
-    StateManager.ReloadWithGUI()
-}
+; Movement keys with acceleration
+Numpad8:: MouseActions.StartMove("up")
+Numpad8 Up:: MouseActions.StopMove()
 
-; Secondary Monitor Toggle - Alt+Numpad9
-!Numpad9::{
-    StateManager.ToggleSecondaryMonitor()
-    StatusIndicator.Update()
-    StatusIndicator.ShowSecondaryMonitorToggle()
-}
+Numpad2:: MouseActions.StartMove("down")
+Numpad2 Up:: MouseActions.StopMove()
 
-; Monitor Test - Ctrl+Alt+Numpad9
-^!Numpad9::{
+Numpad4:: MouseActions.StartMove("left")
+Numpad4 Up:: MouseActions.StopMove()
+
+Numpad6:: MouseActions.StartMove("right")
+Numpad6 Up:: MouseActions.StopMove()
+
+; Diagonal movements
+Numpad7:: MouseActions.StartMove("up-left")
+Numpad7 Up:: MouseActions.StopMove()
+
+Numpad9:: MouseActions.StartMove("up-right")
+Numpad9 Up:: MouseActions.StopMove()
+
+Numpad1:: MouseActions.StartMove("down-left")
+Numpad1 Up:: MouseActions.StopMove()
+
+Numpad3:: MouseActions.StartMove("down-right")
+Numpad3 Up:: MouseActions.StopMove()
+
+; Mouse clicks
+Numpad5:: MouseActions.Click("left")
+NumpadDot:: MouseActions.Click("right")
+NumpadDel:: MouseActions.Click("right")
+
+; Scroll wheel
+NumpadAdd:: MouseActions.Scroll("up")
+NumpadSub:: MouseActions.Scroll("down")
+
+; Toggle invert mode
+NumpadClear:: State.ToggleInvertMode()
+
+; Center mouse on screen
+Numpad0:: {
     mon := MonitorUtils.GetMonitorInfo()
-    monType := mon.isPrimary ? "PRIMARY" : "SECONDARY"
-    
-    MonitorUtils.CreatePositionTest(mon, "TOP-LEFT", mon.left + 20, mon.top + 20)
-    MonitorUtils.CreatePositionTest(mon, "TOP-RIGHT", mon.right - 220, mon.top + 20)
-    MonitorUtils.CreatePositionTest(mon, "BOTTOM-LEFT", mon.left + 20, mon.bottom - 60)
-    MonitorUtils.CreatePositionTest(mon, "BOTTOM-RIGHT", mon.right - 220, mon.bottom - 60)
-    MonitorUtils.CreatePositionTest(mon, "CENTER", mon.left + (mon.width//2) - 100, 
-                   mon.top + (mon.height//2) - 15)
-    
-    result := monType " Monitor`n"
-            . "Size: " mon.width "x" mon.height "`n"
-            . "Position: " mon.left "," mon.top
-    TooltipSystem.ShowForced(result, "info")
-}
-
-; Settings GUI Show - Ctrl+Alt+s
-^!s::{
-    SettingsGUI.Show()
-}
-
-; ======================================================================================================================
-; Position Memory Hotkeys (Active only when in Save Mode or Load Mode)
-; ======================================================================================================================
-
-#HotIf (StateManager.IsSaveMode() || StateManager.IsLoadMode())
-
-Numpad4::{
-    PositionMemory.HandleSlot(1)
-}
-
-Numpad5::{
-    PositionMemory.HandleSlot(2)
-}
-
-Numpad6::{
-    PositionMemory.HandleSlot(3)
-}
-
-Numpad8::{
-    PositionMemory.HandleSlot(4)
-}
-
-Numpad0::{
-    PositionMemory.HandleSlot(5)
+    centerX := mon.left + (mon.width // 2)
+    centerY := mon.top + (mon.height // 2)
+    MouseMove(centerX, centerY, 0)
+    TooltipSystem.ShowTemporary("🎯 Centered", "info", 500)
 }
 
 #HotIf
 
 ; ======================================================================================================================
-; Mouse Mode Hotkeys (Active only when Mouse Mode is ON and NOT in Save/Load Mode)
+; POSITION SAVE HOTKEYS (Ctrl + Numpad in save mode)
 ; ======================================================================================================================
 
-#HotIf StateManager.IsMouseMode() && !StateManager.IsSaveMode() && !StateManager.IsLoadMode()
+#HotIf State.saveMode
 
-Numpad8::{
-    MouseActions.MoveDiagonal("Numpad8", 0, -Config.MoveStep)
-}
+^Numpad1:: PositionMemory.SavePosition(1)
+^Numpad2:: PositionMemory.SavePosition(2)
+^Numpad3:: PositionMemory.SavePosition(3)
+^Numpad4:: PositionMemory.SavePosition(4)
+^Numpad5:: PositionMemory.SavePosition(5)
+^Numpad6:: PositionMemory.SavePosition(6)
+^Numpad7:: PositionMemory.SavePosition(7)
+^Numpad8:: PositionMemory.SavePosition(8)
+^Numpad9:: PositionMemory.SavePosition(9)
+^Numpad0:: PositionMemory.SavePosition(10)
 
-Numpad2::{
-    MouseActions.MoveDiagonal("Numpad2", 0, Config.MoveStep)
-}
-
-Numpad4::{
-    MouseActions.MoveDiagonal("Numpad4", -Config.MoveStep, 0)
-}
-
-Numpad6::{
-    MouseActions.MoveDiagonal("Numpad6", Config.MoveStep, 0)
-}
-
-Numpad5::{
-    StateManager.SetLeftButtonHeld(true)
-    Click("Left", , , , , "D")
-    TooltipSystem.ShowMouseAction("🖱️ Left Held", "success")
+; Extended slots with NumpadDot
+^NumpadDot:: {
+    ; Show slot selection GUI
+    slotGui := Gui("+AlwaysOnTop", "Save to Slot")
+    slotGui.Add("Text", , "Enter slot number (11-30):")
+    slotEdit := slotGui.Add("Edit", "w100 Number")
+    slotGui.Add("Button", "w50", "Save").OnEvent("Click", (*) => SaveToSlot())
+    slotGui.Add("Button", "x+10 w50", "Cancel").OnEvent("Click", (*) => slotGui.Destroy())
     
-    if (Config.EnableAudioFeedback) {
-        SoundBeep(500, 50)
-    }
-    
-    StatusIndicator.Update()
-    timer := SetTimer(() => StatusIndicator.Update(), 250)
-    StateManager.SetLeftClickHoldTimer(timer)
-    
-    KeyWait("Numpad5")
-    
-    StateManager.SetLeftButtonHeld(false)
-    StateManager.ClearLeftClickHoldTimer()
-    
-    Click("Left", , , , , "U")
-    TooltipSystem.ShowMouseAction("🖱️ Left Released", "info")
-    
-    if (Config.EnableAudioFeedback) {
-        SoundBeep(400, 50)
-    }
-    
-    StatusIndicator.Update()
-}
-
-NumpadClear::{
-    if (StateManager.IsLeftButtonHeld()) {
-        StateManager.SetLeftButtonHeld(false)
-        Click("Left", , , , , "U")
-        TooltipSystem.ShowMouseAction("🖱️ Left Released", "info")
-        
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(400, 100)
-        }
-    } else {
-        StateManager.SetLeftButtonHeld(true)
-        Click("Left", , , , , "D")
-        TooltipSystem.ShowMouseAction("🖱️ Left Held", "success")
-        
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(500, 100)
+    SaveToSlot() {
+        slot := slotEdit.Text
+        if (slot >= 11 && slot <= Config.MaxSavedPositions) {
+            PositionMemory.SavePosition(slot)
+            slotGui.Destroy()
+        } else {
+            MsgBox("Invalid slot number. Use 11-" . Config.MaxSavedPositions, "Error", "Icon!")
         }
     }
     
-    Sleep(150)
-    StatusIndicator.Update()
-}
-
-Numpad0::{
-    Click("right")
-}
-
-NumpadIns::{
-    if (StateManager.IsRightButtonHeld()) {
-        StateManager.SetRightButtonHeld(false)
-        Click("Right", , , , , "U")
-        TooltipSystem.ShowMouseAction("🖱️ Right Released", "warning")
-        
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(400, 100)
-        }
-    } else {
-        StateManager.SetRightButtonHeld(true)
-        Click("Right", , , , , "D")
-        TooltipSystem.ShowMouseAction("🖱️ Right Held", "success")
-        
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(600, 100)
-        }
-    }
-    
-    Sleep(150)
-    StatusIndicator.Update()
-}
-
-NumpadDot::{
-    wasInvertedMode := StateManager.IsInvertedMode()
-    wasRightHeld := StateManager.IsRightButtonHeld()
-    
-    if (wasInvertedMode && wasRightHeld) {
-        StateManager.ToggleInvertedMode()
-        StateManager.SetRightButtonHeld(false)
-        Click("Right", , , , , "U")
-        TooltipSystem.ShowMouseAction("🔄🖱️ Both Off", "warning")
-        Sleep(150)
-        StatusIndicator.Update()
-    } else if (wasInvertedMode && !wasRightHeld) {
-        StateManager.SetRightButtonHeld(true)
-        Click("Right", , , , , "D")
-        TooltipSystem.ShowMouseAction("🖱️ Right Added", "success")
-        Sleep(150)
-        StatusIndicator.Update()
-    } else if (!wasInvertedMode && wasRightHeld) {
-        StateManager.ToggleInvertedMode()
-        TooltipSystem.ShowMouseAction("🔄 Inverted Added", "success")
-        Sleep(150)
-        StatusIndicator.Update()
-    } else {
-        StateManager.ToggleInvertedMode()
-        Sleep(100)
-        StateManager.SetRightButtonHeld(true)
-        Click("Right", , , , , "D")
-        TooltipSystem.ShowMouseAction("🔄🖱️ Both On", "success")
-        Sleep(150)
-        StatusIndicator.Update()
-    }
-}
-
-NumpadEnter::{
-    Click("middle")
-}
-
-+NumpadEnter::{
-    if (StateManager.IsMiddleButtonHeld()) {
-        StateManager.SetMiddleButtonHeld(false)
-        Click("Middle", , , , , "U")
-        TooltipSystem.ShowMouseAction("🖱️ Middle Released", "warning")
-        
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(350, 100)
-        }
-    } else {
-        StateManager.SetMiddleButtonHeld(true)
-        Click("Middle", , , , , "D")
-        TooltipSystem.ShowMouseAction("🖱️ Middle Held", "success")
-        
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(550, 100)
-        }
-    }
-    
-    Sleep(150)
-    StatusIndicator.Update()
-}
-
-Numpad7::{
-    MouseActions.ScrollWithAcceleration("Up", "Numpad7")
-}
-
-Numpad1::{
-    MouseActions.ScrollWithAcceleration("Down", "Numpad1")
-}
-
-Numpad9::{
-    MouseActions.ScrollWithAcceleration("Left", "Numpad9")
-}
-
-Numpad3::{
-    MouseActions.ScrollWithAcceleration("Right", "Numpad3")
+    slotGui.Show()
 }
 
 #HotIf
+
+; ======================================================================================================================
+; POSITION LOAD HOTKEYS (Alt + Numpad in load mode)
+; ======================================================================================================================
+
+#HotIf State.loadMode
+
+!Numpad1:: PositionMemory.LoadPosition(1)
+!Numpad2:: PositionMemory.LoadPosition(2)
+!Numpad3:: PositionMemory.LoadPosition(3)
+!Numpad4:: PositionMemory.LoadPosition(4)
+!Numpad5:: PositionMemory.LoadPosition(5)
+!Numpad6:: PositionMemory.LoadPosition(6)
+!Numpad7:: PositionMemory.LoadPosition(7)
+!Numpad8:: PositionMemory.LoadPosition(8)
+!Numpad9:: PositionMemory.LoadPosition(9)
+!Numpad0:: PositionMemory.LoadPosition(10)
+
+; Extended slots with NumpadDot
+!NumpadDot:: {
+    ; Show slot selection GUI
+    slotGui := Gui("+AlwaysOnTop", "Load from Slot")
+    slotGui.Add("Text", , "Enter slot number (11-30):")
+    slotEdit := slotGui.Add("Edit", "w100 Number")
+    slotGui.Add("Button", "w50", "Load").OnEvent("Click", (*) => LoadFromSlot())
+    slotGui.Add("Button", "x+10 w50", "Cancel").OnEvent("Click", (*) => slotGui.Destroy())
+    
+    LoadFromSlot() {
+        slot := slotEdit.Text
+        if (slot >= 11 && slot <= Config.MaxSavedPositions) {
+            PositionMemory.LoadPosition(slot)
+            slotGui.Destroy()
+        } else {
+            MsgBox("Invalid slot number. Use 11-" . Config.MaxSavedPositions, "Error", "Icon!")
+        }
+    }
+    
+    slotGui.Show()
+}
+
+#HotIf
+
+; ======================================================================================================================
+; QUICK ACCESS POSITION HOTKEYS (Always active)
+; ======================================================================================================================
+
+; Quick save positions (Ctrl+Shift+Numpad)
+^+Numpad1:: {
+    if (!State.saveMode) {
+        PositionMemory.SavePosition(1)
+    }
+}
+
+^+Numpad2:: {
+    if (!State.saveMode) {
+        PositionMemory.SavePosition(2)
+    }
+}
+
+^+Numpad3:: {
+    if (!State.saveMode) {
+        PositionMemory.SavePosition(3)
+    }
+}
+
+; Quick load positions (Alt+Shift+Numpad)
+!+Numpad1:: {
+    if (!State.loadMode) {
+        PositionMemory.LoadPosition(1)
+    }
+}
+
+!+Numpad2:: {
+    if (!State.loadMode) {
+        PositionMemory.LoadPosition(2)
+    }
+}
+
+!+Numpad3:: {
+    if (!State.loadMode) {
+        PositionMemory.LoadPosition(3)
+    }
+}
+
+; ======================================================================================================================
+; DEBUG HOTKEYS (Development only)
+; ======================================================================================================================
+
+#HotIf Config.EnableLogging
+
+; Show debug information
+^!+d:: {
+    debugText := "DEBUG INFORMATION`n"
+    debugText .= "================`n`n"
+    debugText .= "Mouse Mode: " . (State.mouseMode ? "ON" : "OFF") . "`n"
+    debugText .= "Save Mode: " . (State.saveMode ? "ON" : "OFF") . "`n"
+    debugText .= "Load Mode: " . (State.loadMode ? "ON" : "OFF") . "`n"
+    debugText .= "Invert Mode: " . (State.invertMode ? "ON" : "OFF") . "`n`n"
+    debugText .= "Move Count: " . State.moveCount . "`n"
+    debugText .= "Current Speed: " . State.currentSpeed . "`n"
+    debugText .= "Consecutive Moves: " . State.consecutiveMoves . "`n`n"
+    debugText .= "Undo History: " . State.undoHistory.Length . " items`n"
+    debugText .= "Analytics Events: " . AnalyticsSystem.events.Length . "`n"
+    
+    MsgBox(debugText, "Debug Info", "Iconi")
+}
+
+; Show performance stats
+^!+p:: PerformanceMonitor.ShowStats()
+
+; Show analytics report
+^!+a:: AnalyticsSystem.ShowReport()
+
+; Test notification
+^!+n:: {
+    TooltipSystem.ShowTemporary("🧪 Test notification", "info", 2000)
+    StatusIndicator.ShowMessage("🧪 Test status message", 2000)
+}
+
+#HotIf
+
+; ======================================================================================================================
+; END OF HOTKEYS
+; ======================================================================================================================

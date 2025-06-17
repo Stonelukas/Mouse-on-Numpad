@@ -1,167 +1,218 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Mouse Actions Module - Mouse movement, scrolling, and undo functionality
+; Mouse Actions - Core mouse movement and click functionality
 ; ######################################################################################################################
 
 class MouseActions {
-    ; Mouse position history for undo functionality
-    static mousePositionHistory := []
-
-    static MoveDiagonal(key, baseDx, baseDy) {
-        ; Ensure we're using screen coordinates
-        CoordMode("Mouse", "Screen")
-        
-        MouseGetPos(&currentX, &currentY)
-        MouseActions.mousePositionHistory.Push({x: currentX, y: currentY})
-        if (MouseActions.mousePositionHistory.Length > Config.MaxUndoLevels) {
-            MouseActions.mousePositionHistory.RemoveAt(1)
-        }
-        
-        currentSpeed := 1.0
-        
-        while GetKeyState(key, "P") {
-            finalDx := 0
-            finalDy := 0
-            feedbackDirection := ""
-            
-            upPressed := GetKeyState("Numpad8", "P")
-            downPressed := GetKeyState("Numpad2", "P")
-            leftPressed := GetKeyState("Numpad4", "P")
-            rightPressed := GetKeyState("Numpad6", "P")
-            
-            if (upPressed && leftPressed) {
-                finalDx := -Config.MoveStep
-                finalDy := -Config.MoveStep
-                feedbackDirection := "up-left"
-            } else if (upPressed && rightPressed) {
-                finalDx := Config.MoveStep
-                finalDy := -Config.MoveStep
-                feedbackDirection := "up-right"
-            } else if (downPressed && leftPressed) {
-                finalDx := -Config.MoveStep
-                finalDy := Config.MoveStep
-                feedbackDirection := "down-left"
-            } else if (downPressed && rightPressed) {
-                finalDx := Config.MoveStep
-                finalDy := Config.MoveStep
-                feedbackDirection := "down-right"
-            } else if (upPressed) {
-                finalDy := -Config.MoveStep
-                feedbackDirection := "up"
-            } else if (downPressed) {
-                finalDy := Config.MoveStep
-                feedbackDirection := "down"
-            } else if (leftPressed) {
-                finalDx := -Config.MoveStep
-                feedbackDirection := "left"
-            } else if (rightPressed) {
-                finalDx := Config.MoveStep
-                feedbackDirection := "right"
-            }
-            
-            if (feedbackDirection != "") {
-                arrow := MouseActions._GetDirectionArrow(feedbackDirection)
-                TooltipSystem.ShowStandard(arrow, "info")
-            }
-            
-            accelDx := Round(finalDx * currentSpeed)
-            accelDy := Round(finalDy * currentSpeed)
-            
-            if (StateManager.IsInvertedMode()) {
-                accelDx := -accelDx
-                accelDy := -accelDy
-            }
-            
-            if (accelDx != 0 || accelDy != 0) {
-                if (Config.EnableAbsoluteMovement) {
-                    MouseGetPos(&currentAbsX, &currentAbsY)
-                    MouseMove(currentAbsX + accelDx, currentAbsY + accelDy, 0)
-                } else {
-                    MouseMove(accelDx, accelDy, 0, "R")
-                }
-            }
-            
-            currentSpeed := currentSpeed * Config.AccelerationRate
-            if (currentSpeed > Config.MaxSpeed / Config.MoveStep) {
-                currentSpeed := Config.MaxSpeed / Config.MoveStep
-            }
-            
-            Sleep(Config.MoveDelay)
-        }
-    }
-
-    static _GetDirectionArrow(direction) {
-        switch direction {
-            case "up": return "↑"
-            case "down": return "↓"
-            case "left": return "←"
-            case "right": return "→"
-            case "up-left": return "↖"
-            case "up-right": return "↗"
-            case "down-left": return "↙"
-            case "down-right": return "↘"
-            default: return ""
-        }
-    }
-
-    static ScrollWithAcceleration(direction, key) {
-        currentScrollSpeed := 1.0
-        
-        while GetKeyState(key, "P") {
-            scrollAmount := Round(Config.ScrollStep * currentScrollSpeed)
-            
-            if (scrollAmount < 1) {
-                scrollAmount := 1
-            }
-            
-            Loop scrollAmount {
-                Send("{Wheel" . direction . "}")
-            }
-            
-            currentScrollSpeed := currentScrollSpeed * Config.ScrollAccelerationRate
-            
-            if (currentScrollSpeed > Config.MaxScrollSpeed / Config.ScrollStep) {
-                currentScrollSpeed := Config.MaxScrollSpeed / Config.ScrollStep
-            }
-            
-            Sleep(Config.MoveDelay)
-        }
-    }
-
-    static UndoLastMovement() {
-        if (MouseActions.mousePositionHistory.Length <= 1) {
-            StatusIndicator.ShowTemporaryMessage("❌ NO UNDO", "error")
-            if (Config.EnableAudioFeedback) {
-                SoundBeep(200, 150)
-            }
+    ; Movement state
+    static moveTimer := ""
+    static currentDirection := ""
+    static isMoving := false
+    
+    ; Start continuous movement
+    static StartMove(direction) {
+        if (!State.mouseMode) {
             return
         }
         
-        ; Ensure we're using screen coordinates
-        CoordMode("Mouse", "Screen")
+        ; Stop any existing movement
+        MouseActions.StopMove()
         
-        MouseActions.mousePositionHistory.Pop()
-        pos := MouseActions.mousePositionHistory.Pop()
-        MouseMove(pos.x, pos.y, 10)
-        MouseActions.mousePositionHistory.Push(pos)
+        ; Set direction and start moving
+        MouseActions.currentDirection := direction
+        MouseActions.isMoving := true
         
-        StatusIndicator.ShowTemporaryMessage("↶ UNDONE", "success")
+        ; Show direction arrow
+        TooltipSystem.ShowArrow(direction)
         
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(650, 100)
+        ; Perform first move immediately
+        MouseActions.PerformMove()
+        
+        ; Set up continuous movement
+        MouseActions.moveTimer := () => MouseActions.PerformMove()
+        SetTimer(MouseActions.moveTimer, Config.MoveDelay)
+    }
+    
+    ; Stop movement
+    static StopMove() {
+        if (MouseActions.moveTimer) {
+            SetTimer(MouseActions.moveTimer, 0)
+            MouseActions.moveTimer := ""
+        }
+        
+        MouseActions.isMoving := false
+        State.ResetMovement()
+    }
+    
+    ; Perform single movement
+    static PerformMove() {
+        if (!MouseActions.isMoving || !State.mouseMode) {
+            MouseActions.StopMove()
+            return
+        }
+        
+        ; Get current position
+        MouseGetPos(&x, &y)
+        
+        ; Save position for undo
+        State.AddToHistory(x, y)
+        
+        ; Calculate movement
+        moveDistance := MouseActions.CalculateMoveDistance()
+        
+        ; Apply movement based on direction
+        switch MouseActions.currentDirection {
+            case "up":
+                y -= moveDistance
+            case "down":
+                y += moveDistance
+            case "left":
+                x -= moveDistance
+            case "right":
+                x += moveDistance
+            case "up-left":
+                x -= moveDistance
+                y -= moveDistance
+            case "up-right":
+                x += moveDistance
+                y -= moveDistance
+            case "down-left":
+                x -= moveDistance
+                y += moveDistance
+            case "down-right":
+                x += moveDistance
+                y += moveDistance
+        }
+        
+        ; Apply invert mode if active
+        if (State.invertMode) {
+            MouseGetPos(&currentX, &currentY)
+            x := currentX - (x - currentX)
+            y := currentY - (y - currentY)
+        }
+        
+        ; Constrain to monitor bounds
+        pos := MonitorUtils.GetSafePosition(x, y)
+        
+        ; Move mouse
+        MouseMove(pos.x, pos.y, 0)
+        
+        ; Track movement
+        State.moveCount++
+        State.consecutiveMoves++
+        State.lastMoveTime := A_TickCount
+        
+        ; Track in performance monitor
+        if (Config.EnableAnalytics) {
+            PerformanceMonitor.TrackMove()
         }
     }
-
-    static GetPositionHistory() {
-        return MouseActions.mousePositionHistory
+    
+    ; Calculate move distance with acceleration
+    static CalculateMoveDistance() {
+        ; Base step
+        distance := Config.MoveStep
+        
+        ; Apply acceleration
+        if (Config.AccelerationRate > 1 && State.consecutiveMoves > 0) {
+            acceleratedDistance := distance * (Config.AccelerationRate ** State.consecutiveMoves)
+            distance := Min(acceleratedDistance, Config.MaxSpeed)
+        }
+        
+        State.currentSpeed := distance
+        return Round(distance)
     }
-
-    static AddToHistory(x, y) {
-        ; x and y should already be in screen coordinates
-        MouseActions.mousePositionHistory.Push({x: x, y: y})
-        if (MouseActions.mousePositionHistory.Length > Config.MaxUndoLevels) {
-            MouseActions.mousePositionHistory.RemoveAt(1)
+    
+    ; Perform click
+    static Click(button := "left") {
+        if (!State.mouseMode) {
+            return
+        }
+        
+        ; Perform click
+        Click(button)
+        
+        ; Show feedback
+        clickText := button = "left" ? "🖱️ Left Click" : "🖱️ Right Click"
+        TooltipSystem.ShowMouseAction(clickText, 1000)
+        
+        ; Track click
+        if (Config.EnableAnalytics) {
+            PerformanceMonitor.TrackClick(button)
+            AnalyticsSystem.LogEvent("mouse_click", {button: button})
+        }
+        
+        ; Audio feedback
+        if (Config.EnableAudioFeedback) {
+            SoundBeep(button = "left" ? 800 : 600, 100)
+        }
+    }
+    
+    ; Scroll wheel
+    static Scroll(direction) {
+        if (!State.mouseMode) {
+            return
+        }
+        
+        ; Calculate scroll amount
+        scrollAmount := MouseActions.CalculateScrollAmount()
+        
+        ; Perform scroll
+        if (direction = "up") {
+            Click("WheelUp " . scrollAmount)
+        } else {
+            Click("WheelDown " . scrollAmount)
+        }
+        
+        ; Show feedback
+        scrollText := direction = "up" ? "🖱️ Scroll ↑" : "🖱️ Scroll ↓"
+        TooltipSystem.ShowMouseAction(scrollText . " (" . scrollAmount . ")", 800)
+        
+        ; Track scroll
+        if (Config.EnableAnalytics) {
+            PerformanceMonitor.TrackScroll(direction)
+        }
+    }
+    
+    ; Calculate scroll amount with acceleration
+    static CalculateScrollAmount() {
+        amount := Config.ScrollStep
+        
+        if (Config.ScrollAccelerationRate > 1) {
+            ; Simple acceleration based on recent activity
+            if (A_TickCount - State.lastMoveTime < 1000) {
+                amount := Min(amount * Config.ScrollAccelerationRate, Config.MaxScrollSpeed)
+            }
+        }
+        
+        return Round(amount)
+    }
+    
+    ; Undo last movement
+    static Undo() {
+        if (State.undoHistory.Length < 2) {
+            TooltipSystem.ShowTemporary("Nothing to undo", "warning")
+            return
+        }
+        
+        ; Remove current position
+        State.undoHistory.Pop()
+        
+        ; Get previous position
+        if (State.undoHistory.Length > 0) {
+            lastPos := State.undoHistory[State.undoHistory.Length]
+            
+            ; Move to previous position
+            MouseMove(lastPos.x, lastPos.y, 0)
+            
+            ; Show feedback
+            TooltipSystem.ShowTemporary("↶ Undo", "info")
+            
+            ; Audio feedback
+            if (Config.EnableAudioFeedback) {
+                SoundBeep(500, 100)
+            }
         }
     }
 }
