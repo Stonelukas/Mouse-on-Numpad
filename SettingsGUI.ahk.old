@@ -1,8 +1,7 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Settings GUI Module - Advanced GUI Settings Panel with Enhanced Dark Mode
-; Part 1 - Main structure and first 3 tabs
+; Settings GUI Module - Advanced GUI Settings Panel with Fixed Bottom Button Bar
 ; ######################################################################################################################
 
 class SettingsGUI {
@@ -12,7 +11,7 @@ class SettingsGUI {
     static controls := Map()
     static isOpen := false
     static tempSettings := Map()
-    static isDarkMode := false  ; Track dark mode state
+    static isDarkMode := false ; Track dark mode state
 
     static Show() {
         if (SettingsGUI.isOpen) {
@@ -35,7 +34,6 @@ class SettingsGUI {
         if (Config.ColorTheme = "Dark Mode" || Config.ColorTheme = "Minimal") {
             SettingsGUI.isDarkMode := true
         }
-
         ; Apply theme colors
         SettingsGUI._ApplyGUITheme()
 
@@ -53,12 +51,9 @@ class SettingsGUI {
         SettingsGUI._InitializeTempSettings()
 
         ; Add dark mode toggle button in top right
-        SettingsGUI.controls["DarkModeToggle"] := SettingsGUI.gui.Add("Button", "x710 y8 w70 h25", SettingsGUI.isDarkMode ?
+        SettingsGUI.controls["DarkModeToggle"] := SettingsGUI.gui.Add("Button", "x720 y5 w70 h25", SettingsGUI.isDarkMode ?
             "☀ Light" : "🌙 Dark")
         SettingsGUI.controls["DarkModeToggle"].OnEvent("Click", (*) => SettingsGUI._ToggleDarkMode())
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["DarkModeToggle"].Opt("+Background2D2D30")
-        }
 
         ; Create tab control FIRST with explicit height to leave room for buttons
         SettingsGUI._CreateTabControl()
@@ -105,7 +100,7 @@ class SettingsGUI {
         SettingsGUI.tempSettings["ScrollStep"] := Config.ScrollStep
         SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.ScrollAccelerationRate
         SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.MaxScrollSpeed
-        ; Visual Settings
+        ; Visuals Settings
         SettingsGUI.tempSettings["ColorTheme"] := Config.ColorTheme
         SettingsGUI.tempSettings["TooltipDuration"] := Config.TooltipDuration
         SettingsGUI.tempSettings["StatusMessageDuration"] := Config.StatusMessageDuration
@@ -144,19 +139,12 @@ class SettingsGUI {
 
         SettingsGUI.controls["Cancel"] := SettingsGUI.gui.Add("Button", "x710 y535 w70 h25", "Cancel")
         SettingsGUI.controls["Cancel"].OnEvent("Click", (*) => SettingsGUI._Cancel())
-
-        ; Apply dark mode styles to buttons if needed
-        if (SettingsGUI.isDarkMode) {
-            ; Note: Button background colors are limited in AHK v2
-            ; We can at least set the separator color
-            SettingsGUI.controls["Separator"].Opt("+Background3E3E42")
-        }
     }
 
     static _CreateTabControl() {
         ; Create tab control with explicit height that leaves room for button bar
         ; Window height is 600, leave 90px for button area (including separator and margins)
-        SettingsGUI.controls["TabControl"] := SettingsGUI.gui.Add("Tab3", "x10 y35 w780 h475", [
+        SettingsGUI.controls["TabControl"] := SettingsGUI.gui.Add("Tab3", "x10 y35 w780 475", [
             "Movement", "Positions", "Visuals", "Hotkeys", "Advanced", "Profiles", "About"
         ])
 
@@ -174,174 +162,105 @@ class SettingsGUI {
         ; Create a scrollable area for the tab content
         yOffset := 50
 
-        ; Create a GroupBox for Movement Speed Section
-        movementGroup := SettingsGUI.gui.Add("GroupBox", "x20 y" . yOffset . " w400 h130", " 🎯 Movement Speed ")
-        movementGroup.SetFont("s10 Bold", "Segoe UI")
+        ; Movement Speed Section
+        movementSpeedText := SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w200 h20 +0x200", "Movement Speed")
+        movementSpeedText.SetFont("s10 Bold")
         if (SettingsGUI.isDarkMode) {
-            movementGroup.Opt("cWhite")
-        }
-
-        yOffset += 30
-        moveStepLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Move Step:")
-        if (SettingsGUI.isDarkMode) {
-            moveStepLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["MoveStep"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60 Number")
-        SettingsGUI.controls["MoveStep"].Text := SettingsGUI.tempSettings["MoveStep"]
-        SettingsGUI.controls["MoveStep"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        SettingsGUI.controls["MoveStepUpDown"] := SettingsGUI.gui.Add("UpDown", "x220 y" . (yOffset - 3) .
-        " w20 h20 Range1-50", SettingsGUI.tempSettings["MoveStep"])
-        SettingsGUI.controls["MoveStepUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        moveStepDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "pixels per movement")
-        if (SettingsGUI.isDarkMode) {
-            moveStepDesc.Opt("cSilver")
-        }
-
-        yOffset += 30
-        moveDelayLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Move Delay:")
-        if (SettingsGUI.isDarkMode) {
-            moveDelayLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["MoveDelay"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60 Number")
-        SettingsGUI.controls["MoveDelay"].Text := SettingsGUI.tempSettings["MoveDelay"]
-        SettingsGUI.controls["MoveDelay"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        SettingsGUI.controls["MoveDelayUpDown"] := SettingsGUI.gui.Add("UpDown", "x220 y" . (yOffset - 3) .
-        " w20 h20 Range5-100", SettingsGUI.tempSettings["MoveDelay"])
-        SettingsGUI.controls["MoveDelayUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        moveDelayDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "milliseconds delay")
-        if (SettingsGUI.isDarkMode) {
-            moveDelayDesc.Opt("cSilver")
-        }
-
-        ; Acceleration Section
-        yOffset += 50
-        accelGroup := SettingsGUI.gui.Add("GroupBox", "x20 y" . yOffset . " w400 h130", " ⚡ Acceleration Settings ")
-        accelGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            accelGroup.Opt("cWhite")
-        }
-
-        yOffset += 30
-        accelRateLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Acceleration Rate:")
-        if (SettingsGUI.isDarkMode) {
-            accelRateLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["AccelerationRate"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60")
-        SettingsGUI.controls["AccelerationRate"].Text := SettingsGUI.tempSettings["AccelerationRate"]
-        SettingsGUI.controls["AccelerationRate"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        accelRateDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "multiplier per step")
-        if (SettingsGUI.isDarkMode) {
-            accelRateDesc.Opt("cSilver")
-        }
-
-        yOffset += 30
-        maxSpeedLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Max Speed:")
-        if (SettingsGUI.isDarkMode) {
-            maxSpeedLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["MaxSpeed"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60 Number")
-        SettingsGUI.controls["MaxSpeed"].Text := SettingsGUI.tempSettings["MaxSpeed"]
-        SettingsGUI.controls["MaxSpeed"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        SettingsGUI.controls["MaxSpeedUpDown"] := SettingsGUI.gui.Add("UpDown", "x220 y" . (yOffset - 3) .
-        " w20 h20 Range5-100", SettingsGUI.tempSettings["MaxSpeed"])
-        SettingsGUI.controls["MaxSpeedUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        maxSpeedDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "maximum pixels/move")
-        if (SettingsGUI.isDarkMode) {
-            maxSpeedDesc.Opt("cSilver")
-        }
-
-        ; Movement Mode Section
-        yOffset += 50
-        modeGroup := SettingsGUI.gui.Add("GroupBox", "x20 y" . yOffset . " w400 h70", " 🎮 Movement Modes ")
-        modeGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            modeGroup.Opt("cWhite")
+            movementSpeedText.Opt("cE0E0E0")
         }
 
         yOffset += 25
-        SettingsGUI.controls["EnableAbsoluteMovement"] := SettingsGUI.gui.Add("CheckBox", "x40 y" . yOffset . " w300",
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Move Step:")
+        SettingsGUI.controls["MoveStep"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60 Number")
+        SettingsGUI.controls["MoveStep"].Text := SettingsGUI.tempSettings["MoveStep"]
+        SettingsGUI.controls["MoveStep"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.controls["MoveStepUpDown"] := SettingsGUI.gui.Add("UpDown", "x210 y" . (yOffset - 3) .
+        " w20 h20 Range1-50", SettingsGUI.tempSettings["MoveStep"])
+        SettingsGUI.controls["MoveStepUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "pixels per movement (1-50)")
+
+        yOffset += 25
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Move Delay:")
+        SettingsGUI.controls["MoveDelay"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60 Number")
+        SettingsGUI.controls["MoveDelay"].Text := SettingsGUI.tempSettings["MoveDelay"]
+        SettingsGUI.controls["MoveDelay"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.controls["MoveDelayUpDown"] := SettingsGUI.gui.Add("UpDown", "x210 y" . (yOffset - 3) .
+        " w20 h20 Range5-100", SettingsGUI.tempSettings["MoveDelay"])
+        SettingsGUI.controls["MoveDelayUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "milliseconds between movements (5-100)")
+
+        ; Acceleration Section
+        yOffset += 40
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w200 h20 +0x200", "Acceleration Settings").SetFont("s10 Bold"
+        )
+
+        yOffset += 25
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Acceleration Rate:")
+        SettingsGUI.controls["AccelerationRate"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60")
+        SettingsGUI.controls["AccelerationRate"].Text := SettingsGUI.tempSettings["AccelerationRate"]
+        SettingsGUI.controls["AccelerationRate"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "multiplier per step (1.0-3.0)")
+
+        yOffset += 25
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Max Speed:")
+        SettingsGUI.controls["MaxSpeed"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60 Number")
+        SettingsGUI.controls["MaxSpeed"].Text := SettingsGUI.tempSettings["MaxSpeed"]
+        SettingsGUI.controls["MaxSpeed"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.controls["MaxSpeedUpDown"] := SettingsGUI.gui.Add("UpDown", "x210 y" . (yOffset - 3) .
+        " w20 h20 Range5-100", SettingsGUI.tempSettings["MaxSpeed"])
+        SettingsGUI.controls["MaxSpeedUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "maximum pixels per movement (5-100)")
+
+        ; Movement Mode Section
+        yOffset += 40
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w200 h20 +0x200", "Movement Modes").SetFont("s10 Bold")
+
+        yOffset += 25
+        SettingsGUI.controls["EnableAbsoluteMovement"] := SettingsGUI.gui.Add("CheckBox", "x30 y" . yOffset . " w300",
             "Enable Absolute Movement")
         SettingsGUI.controls["EnableAbsoluteMovement"].Value := Config.EnableAbsoluteMovement ? 1 : 0
         SettingsGUI.controls["EnableAbsoluteMovement"].OnEvent("Click", (*) => SettingsGUI._UpdateMovementPreview())
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableAbsoluteMovement"].Opt("cWhite")
-        }
         yOffset += 20
-        absDesc := SettingsGUI.gui.Add("Text", "x60 y" . yOffset . " w340",
+        SettingsGUI.gui.Add("Text", "x50 y" . yOffset . " w400",
             "Use absolute coordinates instead of relative movement")
-        absDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            absDesc.Opt("cSilver")
-        }
 
         ; Scroll Settings Section
-        yOffset += 35
-        scrollGroup := SettingsGUI.gui.Add("GroupBox", "x20 y" . yOffset . " w400 h160", " 📜 Scroll Settings ")
-        scrollGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            scrollGroup.Opt("cWhite")
-        }
+        yOffset += 40
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w200 h20 +0x200", "Scroll Settings").SetFont("s10 Bold")
 
-        yOffset += 30
-        scrollStepLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Scroll Step:")
-        if (SettingsGUI.isDarkMode) {
-            scrollStepLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["ScrollStep"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60 Number")
+        yOffset += 25
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Scroll Step:")
+        SettingsGUI.controls["ScrollStep"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60 Number")
         SettingsGUI.controls["ScrollStep"].Text := SettingsGUI.tempSettings["ScrollStep"]
         SettingsGUI.controls["ScrollStep"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        SettingsGUI.controls["ScrollStepUpDown"] := SettingsGUI.gui.Add("UpDown", "x220 y" . (yOffset - 3) .
+        SettingsGUI.controls["ScrollStepUpDown"] := SettingsGUI.gui.Add("UpDown", "x210 y" . (yOffset - 3) .
         " w20 h20 Range1-10", SettingsGUI.tempSettings["ScrollStep"])
         SettingsGUI.controls["ScrollStepUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        scrollStepDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "lines per step")
-        if (SettingsGUI.isDarkMode) {
-            scrollStepDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "scroll lines per step (1-10)")
 
-        yOffset += 30
-        scrollAccelLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Scroll Acceleration:")
-        if (SettingsGUI.isDarkMode) {
-            scrollAccelLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["ScrollAccelerationRate"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60"
+        yOffset += 25
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Scroll Acceleration:")
+        SettingsGUI.controls["ScrollAccelerationRate"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60"
         )
         SettingsGUI.controls["ScrollAccelerationRate"].Text := SettingsGUI.tempSettings["ScrollAccelerationRate"]
         SettingsGUI.controls["ScrollAccelerationRate"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        scrollAccelDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "acceleration multiplier")
-        if (SettingsGUI.isDarkMode) {
-            scrollAccelDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "scroll acceleration multiplier (1.0-3.0)")
 
-        yOffset += 30
-        maxScrollLabel := SettingsGUI.gui.Add("Text", "x40 y" . yOffset . " w120", "Max Scroll Speed:")
-        if (SettingsGUI.isDarkMode) {
-            maxScrollLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["MaxScrollSpeed"] := SettingsGUI.gui.Add("Edit", "x160 y" . (yOffset - 3) . " w60 Number")
+        yOffset += 25
+        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Max Scroll Speed:")
+        SettingsGUI.controls["MaxScrollSpeed"] := SettingsGUI.gui.Add("Edit", "x150 y" . (yOffset - 3) . " w60 Number")
         SettingsGUI.controls["MaxScrollSpeed"].Text := SettingsGUI.tempSettings["MaxScrollSpeed"]
         SettingsGUI.controls["MaxScrollSpeed"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        SettingsGUI.controls["MaxScrollSpeedUpDown"] := SettingsGUI.gui.Add("UpDown", "x220 y" . (yOffset - 3) .
+        SettingsGUI.controls["MaxScrollSpeedUpDown"] := SettingsGUI.gui.Add("UpDown", "x210 y" . (yOffset - 3) .
         " w20 h20 Range1-50", SettingsGUI.tempSettings["MaxScrollSpeed"])
         SettingsGUI.controls["MaxScrollSpeedUpDown"].OnEvent("Change", (*) => SettingsGUI._UpdateMovementPreview())
-        maxScrollDesc := SettingsGUI.gui.Add("Text", "x245 y" . yOffset . " w150", "maximum lines/step")
-        if (SettingsGUI.isDarkMode) {
-            maxScrollDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x235 y" . yOffset . " w300", "maximum scroll lines per step (1-50)")
 
         ; Preview Section
-        previewGroup := SettingsGUI.gui.Add("GroupBox", "x440 y50 w320 h450", " 📊 Movement & Scroll Preview ")
-        previewGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            previewGroup.Opt("cWhite")
-        }
-
+        SettingsGUI.gui.Add("Text", "x450 y50 w300 h20 +0x200", "Movement & Scroll Preview").SetFont("s10 Bold")
         SettingsGUI.controls["MovementPreview"] := SettingsGUI.gui.Add("Edit",
-            "x450 y75 w300 h415 +VScroll +ReadOnly +Wrap")
+            "x450 y75 w300 h360 +VScroll +ReadOnly +Wrap")
         SettingsGUI.controls["MovementPreview"].SetFont("s8", "Consolas")
-        if (SettingsGUI.isDarkMode) {
-            ; Edit controls don't support background color well in AHK v2
-            ; We'll use the default colors for now
-        }
         SettingsGUI._UpdateMovementPreview()
     }
 
@@ -350,47 +269,27 @@ class SettingsGUI {
         SettingsGUI.controls["TabControl"].UseTab(2)
 
         ; Position Slots Section
-        slotGroup := SettingsGUI.gui.Add("GroupBox", "x20 y50 w400 h100", " 💾 Position Memory ")
-        slotGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            slotGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y50 w200 h20 +0x200", "Position Memory").SetFont("s10 Bold")
 
-        maxPosLabel := SettingsGUI.gui.Add("Text", "x40 y85 w150", "Maximum Saved Positions:")
-        if (SettingsGUI.isDarkMode) {
-            maxPosLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["MaxSavedPositions"] := SettingsGUI.gui.Add("Edit", "x190 y82 w60 Number")
+        SettingsGUI.gui.Add("Text", "x30 y75 w150", "Maximum Saved Positions:")
+        SettingsGUI.controls["MaxSavedPositions"] := SettingsGUI.gui.Add("Edit", "x180 y72 w60 Number")
         SettingsGUI.controls["MaxSavedPositions"].Text := SettingsGUI.tempSettings["MaxSavedPositions"]
-        SettingsGUI.controls["MaxSavedPositionsUpDown"] := SettingsGUI.gui.Add("UpDown", "x250 y82 w20 h20 Range1-100",
+        SettingsGUI.controls["MaxSavedPositionsUpDown"] := SettingsGUI.gui.Add("UpDown", "x240 y72 w20 h20 Range1-100",
             SettingsGUI.tempSettings["MaxSavedPositions"])
-        maxPosDesc := SettingsGUI.gui.Add("Text", "x275 y85 w130", "(1-100 slots)")
-        if (SettingsGUI.isDarkMode) {
-            maxPosDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x265 y75 w300", "position slots (1-100)")
 
-        maxUndoLabel := SettingsGUI.gui.Add("Text", "x40 y110 w150", "Maximum Undo Levels:")
-        if (SettingsGUI.isDarkMode) {
-            maxUndoLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["MaxUndoLevels"] := SettingsGUI.gui.Add("Edit", "x190 y107 w60 Number")
+        SettingsGUI.gui.Add("Text", "x30 y100 w150", "Maximum Undo Levels:")
+        SettingsGUI.controls["MaxUndoLevels"] := SettingsGUI.gui.Add("Edit", "x180 y97 w60 Number")
         SettingsGUI.controls["MaxUndoLevels"].Text := SettingsGUI.tempSettings["MaxUndoLevels"]
-        SettingsGUI.controls["MaxUndoLevelsUpDown"] := SettingsGUI.gui.Add("UpDown", "x250 y107 w20 h20 Range1-50",
+        SettingsGUI.controls["MaxUndoLevelsUpDown"] := SettingsGUI.gui.Add("UpDown", "x240 y97 w20 h20 Range1-50",
             SettingsGUI.tempSettings["MaxUndoLevels"])
-        maxUndoDesc := SettingsGUI.gui.Add("Text", "x275 y110 w130", "(1-50 steps)")
-        if (SettingsGUI.isDarkMode) {
-            maxUndoDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x265 y100 w300", "undo steps (1-50)")
 
         ; Current Positions Section
-        posListGroup := SettingsGUI.gui.Add("GroupBox", "x20 y160 w520 h200", " 📍 Saved Positions ")
-        posListGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            posListGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y140 w200 h20 +0x200", "Saved Positions").SetFont("s10 Bold")
 
         ; Position List - REDUCED HEIGHT to make room for buttons
-        SettingsGUI.controls["PositionList"] := SettingsGUI.gui.Add("ListView", "x30 y185 w500 h150", ["Slot", "X", "Y",
+        SettingsGUI.controls["PositionList"] := SettingsGUI.gui.Add("ListView", "x30 y165 w500 h150", ["Slot", "X", "Y",
             "Description"])
         SettingsGUI.controls["PositionList"].ModifyCol(1, 50)
         SettingsGUI.controls["PositionList"].ModifyCol(2, 80)
@@ -401,63 +300,56 @@ class SettingsGUI {
         SettingsGUI.controls["PositionList"].OnEvent("DoubleClick", (*) => SettingsGUI._GotoSelectedPosition())
 
         ; Position Management Buttons
-        SettingsGUI.controls["GotoPosition"] := SettingsGUI.gui.Add("Button", "x550 y185 w120 h25", "Go to Position")
+        SettingsGUI.controls["GotoPosition"] := SettingsGUI.gui.Add("Button", "x550 y165 w120 h25", "Go to Position")
         SettingsGUI.controls["GotoPosition"].OnEvent("Click", (*) => SettingsGUI._GotoSelectedPosition())
 
-        SettingsGUI.controls["PreviewPosition"] := SettingsGUI.gui.Add("Button", "x550 y215 w120 h25", "Preview")
+        SettingsGUI.controls["PreviewPosition"] := SettingsGUI.gui.Add("Button", "x550 y195 w120 h25", "Preview")
         SettingsGUI.controls["PreviewPosition"].OnEvent("Click", (*) => SettingsGUI._PreviewSelectedPosition())
         SettingsGUI.controls["PreviewPosition"].ToolTip := "Preview the selected position with a visual indicator"
 
-        SettingsGUI.controls["SaveCurrentPos"] := SettingsGUI.gui.Add("Button", "x550 y245 w120 h25", "Save Mouse Pos")
+        SettingsGUI.controls["SaveCurrentPos"] := SettingsGUI.gui.Add("Button", "x550 y225 w120 h25", "Save Mouse Pos")
         SettingsGUI.controls["SaveCurrentPos"].OnEvent("Click", (*) => SettingsGUI._SaveCurrentPosition())
         SettingsGUI.controls["SaveCurrentPos"].ToolTip := "Save current mouse cursor position to a slot"
 
-        SettingsGUI.controls["DeletePosition"] := SettingsGUI.gui.Add("Button", "x550 y275 w120 h25", "Delete Position"
+        SettingsGUI.controls["DeletePosition"] := SettingsGUI.gui.Add("Button", "x550 y255 w120 h25", "Delete Position"
         )
         SettingsGUI.controls["DeletePosition"].OnEvent("Click", (*) => SettingsGUI._DeleteSelectedPosition())
 
-        SettingsGUI.controls["ClearAllPositions"] := SettingsGUI.gui.Add("Button", "x550 y305 w120 h25", "Clear All")
+        SettingsGUI.controls["ClearAllPositions"] := SettingsGUI.gui.Add("Button", "x550 y285 w120 h25", "Clear All")
         SettingsGUI.controls["ClearAllPositions"].OnEvent("Click", (*) => SettingsGUI._ClearAllPositions())
 
         ; Import/Export buttons moved to new row
-        SettingsGUI.controls["ImportPositions"] := SettingsGUI.gui.Add("Button", "x30 y345 w120 h25", "Import...")
+        SettingsGUI.controls["ImportPositions"] := SettingsGUI.gui.Add("Button", "x30 y325 w120 h25", "Import...")
         SettingsGUI.controls["ImportPositions"].OnEvent("Click", (*) => SettingsGUI._ImportPositions())
 
-        SettingsGUI.controls["ExportPositions"] := SettingsGUI.gui.Add("Button", "x160 y345 w120 h25", "Export...")
+        SettingsGUI.controls["ExportPositions"] := SettingsGUI.gui.Add("Button", "x160 y325 w120 h25", "Export...")
         SettingsGUI.controls["ExportPositions"].OnEvent("Click", (*) => SettingsGUI._ExportPositions())
 
         ; Monitor test buttons - NOW VISIBLE
-        SettingsGUI.controls["TestMonitors"] := SettingsGUI.gui.Add("Button", "x290 y345 w120 h25", "Test Monitors")
+        SettingsGUI.controls["TestMonitors"] := SettingsGUI.gui.Add("Button", "x290 y325 w120 h25", "Test Monitors")
         SettingsGUI.controls["TestMonitors"].OnEvent("Click", (*) => SettingsGUI._TestMonitorConfiguration())
         SettingsGUI.controls["TestMonitors"].ToolTip := "Show monitor configuration and boundaries"
 
-        SettingsGUI.controls["RefreshMonitors"] := SettingsGUI.gui.Add("Button", "x420 y345 w120 h25",
+        SettingsGUI.controls["RefreshMonitors"] := SettingsGUI.gui.Add("Button", "x420 y325 w120 h25",
             "Refresh Monitors")
         SettingsGUI.controls["RefreshMonitors"].OnEvent("Click", (*) => SettingsGUI._RefreshMonitors())
         SettingsGUI.controls["RefreshMonitors"].ToolTip :=
             "Refresh monitor configuration and update position descriptions"
 
         ; Position File Management
-        fileGroup := SettingsGUI.gui.Add("GroupBox", "x20 y380 w660 h80", " 📂 Position File Management ")
-        fileGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            fileGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y365 w200 h20 +0x200", "Position File Management").SetFont("s10 Bold")
 
-        configFileLabel := SettingsGUI.gui.Add("Text", "x40 y410 w100", "Config File:")
-        if (SettingsGUI.isDarkMode) {
-            configFileLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["ConfigFile"] := SettingsGUI.gui.Add("Edit", "x140 y407 w270 ReadOnly")
+        SettingsGUI.gui.Add("Text", "x30 y390 w100", "Config File:")
+        SettingsGUI.controls["ConfigFile"] := SettingsGUI.gui.Add("Edit", "x130 y387 w270 ReadOnly")
         SettingsGUI.controls["ConfigFile"].Text := Config.PersistentPositionsFile
 
-        SettingsGUI.controls["OpenConfigFolder"] := SettingsGUI.gui.Add("Button", "x420 y405 w75 h25", "Open Folder")
+        SettingsGUI.controls["OpenConfigFolder"] := SettingsGUI.gui.Add("Button", "x410 y385 w75 h25", "Open Folder")
         SettingsGUI.controls["OpenConfigFolder"].OnEvent("Click", (*) => SettingsGUI._OpenConfigFolder())
 
-        SettingsGUI.controls["BackupConfig"] := SettingsGUI.gui.Add("Button", "x505 y405 w75 h25", "Backup")
+        SettingsGUI.controls["BackupConfig"] := SettingsGUI.gui.Add("Button", "x495 y385 w75 h25", "Backup")
         SettingsGUI.controls["BackupConfig"].OnEvent("Click", (*) => SettingsGUI._BackupConfig())
 
-        SettingsGUI.controls["RestoreBtn"] := SettingsGUI.gui.Add("Button", "x590 y405 w80 h25", "Restore...")
+        SettingsGUI.controls["RestoreBtn"] := SettingsGUI.gui.Add("Button", "x580 y385 w90 h25", "Restore...")
         SettingsGUI.controls["RestoreBtn"].OnEvent("Click", (*) => SettingsGUI._RestoreBackup())
 
         ; Populate position list
@@ -469,119 +361,81 @@ class SettingsGUI {
         SettingsGUI.controls["TabControl"].UseTab(3)
 
         ; Status Display Section
-        statusGroup := SettingsGUI.gui.Add("GroupBox", "x20 y50 w400 h100", " 📺 Status Display ")
-        statusGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            statusGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y50 w200 h20 +0x200", "Status Display").SetFont("s10 Bold")
 
-        SettingsGUI.controls["StatusVisibleOnStartup"] := SettingsGUI.gui.Add("CheckBox", "x40 y85 w300",
+        SettingsGUI.controls["StatusVisibleOnStartup"] := SettingsGUI.gui.Add("CheckBox", "x30 y75 w300",
             "Show Status on Startup")
         SettingsGUI.controls["StatusVisibleOnStartup"].Value := SettingsGUI.tempSettings["StatusVisibleOnStartup"] ? 1 :
             0
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["StatusVisibleOnStartup"].Opt("cWhite")
-        }
+        SettingsGUI.controls["StatusVisibleOnStartup"].OnEvent("Click", (*) => SettingsGUI._UpdateVisualsPreview())
 
-        SettingsGUI.controls["UseSecondaryMonitor"] := SettingsGUI.gui.Add("CheckBox", "x40 y110 w300",
+        SettingsGUI.controls["UseSecondaryMonitor"] := SettingsGUI.gui.Add("CheckBox", "x30 y100 w300",
             "Use Secondary Monitor")
         SettingsGUI.controls["UseSecondaryMonitor"].Value := SettingsGUI.tempSettings["UseSecondaryMonitor"] ? 1 : 0
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["UseSecondaryMonitor"].Opt("cWhite")
-        }
+        SettingsGUI.controls["UseSecondaryMonitor"].OnEvent("Click", (*) => SettingsGUI._UpdateVisualsPreview())
 
         ; Status Position Section
-        statusPosGroup := SettingsGUI.gui.Add("GroupBox", "x20 y160 w400 h100", " 📍 Status Position ")
-        statusPosGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            statusPosGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y140 w200 h20 +0x200", "Status Position").SetFont("s10 Bold")
 
-        statusXLabel := SettingsGUI.gui.Add("Text", "x40 y195 w80", "Status X:")
-        if (SettingsGUI.isDarkMode) {
-            statusXLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["StatusX"] := SettingsGUI.gui.Add("Edit", "x120 y192 w150")
+        SettingsGUI.gui.Add("Text", "x30 y165 w80", "Status X:")
+        SettingsGUI.controls["StatusX"] := SettingsGUI.gui.Add("Edit", "x110 y162 w150")
         SettingsGUI.controls["StatusX"].Text := Config.StatusX
-        statusXDesc := SettingsGUI.gui.Add("Text", "x280 y195 w130", "X position or expression")
-        if (SettingsGUI.isDarkMode) {
-            statusXDesc.Opt("cSilver")
-        }
+        SettingsGUI.controls["StatusX"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+        SettingsGUI.gui.Add("Text", "x270 y165 w200", "X position or expression")
 
-        statusYLabel := SettingsGUI.gui.Add("Text", "x40 y220 w80", "Status Y:")
-        if (SettingsGUI.isDarkMode) {
-            statusYLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["StatusY"] := SettingsGUI.gui.Add("Edit", "x120 y217 w150")
+        SettingsGUI.gui.Add("Text", "x30 y190 w80", "Status Y:")
+        SettingsGUI.controls["StatusY"] := SettingsGUI.gui.Add("Edit", "x110 y187 w150")
         SettingsGUI.controls["StatusY"].Text := Config.StatusY
-        statusYDesc := SettingsGUI.gui.Add("Text", "x280 y220 w130", "Y position or expression")
-        if (SettingsGUI.isDarkMode) {
-            statusYDesc.Opt("cSilver")
-        }
+        SettingsGUI.controls["StatusY"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+        SettingsGUI.gui.Add("Text", "x270 y190 w200", "Y position or expression")
 
         ; Tooltip Position Section
-        tooltipPosGroup := SettingsGUI.gui.Add("GroupBox", "x20 y270 w400 h100", " 💬 Tooltip Position ")
-        tooltipPosGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            tooltipPosGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y230 w200 h20 +0x200", "Tooltip Position").SetFont("s10 Bold")
 
-        tooltipXLabel := SettingsGUI.gui.Add("Text", "x40 y305 w80", "Tooltip X:")
-        if (SettingsGUI.isDarkMode) {
-            tooltipXLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["TooltipX"] := SettingsGUI.gui.Add("Edit", "x120 y302 w150")
+        SettingsGUI.gui.Add("Text", "x30 y255 w80", "Tooltip X:")
+        SettingsGUI.controls["TooltipX"] := SettingsGUI.gui.Add("Edit", "x110 y252 w150")
         SettingsGUI.controls["TooltipX"].Text := Config.TooltipX
-        tooltipXDesc := SettingsGUI.gui.Add("Text", "x280 y305 w130", "X position or expression")
-        if (SettingsGUI.isDarkMode) {
-            tooltipXDesc.Opt("cSilver")
-        }
+        SettingsGUI.controls["TooltipX"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+        SettingsGUI.gui.Add("Text", "x270 y255 w200", "X position or expression")
 
-        tooltipYLabel := SettingsGUI.gui.Add("Text", "x40 y330 w80", "Tooltip Y:")
-        if (SettingsGUI.isDarkMode) {
-            tooltipYLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["TooltipY"] := SettingsGUI.gui.Add("Edit", "x120 y327 w150")
+        SettingsGUI.gui.Add("Text", "x30 y280 w80", "Tooltip Y:")
+        SettingsGUI.controls["TooltipY"] := SettingsGUI.gui.Add("Edit", "x110 y277 w150")
         SettingsGUI.controls["TooltipY"].Text := Config.TooltipY
-        tooltipYDesc := SettingsGUI.gui.Add("Text", "x280 y330 w130", "Y position or expression")
-        if (SettingsGUI.isDarkMode) {
-            tooltipYDesc.Opt("cSilver")
-        }
+        SettingsGUI.controls["TooltipY"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+        SettingsGUI.gui.Add("Text", "x270 y280 w200", "Y position or expression")
 
         ; Audio Feedback Section
-        audioGroup := SettingsGUI.gui.Add("GroupBox", "x20 y380 w400 h70", " 🔊 Audio Feedback ")
-        audioGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            audioGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y320 w200 h20 +0x200", "Audio Feedback").SetFont("s10 Bold")
 
-        SettingsGUI.controls["EnableAudioFeedback"] := SettingsGUI.gui.Add("CheckBox", "x40 y415 w200",
+        SettingsGUI.controls["EnableAudioFeedback"] := SettingsGUI.gui.Add("CheckBox", "x30 y345 w200",
             "Enable Audio Feedback")
         SettingsGUI.controls["EnableAudioFeedback"].Value := SettingsGUI.tempSettings["EnableAudioFeedback"] ? 1 : 0
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableAudioFeedback"].Opt("cWhite")
-        }
+        SettingsGUI.controls["EnableAudioFeedback"].OnEvent("Click", (*) => SettingsGUI._UpdateVisualsPreview())
 
         ; Test Audio Button
-        SettingsGUI.controls["TestAudio"] := SettingsGUI.gui.Add("Button", "x260 y413 w100 h25", "Test Audio")
+        SettingsGUI.controls["TestAudio"] := SettingsGUI.gui.Add("Button", "x250 y343 w100 h25", "Test Audio")
         SettingsGUI.controls["TestAudio"].OnEvent("Click", (*) => SettingsGUI._TestAudio())
 
         ; Color Theme Section
-        themeGroup := SettingsGUI.gui.Add("GroupBox", "x440 y50 w320 h160", " 🎨 Color Themes ")
-        themeGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            themeGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x450 y50 w200 h20 +0x200", "Color Themes").SetFont("s10 Bold")
 
-        themeLabel := SettingsGUI.gui.Add("Text", "x460 y85 w80", "Theme:")
-        if (SettingsGUI.isDarkMode) {
-            themeLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["ColorTheme"] := SettingsGUI.gui.Add("DropDownList", "x540 y82 w150",
+        SettingsGUI.gui.Add("Text", "x450 y75 w80", "Theme:")
+        SettingsGUI.controls["ColorTheme"] := SettingsGUI.gui.Add("DropDownList", "x530 y72 w150",
             ["Default", "Dark Mode", "High Contrast", "Minimal"])
 
-        ; Find and select the current theme
+        ; Find and select the current theme with error checking
         themeIndex := 1
+        currentTheme := ""
+
+        ; Ensure ColorTheme is properly initialized
+        if (SettingsGUI.tempSettings.Has("ColorTheme")) {
+            currentTheme := SettingsGUI.tempSettings["ColorTheme"]
+        } else {
+            currentTheme := Config.ColorTheme  ; Fallback to Config value
+            SettingsGUI.tempSettings["ColorTheme"] := currentTheme
+        }
+
+        ; Find the theme in the list
         themeNames := ["Default", "Dark Mode", "High Contrast", "Minimal"]
         loop themeNames.Length {
             if (themeNames[A_Index] = SettingsGUI.tempSettings["ColorTheme"]) {
@@ -589,70 +443,54 @@ class SettingsGUI {
                 break
             }
         }
+
         SettingsGUI.controls["ColorTheme"].Choose(themeIndex)
         SettingsGUI.controls["ColorTheme"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
 
         ; Tooltip Duration Settings
-        tooltipDurLabel := SettingsGUI.gui.Add("Text", "x460 y115 w80", "Tooltip Duration:")
-        if (SettingsGUI.isDarkMode) {
-            tooltipDurLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["TooltipDuration"] := SettingsGUI.gui.Add("Edit", "x540 y112 w60 Number")
+        SettingsGUI.gui.Add("Text", "x450 y105 w80", "Tooltip Duration:")
+        SettingsGUI.controls["TooltipDuration"] := SettingsGUI.gui.Add("Edit", "x530 y102 w60 Number")
         SettingsGUI.controls["TooltipDuration"].Text := SettingsGUI.tempSettings["TooltipDuration"]
         SettingsGUI.controls["TooltipDurationUpDown"] := SettingsGUI.gui.Add("UpDown",
-            "x600 y112 w20 h20 Range500-10000",
+            "x590 y102 w20 h20 Range500-10000",
             SettingsGUI.tempSettings["TooltipDuration"])
-        tooltipDurDesc := SettingsGUI.gui.Add("Text", "x625 y115 w80", "ms")
-        if (SettingsGUI.isDarkMode) {
-            tooltipDurDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x615 y105 w80", "ms")
         SettingsGUI.controls["TooltipDuration"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
 
-        ; Status Message Duration
-        statusDurLabel := SettingsGUI.gui.Add("Text", "x460 y140 w80", "Status Duration:")
-        if (SettingsGUI.isDarkMode) {
-            statusDurLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["StatusMessageDuration"] := SettingsGUI.gui.Add("Edit", "x540 y137 w60 Number")
+        ; Status Message Duration Settings
+        SettingsGUI.gui.Add("Text", "x450 y130 w80", "Status Duration:")
+        SettingsGUI.controls["StatusMessageDuration"] := SettingsGUI.gui.Add("Edit", "x530 y127 w60 Number")
         SettingsGUI.controls["StatusMessageDuration"].Text := SettingsGUI.tempSettings["StatusMessageDuration"]
         SettingsGUI.controls["StatusMessageDurationUpDown"] := SettingsGUI.gui.Add("UpDown",
-            "x600 y137 w20 h20 Range200-5000",
+            "x590 y127 w20 h20 Range200-5000",
             SettingsGUI.tempSettings["StatusMessageDuration"])
-        statusDurDesc := SettingsGUI.gui.Add("Text", "x625 y140 w80", "ms")
-        if (SettingsGUI.isDarkMode) {
-            statusDurDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x615 y130 w80", "ms")
         SettingsGUI.controls["StatusMessageDuration"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
 
-        ; Preview Section
-        previewGroup := SettingsGUI.gui.Add("GroupBox", "x440 y220 w320 h170", " 📊 Preview ")
-        previewGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            previewGroup.Opt("cWhite")
-        }
+        ; Theme Buttuns
+        SettingsGUI.controls["ApplyTheme"] := SettingsGUI.gui.Add("Button", "x450 y410 w140 h25",
+            "Apply Theme Now")
+        SettingsGUI.controls["ApplyTheme"].OnEvent("Click", (*) => SettingsGUI._ApplyThemeNow())
 
+        SettingsGUI.controls["ResetVisuals"] := SettingsGUI.gui.Add("Button", "x600 y410 w140 h25",
+            "Reset to Default")
+        SettingsGUI.controls["ResetVisuals"].OnEvent("Click", (*) => SettingsGUI._ResetVisuals())
+
+        ; Preview Section
+        SettingsGUI.gui.Add("Text", "x450 y150 w200 h20 +0x200", "Preview").SetFont("s10 Bold")
         SettingsGUI.controls["VisualPreview"] := SettingsGUI.gui.Add("Edit",
-            "x450 y245 w300 h135 +VScroll +ReadOnly +Wrap")
+            "x450 y175 w300 h150 +VScroll +ReadOnly +Wrap")
         SettingsGUI.controls["VisualPreview"].SetFont("s8", "Consolas")
         SettingsGUI._UpdateVisualsPreview()
 
         ; Position Test Buttons
-        SettingsGUI.controls["TestStatusPosition"] := SettingsGUI.gui.Add("Button", "x440 y405 w140 h25",
+        SettingsGUI.controls["TestStatusPosition"] := SettingsGUI.gui.Add("Button", "x450 y350 w140 h25",
             "Test Status Position")
         SettingsGUI.controls["TestStatusPosition"].OnEvent("Click", (*) => SettingsGUI._TestStatusPosition())
 
-        SettingsGUI.controls["TestTooltipPosition"] := SettingsGUI.gui.Add("Button", "x590 y405 w140 h25",
+        SettingsGUI.controls["TestTooltipPosition"] := SettingsGUI.gui.Add("Button", "x600 y350 w140 h25",
             "Test Tooltip Position")
         SettingsGUI.controls["TestTooltipPosition"].OnEvent("Click", (*) => SettingsGUI._TestTooltipPosition())
-
-        ; Apply Theme Button
-        SettingsGUI.controls["ApplyTheme"] := SettingsGUI.gui.Add("Button", "x440 y440 w140 h25",
-            "Apply Theme Now")
-        SettingsGUI.controls["ApplyTheme"].OnEvent("Click", (*) => SettingsGUI._ApplyThemeNow())
-
-        SettingsGUI.controls["ResetVisuals"] := SettingsGUI.gui.Add("Button", "x590 y440 w140 h25",
-            "Reset to Default")
-        SettingsGUI.controls["ResetVisuals"].OnEvent("Click", (*) => SettingsGUI._ResetVisuals())
     }
 
     static _CreateHotkeysTab() {
@@ -660,11 +498,7 @@ class SettingsGUI {
         SettingsGUI.controls["TabControl"].UseTab(4)
 
         ; Hotkey List Section
-        hotkeyGroup := SettingsGUI.gui.Add("GroupBox", "x20 y50 w760 h340", " ⌨️ Hotkey Configuration ")
-        hotkeyGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            hotkeyGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y50 w200 h20 +0x200", "Hotkey Configuration").SetFont("s10 Bold")
 
         ; Hotkey ListView
         SettingsGUI.controls["HotkeyList"] := SettingsGUI.gui.Add("ListView", "x30 y75 w650 h300", ["Action",
@@ -687,23 +521,16 @@ class SettingsGUI {
         SettingsGUI.controls["TestHotkey"].OnEvent("Click", (*) => SettingsGUI._TestSelectedHotkey())
 
         ; Conflict Detection
-        conflictGroup := SettingsGUI.gui.Add("GroupBox", "x20 y400 w760 h60", " ⚠️ Conflict Detection ")
-        conflictGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            conflictGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y390 w200 h20 +0x200", "Conflict Detection").SetFont("s10 Bold")
 
-        SettingsGUI.controls["ConflictStatus"] := SettingsGUI.gui.Add("Text", "x40 y430 w450 h20")
+        SettingsGUI.controls["ConflictStatus"] := SettingsGUI.gui.Add("Text", "x30 y415 w450 h20")
         SettingsGUI.controls["ConflictStatus"].Text := "No conflicts detected"
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["ConflictStatus"].Opt("cLime")
-        }
 
-        SettingsGUI.controls["ScanConflicts"] := SettingsGUI.gui.Add("Button", "x510 y427 w120 h25",
+        SettingsGUI.controls["ScanConflicts"] := SettingsGUI.gui.Add("Button", "x500 y412 w120 h25",
             "Scan for Conflicts")
         SettingsGUI.controls["ScanConflicts"].OnEvent("Click", (*) => SettingsGUI._ScanForConflicts())
 
-        SettingsGUI.controls["ResetAllHotkeys"] := SettingsGUI.gui.Add("Button", "x640 y427 w120 h25", "Reset All")
+        SettingsGUI.controls["ResetAllHotkeys"] := SettingsGUI.gui.Add("Button", "x630 y412 w120 h25", "Reset All")
         SettingsGUI.controls["ResetAllHotkeys"].OnEvent("Click", (*) => SettingsGUI._ResetAllHotkeys())
     }
 
@@ -712,159 +539,76 @@ class SettingsGUI {
         SettingsGUI.controls["TabControl"].UseTab(5)
 
         ; Performance Section
-        perfGroup := SettingsGUI.gui.Add("GroupBox", "x20 y50 w370 h170", " ⚡ Performance Settings ")
-        perfGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            perfGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y50 w200 h20 +0x200", "Performance Settings").SetFont("s10 Bold")
 
-        SettingsGUI.controls["LowMemoryMode"] := SettingsGUI.gui.Add("CheckBox", "x40 y85 w200",
+        SettingsGUI.controls["LowMemoryMode"] := SettingsGUI.gui.Add("CheckBox", "x30 y75 w200",
             "Enable Low Memory Mode")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["LowMemoryMode"].Opt("cWhite")
-        }
-        lowMemDesc := SettingsGUI.gui.Add("Text", "x60 y105 w300", "Reduces memory usage at the cost of some features")
-        lowMemDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            lowMemDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x50 y95 w400", "Reduces memory usage at the cost of some features")
 
-        SettingsGUI.controls["ReduceAnimations"] := SettingsGUI.gui.Add("CheckBox", "x40 y125 w200",
+        SettingsGUI.controls["ReduceAnimations"] := SettingsGUI.gui.Add("CheckBox", "x30 y115 w200",
             "Reduce Animations")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["ReduceAnimations"].Opt("cWhite")
-        }
-        reduceAnimDesc := SettingsGUI.gui.Add("Text", "x60 y145 w300", "Disables visual effects for better performance"
-        )
-        reduceAnimDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            reduceAnimDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x50 y135 w400", "Disables visual effects for better performance")
 
         ; Update Frequency
-        updateFreqLabel := SettingsGUI.gui.Add("Text", "x40 y175 w150", "Update Frequency:")
-        if (SettingsGUI.isDarkMode) {
-            updateFreqLabel.Opt("cE0E0E0")
-        }
-        SettingsGUI.controls["UpdateFrequency"] := SettingsGUI.gui.Add("Edit", "x190 y172 w60 Number")
+        SettingsGUI.gui.Add("Text", "x30 y165 w150", "Update Frequency:")
+        SettingsGUI.controls["UpdateFrequency"] := SettingsGUI.gui.Add("Edit", "x180 y162 w60 Number")
         SettingsGUI.controls["UpdateFrequency"].Text := "500"
         SettingsGUI.controls["UpdateFrequencyUpDown"] := SettingsGUI.gui.Add("UpDown",
-            "x250 y172 w20 h20 Range100-2000", 500)
-        updateFreqDesc := SettingsGUI.gui.Add("Text", "x275 y175 w100", "ms between updates")
-        if (SettingsGUI.isDarkMode) {
-            updateFreqDesc.Opt("cSilver")
-        }
+            "x240 y162 w20 h20 Range100-2000", 500)
+        SettingsGUI.gui.Add("Text", "x265 y165 w200", "milliseconds between updates")
 
         ; Logging Section
-        logGroup := SettingsGUI.gui.Add("GroupBox", "x20 y230 w370 h120", " 📝 Logging & Debugging ")
-        logGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            logGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y205 w200 h20 +0x200", "Logging & Debugging").SetFont("s10 Bold")
 
-        SettingsGUI.controls["EnableLogging"] := SettingsGUI.gui.Add("CheckBox", "x40 y260 w200",
+        SettingsGUI.controls["EnableLogging"] := SettingsGUI.gui.Add("CheckBox", "x30 y230 w200",
             "Enable Debug Logging")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableLogging"].Opt("cWhite")
-        }
-        enableLogDesc := SettingsGUI.gui.Add("Text", "x60 y280 w300", "Logs actions for troubleshooting")
-        enableLogDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            enableLogDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x50 y250 w300", "Logs actions for troubleshooting")
 
-        SettingsGUI.controls["LogLevel"] := SettingsGUI.gui.Add("DropDownList", "x260 y258 w100", ["Error", "Warning",
+        SettingsGUI.controls["LogLevel"] := SettingsGUI.gui.Add("DropDownList", "x250 y228 w100", ["Error", "Warning",
             "Info", "Debug"])
         SettingsGUI.controls["LogLevel"].Choose(2)
 
         ; Log Management Buttons
-        SettingsGUI.controls["ViewLogs"] := SettingsGUI.gui.Add("Button", "x40 y305 w100 h25", "View Logs")
+        SettingsGUI.controls["ViewLogs"] := SettingsGUI.gui.Add("Button", "x30 y275 w100 h25", "View Logs")
         SettingsGUI.controls["ViewLogs"].OnEvent("Click", (*) => SettingsGUI._ViewLogs())
 
-        SettingsGUI.controls["ClearLogs"] := SettingsGUI.gui.Add("Button", "x150 y305 w100 h25", "Clear Logs")
+        SettingsGUI.controls["ClearLogs"] := SettingsGUI.gui.Add("Button", "x140 y275 w100 h25", "Clear Logs")
         SettingsGUI.controls["ClearLogs"].OnEvent("Click", (*) => SettingsGUI._ClearLogs())
 
         ; Advanced Features Section
-        advGroup := SettingsGUI.gui.Add("GroupBox", "x410 y50 w370 h200", " 🚀 Advanced Features ")
-        advGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            advGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x450 y50 w200 h20 +0x200", "Advanced Features").SetFont("s10 Bold")
 
-        SettingsGUI.controls["EnableGestures"] := SettingsGUI.gui.Add("CheckBox", "x430 y85 w200",
+        SettingsGUI.controls["EnableGestures"] := SettingsGUI.gui.Add("CheckBox", "x450 y75 w200",
             "Enable Gesture Recognition")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableGestures"].Opt("cWhite")
-        }
-        gestureDesc := SettingsGUI.gui.Add("Text", "x450 y105 w300", "Recognize mouse gestures for quick actions")
-        gestureDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            gestureDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x470 y95 w300", "Recognize mouse gestures for quick actions")
 
-        SettingsGUI.controls["EnableAnalytics"] := SettingsGUI.gui.Add("CheckBox", "x430 y125 w200",
+        SettingsGUI.controls["EnableAnalytics"] := SettingsGUI.gui.Add("CheckBox", "x450 y115 w200",
             "Enable Usage Analytics")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableAnalytics"].Opt("cWhite")
-        }
-        analyticsDesc := SettingsGUI.gui.Add("Text", "x450 y145 w300", "Track usage patterns for optimization")
-        analyticsDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            analyticsDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x470 y135 w300", "Track usage patterns for optimization")
 
-        SettingsGUI.controls["EnableCloudSync"] := SettingsGUI.gui.Add("CheckBox", "x430 y165 w200",
+        SettingsGUI.controls["EnableCloudSync"] := SettingsGUI.gui.Add("CheckBox", "x450 y155 w200",
             "Enable Cloud Synchronization")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableCloudSync"].Opt("cWhite")
-        }
-        cloudDesc := SettingsGUI.gui.Add("Text", "x450 y185 w300", "Sync settings across devices")
-        cloudDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            cloudDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x470 y175 w300", "Sync settings across devices")
 
         ; Experimental Features
-        expGroup := SettingsGUI.gui.Add("GroupBox", "x410 y260 w370 h140", " 🧪 Experimental Features ")
-        expGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            expGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x450 y205 w200 h20 +0x200", "Experimental Features").SetFont("s10 Bold")
 
-        SettingsGUI.controls["EnablePrediction"] := SettingsGUI.gui.Add("CheckBox", "x430 y290 w200",
+        SettingsGUI.controls["EnablePrediction"] := SettingsGUI.gui.Add("CheckBox", "x450 y230 w200",
             "Enable Movement Prediction")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnablePrediction"].Opt("cWhite")
-        }
-        predictionDesc := SettingsGUI.gui.Add("Text", "x450 y310 w300", "Predict and suggest common movements")
-        predictionDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            predictionDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x470 y250 w300", "Predict and suggest common movements")
 
-        SettingsGUI.controls["EnableMagneticSnap"] := SettingsGUI.gui.Add("CheckBox", "x430 y330 w200",
+        SettingsGUI.controls["EnableMagneticSnap"] := SettingsGUI.gui.Add("CheckBox", "x450 y270 w200",
             "Enable Magnetic Snapping")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableMagneticSnap"].Opt("cWhite")
-        }
-        magneticDesc := SettingsGUI.gui.Add("Text", "x450 y350 w300", "Automatically snap to UI elements")
-        magneticDesc.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            magneticDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x470 y290 w300", "Automatically snap to UI elements")
 
         ; Reset Section
-        resetGroup := SettingsGUI.gui.Add("GroupBox", "x20 y360 w370 h100", " 🔄 Reset Options ")
-        resetGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            resetGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x450 y330 w200 h20 +0x200", "Reset Options").SetFont("s10 Bold")
 
-        SettingsGUI.controls["ResetToDefaults"] := SettingsGUI.gui.Add("Button", "x40 y395 w150 h25",
+        SettingsGUI.controls["ResetToDefaults"] := SettingsGUI.gui.Add("Button", "x450 y355 w150 h25",
             "Reset to Defaults")
         SettingsGUI.controls["ResetToDefaults"].OnEvent("Click", (*) => SettingsGUI._ResetToDefaults())
 
-        SettingsGUI.controls["FactoryReset"] := SettingsGUI.gui.Add("Button", "x40 y425 w150 h25", "Factory Reset")
+        SettingsGUI.controls["FactoryReset"] := SettingsGUI.gui.Add("Button", "x450 y385 w150 h25", "Factory Reset")
         SettingsGUI.controls["FactoryReset"].OnEvent("Click", (*) => SettingsGUI._FactoryReset())
     }
 
@@ -873,11 +617,7 @@ class SettingsGUI {
         SettingsGUI.controls["TabControl"].UseTab(6)
 
         ; Profile List Section
-        profileListGroup := SettingsGUI.gui.Add("GroupBox", "x20 y50 w540 h240", " 👤 Configuration Profiles ")
-        profileListGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            profileListGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y50 w200 h20 +0x200", "Configuration Profiles").SetFont("s10 Bold")
 
         ; Profile ListView
         SettingsGUI.controls["ProfileList"] := SettingsGUI.gui.Add("ListView", "x30 y75 w500 h200", ["Profile Name",
@@ -890,105 +630,59 @@ class SettingsGUI {
         SettingsGUI._PopulateProfileList()
 
         ; Profile Management Buttons
-        SettingsGUI.controls["LoadProfile"] := SettingsGUI.gui.Add("Button", "x570 y75 w120 h25", "Load Profile")
+        SettingsGUI.controls["LoadProfile"] := SettingsGUI.gui.Add("Button", "x550 y75 w120 h25", "Load Profile")
         SettingsGUI.controls["LoadProfile"].OnEvent("Click", (*) => SettingsGUI._LoadSelectedProfile())
 
-        SettingsGUI.controls["SaveProfile"] := SettingsGUI.gui.Add("Button", "x570 y105 w120 h25", "Save as New...")
+        SettingsGUI.controls["SaveProfile"] := SettingsGUI.gui.Add("Button", "x550 y105 w120 h25", "Save as New...")
         SettingsGUI.controls["SaveProfile"].OnEvent("Click", (*) => SettingsGUI._SaveNewProfile())
 
-        SettingsGUI.controls["UpdateProfile"] := SettingsGUI.gui.Add("Button", "x570 y135 w120 h25", "Update Current")
+        SettingsGUI.controls["UpdateProfile"] := SettingsGUI.gui.Add("Button", "x550 y135 w120 h25", "Update Current")
         SettingsGUI.controls["UpdateProfile"].OnEvent("Click", (*) => SettingsGUI._UpdateCurrentProfile())
 
-        SettingsGUI.controls["DeleteProfile"] := SettingsGUI.gui.Add("Button", "x570 y165 w120 h25", "Delete Profile")
+        SettingsGUI.controls["DeleteProfile"] := SettingsGUI.gui.Add("Button", "x550 y165 w120 h25", "Delete Profile")
         SettingsGUI.controls["DeleteProfile"].OnEvent("Click", (*) => SettingsGUI._DeleteSelectedProfile())
 
-        SettingsGUI.controls["ExportProfile"] := SettingsGUI.gui.Add("Button", "x570 y195 w120 h25", "Export...")
+        SettingsGUI.controls["ExportProfile"] := SettingsGUI.gui.Add("Button", "x550 y195 w120 h25", "Export...")
         SettingsGUI.controls["ExportProfile"].OnEvent("Click", (*) => SettingsGUI._ExportProfile())
 
-        SettingsGUI.controls["ImportProfile"] := SettingsGUI.gui.Add("Button", "x570 y225 w120 h25", "Import...")
+        SettingsGUI.controls["ImportProfile"] := SettingsGUI.gui.Add("Button", "x550 y225 w120 h25", "Import...")
         SettingsGUI.controls["ImportProfile"].OnEvent("Click", (*) => SettingsGUI._ImportProfile())
 
         ; Current Profile Info
-        currentLabel := SettingsGUI.gui.Add("Text", "x30 y295 w150 h20", "Current Profile:")
-        if (SettingsGUI.isDarkMode) {
-            currentLabel.Opt("cE0E0E0")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y295 w150 h20", "Current Profile:")
         SettingsGUI.controls["CurrentProfileName"] := SettingsGUI.gui.Add("Text", "x180 y295 w200 h20 +0x200")
         SettingsGUI.controls["CurrentProfileName"].Text := "Default"
-        SettingsGUI.controls["CurrentProfileName"].SetFont("Bold")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["CurrentProfileName"].Opt("cLime")
-        }
 
         ; Profile Description
-        descGroup := SettingsGUI.gui.Add("GroupBox", "x20 y320 w760 h100", " 📝 Profile Description ")
-        descGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            descGroup.Opt("cWhite")
-        }
-
+        SettingsGUI.gui.Add("Text", "x30 y325 w200 h20 +0x200", "Profile Description").SetFont("s10 Bold")
         SettingsGUI.controls["ProfileDescription"] := SettingsGUI.gui.Add("Edit",
-            "x30 y345 w740 h65 +VScroll +WantReturn")
+            "x30 y345 w640 h100 +VScroll +WantReturn")
         SettingsGUI.controls["ProfileDescription"].Text := "Default configuration profile with standard settings."
 
         ; Auto-Switch Settings
-        autoGroup := SettingsGUI.gui.Add("GroupBox", "x20 y430 w760 h40", " 🔄 Auto-Switch Rules ")
-        autoGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            autoGroup.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y455 w200 h20 +0x200", "Auto-Switch Rules").SetFont("s10 Bold")
 
-        SettingsGUI.controls["EnableAutoSwitch"] := SettingsGUI.gui.Add("CheckBox", "x40 y450 w220",
+        SettingsGUI.controls["EnableAutoSwitch"] := SettingsGUI.gui.Add("CheckBox", "x30 y480 w220",
             "Enable Auto Profile Switching")
-        if (SettingsGUI.isDarkMode) {
-            SettingsGUI.controls["EnableAutoSwitch"].Opt("cWhite")
-        }
-        autoSwitchDesc := SettingsGUI.gui.Add("Text", "x270 y450 w400",
-            "Automatically switch profiles based on active application")
-        if (SettingsGUI.isDarkMode) {
-            autoSwitchDesc.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x260 y480 w400", "Automatically switch profiles based on active application")
     }
 
     static _CreateAboutTab() {
         ; About Tab
         SettingsGUI.controls["TabControl"].UseTab(7)
 
-        ; About GroupBox
-        aboutGroup := SettingsGUI.gui.Add("GroupBox", "x20 y50 w760 h420", " ℹ️ About Mouse on Numpad Enhanced ")
-        aboutGroup.SetFont("s10 Bold", "Segoe UI")
-        if (SettingsGUI.isDarkMode) {
-            aboutGroup.Opt("cWhite")
-        }
-
         ; Title and Version
-        titleText := SettingsGUI.gui.Add("Text", "x30 y80 w740 h30 +Center", "Mouse on Numpad Enhanced")
-        titleText.SetFont("s16 Bold")
-        if (SettingsGUI.isDarkMode) {
-            titleText.Opt("cWhite")
-        }
-
-        versionText := SettingsGUI.gui.Add("Text", "x30 y115 w740 h20 +Center",
-            "Version 3.0.0 - Advanced Settings Panel")
-        versionText.SetFont("s10")
-        if (SettingsGUI.isDarkMode) {
-            versionText.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y50 w720 h30 +Center", "Mouse on Numpad Enhanced").SetFont("s16 Bold")
+        SettingsGUI.gui.Add("Text", "x30 y85 w720 h20 +Center", "Version 3.0.0 - Advanced Settings Panel").SetFont(
+            "s10")
 
         ; Description
-        descText := SettingsGUI.gui.Add("Text", "x30 y150 w740 h60 +Wrap",
+        SettingsGUI.gui.Add("Text", "x30 y120 w720 h60 +Wrap",
             "A comprehensive mouse control system using the numeric keypad. This enhanced version includes " .
             "advanced features like gesture recognition, analytics, profile management, and cloud synchronization.")
-        if (SettingsGUI.isDarkMode) {
-            descText.Opt("cE0E0E0")
-        }
 
         ; Features List
-        featuresLabel := SettingsGUI.gui.Add("Text", "x30 y220 w200 h20 +0x200", "Key Features")
-        featuresLabel.SetFont("s10 Bold")
-        if (SettingsGUI.isDarkMode) {
-            featuresLabel.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y190 w200 h20 +0x200", "Key Features").SetFont("s10 Bold")
 
         featuresText := "• Comprehensive numpad mouse control`n" .
             "• Advanced position memory system`n" .
@@ -1001,17 +695,10 @@ class SettingsGUI {
             "• Accessibility features`n" .
             "• Comprehensive backup system"
 
-        featuresContent := SettingsGUI.gui.Add("Text", "x30 y245 w340 h200 +Wrap", featuresText)
-        if (SettingsGUI.isDarkMode) {
-            featuresContent.Opt("cE0E0E0")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y215 w340 h200 +Wrap", featuresText)
 
         ; System Information
-        sysInfoLabel := SettingsGUI.gui.Add("Text", "x400 y220 w200 h20 +0x200", "System Information")
-        sysInfoLabel.SetFont("s10 Bold")
-        if (SettingsGUI.isDarkMode) {
-            sysInfoLabel.Opt("cWhite")
-        }
+        SettingsGUI.gui.Add("Text", "x400 y190 w200 h20 +0x200", "System Information").SetFont("s10 Bold")
 
         systemInfo := "AutoHotkey Version: " . A_AhkVersion . "`n" .
             "Operating System: " . A_OSVersion . "`n" .
@@ -1020,36 +707,28 @@ class SettingsGUI {
             "Screen Resolution: " . A_ScreenWidth . "x" . A_ScreenHeight . "`n" .
             "Script Directory: " . A_ScriptDir
 
-        sysInfoContent := SettingsGUI.gui.Add("Text", "x400 y245 w370 h150 +Wrap", systemInfo)
-        if (SettingsGUI.isDarkMode) {
-            sysInfoContent.Opt("cE0E0E0")
-        }
+        SettingsGUI.gui.Add("Text", "x400 y215 w370 h150 +Wrap", systemInfo)
 
         ; Action Buttons
-        SettingsGUI.controls["CheckUpdates"] := SettingsGUI.gui.Add("Button", "x30 y410 w120 h30", "Check for Updates")
+        SettingsGUI.controls["CheckUpdates"] := SettingsGUI.gui.Add("Button", "x30 y380 w120 h30", "Check for Updates")
         SettingsGUI.controls["CheckUpdates"].OnEvent("Click", (*) => SettingsGUI._CheckForUpdates())
 
-        SettingsGUI.controls["OpenDocumentation"] := SettingsGUI.gui.Add("Button", "x160 y410 w120 h30",
+        SettingsGUI.controls["OpenDocumentation"] := SettingsGUI.gui.Add("Button", "x160 y380 w120 h30",
             "Documentation")
         SettingsGUI.controls["OpenDocumentation"].OnEvent("Click", (*) => SettingsGUI._OpenDocumentation())
 
-        SettingsGUI.controls["ReportIssue"] := SettingsGUI.gui.Add("Button", "x290 y410 w120 h30", "Report Issue")
+        SettingsGUI.controls["ReportIssue"] := SettingsGUI.gui.Add("Button", "x290 y380 w120 h30", "Report Issue")
         SettingsGUI.controls["ReportIssue"].OnEvent("Click", (*) => SettingsGUI._ReportIssue())
 
-        SettingsGUI.controls["SystemDiagnostics"] := SettingsGUI.gui.Add("Button", "x420 y410 w120 h30",
+        SettingsGUI.controls["SystemDiagnostics"] := SettingsGUI.gui.Add("Button", "x420 y380 w120 h30",
             "System Diagnostics")
         SettingsGUI.controls["SystemDiagnostics"].OnEvent("Click", (*) => SettingsGUI._RunSystemDiagnostics())
 
         ; Copyright and Credits
-        creditText := SettingsGUI.gui.Add("Text", "x30 y455 w740 h20 +Wrap +Center",
-            "Enhanced by Claude AI Assistant. Original concept and base implementation community-driven.")
-        creditText.SetFont("s8")
-        if (SettingsGUI.isDarkMode) {
-            creditText.Opt("cSilver")
-        }
+        SettingsGUI.gui.Add("Text", "x30 y430 w720 h40 +Wrap +Center",
+            "Enhanced by Claude AI Assistant. Original concept and base implementation community-driven. " .
+            "Thank you to all contributors and users who made this possible.")
     }
-
-    ; Event Handlers and Helper Methods
 
     ; Event Handlers
     static _OnTabChange() {
@@ -1080,11 +759,6 @@ class SettingsGUI {
             ; Resize tab control to fit above button bar (leave 100px for buttons)
             SettingsGUI.controls["TabControl"].Move(10, 35, width - 20, height - 125)
 
-            ; Update dark mode toggle position
-            if (SettingsGUI.controls.Has("DarkModeToggle")) {
-                SettingsGUI.controls["DarkModeToggle"].Move(width - 80, 8)
-            }
-
             ; Update button positions
             buttonY := height - 65
             separatorY := height - 80
@@ -1092,6 +766,11 @@ class SettingsGUI {
             ; Update separator line
             if (SettingsGUI.controls.Has("Separator")) {
                 SettingsGUI.controls["Separator"].Move(10, separatorY, width - 20, 1)
+            }
+
+            ; Update dark mode toggle position
+            if (SettingsGUI.controls.Has("DarkModeToggle")) {
+                SettingsGUI.controls["DarkModeToggle"].Move(width - 80, 5)
             }
 
             ; Update button positions
@@ -1191,15 +870,27 @@ class SettingsGUI {
         }
     }
 
+    static _ColorToRGB(hexcolor) {
+        ; Remove 0x prefix if present
+        hex := SubStr(hexcolor, 3)
+
+        ; Convert to RGB values
+        r := Integer("0x" . SubStr(hex, 1, 2))
+        g := Integer("0x" . SubStr(hex, 3, 2))
+        b := Integer("0x" . SubStr(hex, 5, 2))
+
+        return "RGB(" . r . ", " . g . ", " . b . ")"
+    }
+
     static _UpdateVisualsPreview() {
         try {
             ; Get current selections
             colorTheme := SettingsGUI.controls["ColorTheme"].Text
             tooltipDuration := SettingsGUI.controls["TooltipDuration"].Text
             statusDuration := SettingsGUI.controls["StatusMessageDuration"].Text
-            statusVisible := SettingsGUI.controls["StatusVisibleOnStartup"].Value ? "ON" : "OFF"
-            useSecondary := SettingsGUI.controls["UseSecondaryMonitor"].Value ? "YES" : "NO"
-            audioEnabled := SettingsGUI.controls["EnableAudioFeedback"].Value ? "ON" : "OFF"
+            statusVisible := SettingsGUI.controls["StatusVisibleOnStartup"].Value
+            useSecondary := SettingsGUI.controls["UseSecondaryMonitor"].Value
+            audioEnabled := SettingsGUI.controls["EnableAudioFeedback"].Value
 
             ; Store temp theme
             SettingsGUI.tempSettings["ColorTheme"] := colorTheme
@@ -1229,7 +920,6 @@ class SettingsGUI {
 
             ; Color Preview
             previewText .= "🎨 THEME COLOR PREVIEW:`r`n"
-
             ; Get the colors for this theme
             if (Config.ColorThemes.Has(colorTheme)) {
                 theme := Config.ColorThemes[colorTheme]
@@ -1274,19 +964,6 @@ class SettingsGUI {
         } catch {
             SettingsGUI.controls["VisualPreview"].Text := "Preview will update when settings change..."
         }
-    }
-
-    ; Helper function to convert hex color to RGB string
-    static _ColorToRGB(hexColor) {
-        ; Remove 0x prefix if present
-        hex := SubStr(hexColor, 3)
-
-        ; Convert to RGB values
-        r := Integer("0x" . SubStr(hex, 1, 2))
-        g := Integer("0x" . SubStr(hex, 3, 2))
-        b := Integer("0x" . SubStr(hex, 5, 2))
-
-        return "RGB(" . r . ", " . g . ", " . b . ")"
     }
 
     static _PopulatePositionList() {
@@ -1348,120 +1025,7 @@ class SettingsGUI {
         }
     }
 
-    ; Dark Mode Methods
-    static _ApplyGUITheme() {
-        if (SettingsGUI.isDarkMode) {
-            ; Dark mode colors inspired by the System Monitor
-            SettingsGUI.gui.BackColor := "0x1E1E1E"  ; Dark background
-
-            ; Store theme colors for later use
-            SettingsGUI.darkBgColor := "0x1E1E1E"
-            SettingsGUI.darkControlBg := "0x2D2D30"
-            SettingsGUI.darkTextColor := "0xE0E0E0"
-            SettingsGUI.darkBorderColor := "0x3E3E42"
-            SettingsGUI.darkGroupBoxColor := "0x252526"
-            SettingsGUI.darkButtonColor := "0x383838"
-        } else {
-            ; Light mode colors (default)
-            SettingsGUI.gui.BackColor := "0xF0F0F0"
-
-            SettingsGUI.lightBgColor := "0xF0F0F0"
-            SettingsGUI.lightControlBg := "0xFFFFFF"
-            SettingsGUI.lightTextColor := "0x000000"
-            SettingsGUI.lightBorderColor := "0xCCCCCC"
-            SettingsGUI.lightGroupBoxColor := "0xFFFFFF"
-            SettingsGUI.lightButtonColor := "0xE1E1E1"
-        }
-    }
-
-    static _ToggleDarkMode() {
-        SettingsGUI.isDarkMode := !SettingsGUI.isDarkMode
-
-        ; Update button text
-        SettingsGUI.controls["DarkModeToggle"].Text := SettingsGUI.isDarkMode ? "☀ Light" : "🌙 Dark"
-
-        ; Apply theme
-        SettingsGUI._ApplyGUITheme()
-
-        ; Update all controls
-        SettingsGUI._UpdateAllControlColors()
-
-        ; Show feedback
-        feedbackGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
-        feedbackGui.BackColor := SettingsGUI.isDarkMode ? "0x2D2D30" : "0xF0F0F0"
-        feedbackGui.MarginX := 10
-        feedbackGui.MarginY := 5
-
-        feedbackText := feedbackGui.Add("Text", "Center w150 h20",
-            SettingsGUI.isDarkMode ? "🌙 Dark Mode ON" : "☀ Light Mode ON")
-        feedbackText.SetFont("s10 Bold", "Segoe UI")
-
-        if (SettingsGUI.isDarkMode) {
-            feedbackText.Opt("cWhite")
-        }
-
-        centerX := (A_ScreenWidth - 170) // 2
-        centerY := (A_ScreenHeight - 30) // 2
-        feedbackGui.Show("x" . centerX . " y" . centerY . " w170 h30 NoActivate")
-
-        SetTimer(() => feedbackGui.Destroy(), -1500)
-    }
-
-    static _UpdateAllControlColors() {
-        ; This would require keeping track of all text controls
-        ; For now, we'll need to recreate the GUI for full theme change
-        ; In a production app, you'd iterate through all controls and update their colors
-
-        ; Store current tab
-        currentTab := SettingsGUI.controls["TabControl"].Value
-
-        ; Close and recreate
-        SettingsGUI.gui.Destroy()
-        SettingsGUI.isOpen := false
-
-        ; Recreate with new theme
-        SettingsGUI.Show()
-
-        ; Restore tab
-        SettingsGUI.controls["TabControl"].Choose(currentTab)
-    }
-
-    static _GetThemeTextColor() {
-        return SettingsGUI.isDarkMode ? "cE0E0E0" : "c000000"
-    }
-
-    static _GetThemeControlBg() {
-        return SettingsGUI.isDarkMode ? "0x2D2D30" : "0xFFFFFF"
-    }
-
-    ; Helper to apply consistent styling to controls
-    static _StyleControl(control, type := "text") {
-        if (!SettingsGUI.isDarkMode) {
-            return  ; Light mode uses defaults
-        }
-
-        switch type {
-            case "text":
-                control.Opt("cE0E0E0")
-            case "label":
-                control.Opt("cSilver")
-            case "heading":
-                control.Opt("cWhite")
-                control.SetFont("Bold")
-            case "groupbox":
-                control.Opt("cWhite")
-            case "button":
-                ; Buttons have limited styling options in AHK v2
-                ; We can't easily change their background color
-            case "edit":
-                ; Edit controls also have limited styling
-                ; Background color changes don't work well
-        }
-    }
-
-    ; Continuation of SettingsGUI class - Part 4 (Final)
     ; Action Methods
-
     static _TestAudio() {
         if (SettingsGUI.controls["EnableAudioFeedback"].Value) {
             SoundBeep(800, 200)
@@ -1473,8 +1037,8 @@ class SettingsGUI {
 
     static _TestStatusPosition() {
         ; Create test status indicator at configured position
-        xPos := SettingsGUI.controls["StatusX"].Text
-        yPos := SettingsGUI.controls["StatusY"].Text
+        xPos := SettingsGUI.controls["StatusX"].text
+        yPos := SettingsGUI.controls["StatusY"].text
 
         ; Evaluate expressions
         testX := Config.TooltipX is Number ? xPos : MonitorUtils.EvaluateExpression(xPos)
@@ -1506,6 +1070,7 @@ class SettingsGUI {
         testGui.Destroy()
 
         MsgBox("Status position test completed at:`nX: " . finalX . ", Y: " . finalY, "Test Complete", "Iconi T3")
+
     }
 
     static _TestTooltipPosition() {
@@ -1549,16 +1114,75 @@ class SettingsGUI {
         MsgBox("Tooltip position test completed at:`nX: " . finalX . ", Y: " . finalY, "Test Complete", "Iconi T3")
     }
 
+    static _ApplySettings() {
+        ; Apply all settings from temp storage to actual config
+        try {
+            ; Movement Settings
+            Config.MoveStep := Integer(SettingsGUI.controls["MoveStep"].Text)
+            Config.MoveDelay := Integer(SettingsGUI.controls["MoveDelay"].Text)
+            Config.AccelerationRate := Float(SettingsGUI.controls["AccelerationRate"].Text)
+            Config.MaxSpeed := Integer(SettingsGUI.controls["MaxSpeed"].Text)
+
+            ; Absolute Movement
+            Config.EnableAbsoluteMovement := SettingsGUI.controls["EnableAbsoluteMovement"].Value ? true : false
+
+            ; Position Settings
+            Config.MaxSavedPositions := Integer(SettingsGUI.controls["MaxSavedPositions"].Text)
+            Config.MaxUndoLevels := Integer(SettingsGUI.controls["MaxUndoLevels"].Text)
+
+            ; Visual Settings
+            Config.EnableAudioFeedback := SettingsGUI.controls["EnableAudioFeedback"].Value ? true : false
+            Config.StatusVisibleOnStartup := SettingsGUI.controls["StatusVisibleOnStartup"].Value ? true : false
+            Config.UseSecondaryMonitor := SettingsGUI.controls["UseSecondaryMonitor"].Value ? true : false
+
+            ; Scroll Settings
+            Config.ScrollStep := Integer(SettingsGUI.controls["ScrollStep"].Text)
+            Config.ScrollAccelerationRate := Float(SettingsGUI.controls["ScrollAccelerationRate"].Text)
+            Config.MaxScrollSpeed := Integer(SettingsGUI.controls["MaxScrollSpeed"].Text)
+
+            ; GUI Positions
+            Config.StatusX := SettingsGUI.controls["StatusX"].Text
+            Config.StatusY := SettingsGUI.controls["StatusY"].Text
+            Config.TooltipX := SettingsGUI.controls["TooltipX"].Text
+            Config.TooltipY := SettingsGUI.controls["TooltipY"].Text
+
+            ; Color Theme Settings
+            Config.ColorTheme := SettingsGUI.controls["ColorTheme"].Text
+            Config.TooltipDuration := Integer(SettingsGUI.controls["TooltipDuration"].Text)
+            Config.StatusMessageDuration := Integer(SettingsGUI.controls["StatusMessageDuration"].Text)
+
+            ; Update tooltip colors if theme changed
+            if (TooltipSystem.globalTooltip != "") {
+                TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
+            }
+            if (TooltipSystem.mouseTooltip != "") {
+                TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
+            }
+
+            ; Save configuration
+            Config.Save()
+
+            ; Update status indicator to reflect changes
+            StatusIndicator.Update()
+
+            ; Show success message
+            MsgBox("Settings have been applied successfully!", "Settings Applied", "Iconi T3")
+
+        } catch Error as e {
+            MsgBox("Error applying settings: " . e.Message . "`n`nPlease check your input values.", "Error", "IconX")
+        }
+    }
+
     static _ApplyThemeNow() {
-        ; Apply the selected theme immediately without saving to config
+        ;Apply the selected theme immediately without saving to config
         Config.ColorTheme := SettingsGUI.controls["ColorTheme"].Text
         Config.TooltipDuration := Integer(SettingsGUI.controls["TooltipDuration"].Text)
         Config.StatusMessageDuration := Integer(SettingsGUI.controls["StatusMessageDuration"].Text)
 
-        ; Update all active GUI elements
+        ;Update all active GUI elements
         StatusIndicator.Update()
 
-        ; Recreate tooltips with new colors
+        ;Recreate tooltips with new colors
         if (TooltipSystem.globalTooltip != "") {
             TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
         }
@@ -1566,7 +1190,7 @@ class SettingsGUI {
             TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
         }
 
-        ; Show confirmation
+        ;Show confirmation
         confirmGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
         confirmGui.BackColor := Config.GetThemeColor("TooltipSuccess")
         confirmGui.MarginX := 10
@@ -1609,65 +1233,6 @@ class SettingsGUI {
             SettingsGUI._UpdateVisualsPreview()
 
             MsgBox("Visual settings have been reset to defaults.", "Reset Complete", "Iconi T2")
-        }
-    }
-
-    static _ApplySettings() {
-        ; Apply all settings from temp storage to actual config
-        try {
-            ; Movement Settings
-            Config.MoveStep := Integer(SettingsGUI.controls["MoveStep"].Text)
-            Config.MoveDelay := Integer(SettingsGUI.controls["MoveDelay"].Text)
-            Config.AccelerationRate := Float(SettingsGUI.controls["AccelerationRate"].Text)
-            Config.MaxSpeed := Integer(SettingsGUI.controls["MaxSpeed"].Text)
-
-            ; Absolute Movement
-            Config.EnableAbsoluteMovement := SettingsGUI.controls["EnableAbsoluteMovement"].Value ? true : false
-
-            ; Position Settings
-            Config.MaxSavedPositions := Integer(SettingsGUI.controls["MaxSavedPositions"].Text)
-            Config.MaxUndoLevels := Integer(SettingsGUI.controls["MaxUndoLevels"].Text)
-
-            ; Visual Settings
-            Config.EnableAudioFeedback := SettingsGUI.controls["EnableAudioFeedback"].Value ? true : false
-            Config.StatusVisibleOnStartup := SettingsGUI.controls["StatusVisibleOnStartup"].Value ? true : false
-            Config.UseSecondaryMonitor := SettingsGUI.controls["UseSecondaryMonitor"].Value ? true : false
-
-            ; Color Theme Settings
-            Config.ColorTheme := SettingsGUI.controls["ColorTheme"].Text
-            Config.TooltipDuration := Integer(SettingsGUI.controls["TooltipDuration"].Text)
-            Config.StatusMessageDuration := Integer(SettingsGUI.controls["StatusMessageDuration"].Text)
-
-            ; Scroll Settings
-            Config.ScrollStep := Integer(SettingsGUI.controls["ScrollStep"].Text)
-            Config.ScrollAccelerationRate := Float(SettingsGUI.controls["ScrollAccelerationRate"].Text)
-            Config.MaxScrollSpeed := Integer(SettingsGUI.controls["MaxScrollSpeed"].Text)
-
-            ; GUI Positions
-            Config.StatusX := SettingsGUI.controls["StatusX"].Text
-            Config.StatusY := SettingsGUI.controls["StatusY"].Text
-            Config.TooltipX := SettingsGUI.controls["TooltipX"].Text
-            Config.TooltipY := SettingsGUI.controls["TooltipY"].Text
-
-            ; Save configuration
-            Config.Save()
-
-            ; Update status indicator to reflect changes
-            StatusIndicator.Update()
-
-            ; Update tooltip colors if theme changed
-            if (TooltipSystem.globalTooltip != "") {
-                TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
-            }
-            if (TooltipSystem.mouseTooltip != "") {
-                TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
-            }
-
-            ; Show success message
-            MsgBox("Settings have been applied successfully!", "Settings Applied", "Iconi T3")
-
-        } catch Error as e {
-            MsgBox("Error applying settings: " . e.Message . "`n`nPlease check your input values.", "Error", "IconX")
         }
     }
 
@@ -1789,39 +1354,19 @@ class SettingsGUI {
         saveDialog := Gui("+AlwaysOnTop", "Save Mouse Position")
         saveDialog.SetFont("s10")
 
-        ; Apply dark mode if needed
-        if (SettingsGUI.isDarkMode) {
-            saveDialog.BackColor := "0x1E1E1E"
-        }
-
         ; Instructions
-        instructionText := saveDialog.Add("Text", "x10 y10 w300", "Move your mouse to the desired position.")
-        if (SettingsGUI.isDarkMode) {
-            instructionText.Opt("cWhite")
-        }
+        saveDialog.Add("Text", "x10 y10 w300", "Move your mouse to the desired position.")
 
         ; Current position display (will update)
         posText := saveDialog.Add("Text", "x10 y35 w300 h20", "Current mouse position: ")
-        if (SettingsGUI.isDarkMode) {
-            posText.Opt("cSilver")
-        }
         posDisplay := saveDialog.Add("Text", "x10 y55 w300 h20 +0x200", "X: 0, Y: 0")
         posDisplay.SetFont("s12 Bold")
-        if (SettingsGUI.isDarkMode) {
-            posDisplay.Opt("cLime")
-        }
 
         ; Slot selection
-        slotLabel := saveDialog.Add("Text", "x10 y85 w100", "Save to slot:")
-        if (SettingsGUI.isDarkMode) {
-            slotLabel.Opt("cWhite")
-        }
+        saveDialog.Add("Text", "x10 y85 w100", "Save to slot:")
         slotEdit := saveDialog.Add("Edit", "x110 y82 w50 Number")
         slotUpDown := saveDialog.Add("UpDown", "x160 y82 w20 h20 Range1-" . Config.MaxSavedPositions, 1)
-        slotDesc := saveDialog.Add("Text", "x185 y85 w100", "(1-" . Config.MaxSavedPositions . ")")
-        if (SettingsGUI.isDarkMode) {
-            slotDesc.Opt("cSilver")
-        }
+        saveDialog.Add("Text", "x185 y85 w100", "(1-" . Config.MaxSavedPositions . ")")
 
         ; Set initial value
         slotEdit.Text := "1"
@@ -2386,5 +1931,86 @@ class SettingsGUI {
             "Iconi T2")
     }
 
-}
+    ; Dark Mode Methods
+    static _ApplyGUITheme() {
+        if (SettingsGUI.isDarkMode) {
+            ; Dark mode colors
+            SettingsGUI.gui.BackColor := "0x1E1E1E"  ; Dark background
 
+            ; We'll need to update text colors after controls are created
+            ; Store theme colors for later use
+            SettingsGUI.darkBgColor := "0x1E1E1E"
+            SettingsGUI.darkControlBg := "0x2D2D30"
+            SettingsGUI.darkTextColor := "0xE0E0E0"
+            SettingsGUI.darkBorderColor := "0x3E3E42"
+        } else {
+            ; Light mode colors (default)
+            SettingsGUI.gui.BackColor := "0xF5F5F5"
+
+            SettingsGUI.lightBgColor := "0xF5F5F5"
+            SettingsGUI.lightControlBg := "0xFFFFFF"
+            SettingsGUI.lightTextColor := "0x000000"
+            SettingsGUI.lightBorderColor := "0xCCCCCC"
+        }
+    }
+
+    static _ToggleDarkMode() {
+        SettingsGUI.isDarkMode := !SettingsGUI.isDarkMode
+
+        ; Update button text
+        SettingsGUI.controls["DarkModeToggle"].Text := SettingsGUI.isDarkMode ? "☀ Light" : "🌙 Dark"
+
+        ; Apply theme
+        SettingsGUI._ApplyGUITheme()
+
+        ; Update all controls
+        SettingsGUI._UpdateAllControlColors()
+
+        ; Show feedback
+        feedbackGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
+        feedbackGui.BackColor := SettingsGUI.isDarkMode ? "0x2D2D30" : "0xF0F0F0"
+        feedbackGui.MarginX := 10
+        feedbackGui.MarginY := 5
+
+        feedbackText := feedbackGui.Add("Text", "Center w150 h20",
+            SettingsGUI.isDarkMode ? "🌙 Dark Mode ON" : "☀ Light Mode ON")
+        feedbackText.SetFont("s10 Bold", "Segoe UI")
+
+        if (SettingsGUI.isDarkMode) {
+            feedbackText.Opt("cWhite")
+        }
+
+        centerX := (A_ScreenWidth - 170) // 2
+        centerY := (A_ScreenHeight - 30) // 2
+        feedbackGui.Show("x" . centerX . " y" . centerY . " w170 h30 NoActivate")
+
+        SetTimer(() => feedbackGui.Destroy(), -1500)
+    }
+
+    static _UpdateAllControlColors() {
+        ; This would require keeping track of all text controls
+        ; For now, we'll need to recreate the GUI for full theme change
+        ; In a production app, you'd iterate through all controls and update their colors
+
+        ; Store current tab
+        currentTab := SettingsGUI.controls["TabControl"].Value
+
+        ; Close and recreate
+        SettingsGUI.gui.Destroy()
+        SettingsGUI.isOpen := false
+
+        ; Recreate with new theme
+        SettingsGUI.Show()
+
+        ; Restore tab
+        SettingsGUI.controls["TabControl"].Choose(currentTab)
+    }
+
+    static _GetThemeTextColor() {
+        return SettingsGUI.isDarkMode ? "cE0E0E0" : "c000000"
+    }
+
+    static _GetThemeControlBg() {
+        return SettingsGUI.isDarkMode ? "0x2D2D30" : "0xFFFFFF"
+    }
+}

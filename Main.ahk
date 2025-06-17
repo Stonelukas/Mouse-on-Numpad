@@ -19,7 +19,10 @@
 #Include "MouseActions.ahk"
 #Include "PositionMemory.ahk"
 #Include "HotkeyManager.ahk"
-#Include "SettingsGUI.ahk"
+
+; Include GUI modules from subfolder
+#Include "GUI\SettingsGUI.ahk"
+; Note: SettingsGUI.ahk will include the other GUI files itself
 
 ; ======================================================================================================================
 ; Main Initialization
