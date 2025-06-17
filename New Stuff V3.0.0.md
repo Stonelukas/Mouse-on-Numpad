@@ -8,12 +8,14 @@ This major release transforms the original Mouse on Numpad script into a **profe
 
 #### 1. **Advanced GUI Settings Panel**
 
-- **Tabbed Interface**: 7 organized tabs covering all aspects of configuration
-- **Real-time Preview**: See changes instantly before applying
-- **Import/Export**: Share configurations between users and devices
-- **Profile Management**: Create, edit, and switch between custom profiles
-- **Visual Themes**: Multiple color schemes and appearance options
-- **Hotkey Customization**: Reassign any hotkey to your preference
+- [ ] 
+
+- [x] **Tabbed Interface**: 7 organized tabs covering all aspects of configuration
+- [ ] **Real-time Preview**: See changes instantly before applying
+- [x] **Import/Export**: Share configurations between users and devices
+- [ ] **Profile Management**: Create, edit, and switch between custom profiles
+- [ ] **Visual Themes**: Multiple color schemes and appearance options
+- [ ] **Hotkey Customization**: Reassign any hotkey to your preference
 
 #### 2. **Enhanced Movement System**
 
