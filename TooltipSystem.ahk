@@ -1,17 +1,14 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Updated Tooltip System Module - With Color Theme Support
-; ######################################################################################################################
-; 
-; IMPORTANT: This is an updated version of TooltipSystem.ahk that integrates with ColorThemeManager.
-; Replace the existing TooltipSystem.ahk with this version.
+; Fixed Tooltip System Module - With Working Color Theme Support
 ; ######################################################################################################################
 
 class TooltipSystem {
     ; GUI elements
     static globalTooltip := ""
     static mouseTooltip := ""
+    static isInitialized := false
     
     ; Timer
     static mouseTooltipTimer := ""
@@ -19,63 +16,68 @@ class TooltipSystem {
     static Initialize() {
         TooltipSystem._InitializeTooltip()
         TooltipSystem._InitializeMouseTooltip()
+        TooltipSystem.isInitialized := true
     }
 
     static _InitializeTooltip() {
         TooltipSystem.globalTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        TooltipSystem.globalTooltip.BackColor := ColorThemeManager.GetColor("tooltipDefault")
         TooltipSystem.globalTooltip.MarginX := 5
         TooltipSystem.globalTooltip.MarginY := 2
         
-        TooltipSystem.globalTooltip.textCtrl := TooltipSystem.globalTooltip.Add("Text", "cWhite Center w50 h16", "")
-        TooltipSystem.globalTooltip.textCtrl.SetFont("s8 Bold", "Segoe UI")
+        ; Set initial background color
+        TooltipSystem.globalTooltip.BackColor := ColorThemeManager.GetColor("tooltipDefault")
         
-        ; Apply text color based on theme
-        textColor := ColorThemeManager.GetColor("textDefault")
-        TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
+        ; Create text control without initial color
+        TooltipSystem.globalTooltip.textCtrl := TooltipSystem.globalTooltip.Add("Text", "Center w50 h16", "")
+        TooltipSystem.globalTooltip.textCtrl.SetFont("s8 Bold", "Segoe UI")
         
         pos := MonitorUtils.GetGuiPosition("tooltip")
         TooltipSystem.globalTooltip.Move(pos[1], pos[2], 60, 22)
-        TooltipSystem.globalTooltip.Show("NoActivate Hide")  ; Create but keep hidden
-        WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd)
+        
+        ; Create but hide initially
+        TooltipSystem.globalTooltip.Show("NoActivate")
+        TooltipSystem.globalTooltip.Hide()
     }
 
     static _InitializeMouseTooltip() {
         TooltipSystem.mouseTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        TooltipSystem.mouseTooltip.BackColor := ColorThemeManager.GetColor("tooltipSuccess")
         TooltipSystem.mouseTooltip.MarginX := 8
         TooltipSystem.mouseTooltip.MarginY := 4
         
-        TooltipSystem.mouseTooltip.textCtrl := TooltipSystem.mouseTooltip.Add("Text", "cWhite Center w120 h20", "")
-        TooltipSystem.mouseTooltip.textCtrl.SetFont("s9 Bold", "Segoe UI")
+        ; Set initial background color
+        TooltipSystem.mouseTooltip.BackColor := ColorThemeManager.GetColor("tooltipSuccess")
         
-        ; Apply text color based on theme
-        textColor := ColorThemeManager.GetColor("textDefault")
-        TooltipSystem.mouseTooltip.textCtrl.SetFont("c" . textColor)
+        ; Create text control without initial color
+        TooltipSystem.mouseTooltip.textCtrl := TooltipSystem.mouseTooltip.Add("Text", "Center w120 h20", "")
+        TooltipSystem.mouseTooltip.textCtrl.SetFont("s9 Bold", "Segoe UI")
         
         pos := MonitorUtils.GetGuiPosition("tooltip")
         TooltipSystem.mouseTooltip.Move(pos[1], pos[2] - 30, 140, 28)
-        TooltipSystem.mouseTooltip.Show("NoActivate Hide")  ; Create but keep hidden
-        WinSetTransparent(0, TooltipSystem.mouseTooltip.Hwnd)
+        
+        ; Create but hide initially
+        TooltipSystem.mouseTooltip.Show("NoActivate")
+        TooltipSystem.mouseTooltip.Hide()
     }
 
     ; Standard tooltip for movement and general feedback
     static ShowStandard(text, type := "info", duration := "") {
-        if (!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
+        if (!TooltipSystem.isInitialized || !StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
             return
         }
         
-        ; Make sure tooltip is visible before updating content
-        TooltipSystem.globalTooltip.Show("NoActivate")
-        
-        ; Apply theme color
-        TooltipSystem.globalTooltip.BackColor := TooltipSystem._GetTooltipColor(type)
-        TooltipSystem.globalTooltip.textCtrl.Text := text
-        
-        ; Update text color for contrast
+        ; Get theme color
         bgColor := TooltipSystem._GetTooltipColor(type)
+        TooltipSystem.globalTooltip.BackColor := bgColor
+        
+        ; Get contrasting text color
         textColor := GetContrastingColor(bgColor)
+        if (SubStr(textColor, 1, 2) = "0x") {
+            textColor := SubStr(textColor, 3)
+        }
         TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
+        
+        ; Update text
+        TooltipSystem.globalTooltip.textCtrl.Text := text
         
         ; Calculate size
         textLength := StrLen(text)
@@ -100,6 +102,8 @@ class TooltipSystem {
         pos := MonitorUtils.GetGuiPosition("tooltip")
         TooltipSystem.globalTooltip.Move(pos[1], pos[2], tooltipWidth, 22)
         
+        ; Show the tooltip
+        TooltipSystem.globalTooltip.Show("NoActivate")
         WinSetTransparent(255, TooltipSystem.globalTooltip.Hwnd)
         
         ; Determine duration
@@ -111,17 +115,21 @@ class TooltipSystem {
             displayDuration := Config.FeedbackDurationLong
         }
         
-        SetTimer(() => WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd), -displayDuration)
+        SetTimer(() => TooltipSystem._HideGlobalTooltip(), -displayDuration)
+    }
+
+    static _HideGlobalTooltip() {
+        if (TooltipSystem.globalTooltip != "") {
+            WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd)
+            TooltipSystem.globalTooltip.Hide()
+        }
     }
 
     ; Dedicated mouse tooltip with 4-second duration
     static ShowMouseAction(text, type := "success") {
-        if (!StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
+        if (!TooltipSystem.isInitialized || !StateManager.IsStatusVisible() || MonitorUtils.IsFullscreen()) {
             return
         }
-        
-        ; Make sure mouse tooltip is visible before updating content
-        TooltipSystem.mouseTooltip.Show("NoActivate")
         
         ; Cancel any existing mouse tooltip timer
         if (TooltipSystem.mouseTooltipTimer != "") {
@@ -135,6 +143,9 @@ class TooltipSystem {
         
         ; Update text color for contrast
         textColor := GetContrastingColor(bgColor)
+        if (SubStr(textColor, 1, 2) = "0x") {
+            textColor := SubStr(textColor, 3)
+        }
         TooltipSystem.mouseTooltip.textCtrl.SetFont("c" . textColor)
         
         TooltipSystem.mouseTooltip.textCtrl.Text := text
@@ -152,17 +163,26 @@ class TooltipSystem {
         TooltipSystem.mouseTooltip.Move(pos[1], pos[2] - 35, tooltipWidth, 28)
         
         ; Show for exactly 4 seconds
+        TooltipSystem.mouseTooltip.Show("NoActivate")
         WinSetTransparent(255, TooltipSystem.mouseTooltip.Hwnd)
         
         ; Set timer to hide after 4 seconds
-        TooltipSystem.mouseTooltipTimer := () => WinSetTransparent(0, TooltipSystem.mouseTooltip.Hwnd)
+        TooltipSystem.mouseTooltipTimer := () => TooltipSystem._HideMouseTooltip()
         SetTimer(TooltipSystem.mouseTooltipTimer, -4000)
+    }
+
+    static _HideMouseTooltip() {
+        if (TooltipSystem.mouseTooltip != "") {
+            WinSetTransparent(0, TooltipSystem.mouseTooltip.Hwnd)
+            TooltipSystem.mouseTooltip.Hide()
+        }
     }
 
     ; Forced tooltip that always shows (for critical messages)
     static ShowForced(text, type := "info") {
-        ; Make sure tooltip is visible
-        TooltipSystem.globalTooltip.Show("NoActivate")
+        if (!TooltipSystem.isInitialized) {
+            return
+        }
         
         ; Apply theme color
         bgColor := TooltipSystem._GetTooltipColor(type)
@@ -170,6 +190,9 @@ class TooltipSystem {
         
         ; Update text color for contrast
         textColor := GetContrastingColor(bgColor)
+        if (SubStr(textColor, 1, 2) = "0x") {
+            textColor := SubStr(textColor, 3)
+        }
         TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
         
         TooltipSystem.globalTooltip.textCtrl.Text := text
@@ -182,9 +205,10 @@ class TooltipSystem {
         pos := MonitorUtils.GetGuiPosition("tooltip")
         TooltipSystem.globalTooltip.Move(pos[1], pos[2], tooltipWidth, 22)
         
+        TooltipSystem.globalTooltip.Show("NoActivate")
         WinSetTransparent(255, TooltipSystem.globalTooltip.Hwnd)
         
-        SetTimer(() => WinSetTransparent(0, TooltipSystem.globalTooltip.Hwnd), -1000)
+        SetTimer(() => TooltipSystem._HideGlobalTooltip(), -1000)
     }
 
     static _GetTooltipColor(type) {
@@ -220,9 +244,6 @@ class TooltipSystem {
                     TooltipSystem.mouseTooltip.Hide()
                 }
             }
-        } else {
-            ; Only show tooltips when they actually have content and are needed
-            ; Don't auto-show empty tooltips
         }
     }
 
@@ -235,18 +256,32 @@ class TooltipSystem {
         }
     }
     
-    ; Apply theme colors to existing tooltips
+    ; Apply theme colors to existing tooltips - force immediate update
     static ApplyTheme() {
-        ; Re-initialize tooltips with new colors
+        if (!TooltipSystem.isInitialized) {
+            return
+        }
+        
+        ; Update default background colors
         if (TooltipSystem.globalTooltip != "") {
-            TooltipSystem.globalTooltip.BackColor := ColorThemeManager.GetColor("tooltipDefault")
-            textColor := GetContrastingColor(ColorThemeManager.GetColor("tooltipDefault"))
+            bgColor := ColorThemeManager.GetColor("tooltipDefault")
+            TooltipSystem.globalTooltip.BackColor := bgColor
+            
+            textColor := GetContrastingColor(bgColor)
+            if (SubStr(textColor, 1, 2) = "0x") {
+                textColor := SubStr(textColor, 3)
+            }
             TooltipSystem.globalTooltip.textCtrl.SetFont("c" . textColor)
         }
         
         if (TooltipSystem.mouseTooltip != "") {
-            TooltipSystem.mouseTooltip.BackColor := ColorThemeManager.GetColor("tooltipSuccess")
-            textColor := GetContrastingColor(ColorThemeManager.GetColor("tooltipSuccess"))
+            bgColor := ColorThemeManager.GetColor("tooltipSuccess")
+            TooltipSystem.mouseTooltip.BackColor := bgColor
+            
+            textColor := GetContrastingColor(bgColor)
+            if (SubStr(textColor, 1, 2) = "0x") {
+                textColor := SubStr(textColor, 3)
+            }
             TooltipSystem.mouseTooltip.textCtrl.SetFont("c" . textColor)
         }
     }

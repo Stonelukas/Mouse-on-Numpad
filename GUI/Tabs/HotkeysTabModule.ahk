@@ -87,7 +87,7 @@ class HotkeysTabModule extends BaseTabModule {
                 ["Scroll Down", "Numpad 1", "Scroll wheel down (Mouse Mode)"],
                 ["Scroll Left", "Numpad 9", "Horizontal scroll left (Mouse Mode)"],
                 ["Scroll Right", "Numpad 3", "Horizontal scroll right (Mouse Mode)"],
-                ["Inverted Mode", "Numpad Del", "Toggle inverted movement (Mouse Mode)"]
+                ["Inverted Mode", "Alt + Numpad 1", "Toggle inverted movement (Mouse Mode)"]
             ]
 
             for hotkey in hotkeys {

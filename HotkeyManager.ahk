@@ -126,31 +126,7 @@ Numpad6::{
 }
 
 Numpad5::{
-    StateManager.SetLeftButtonHeld(true)
-    Click("Left", , , , , "D")
-    TooltipSystem.ShowMouseAction("🖱️ Left Held", "success")
-    
-    if (Config.EnableAudioFeedback) {
-        SoundBeep(500, 50)
-    }
-    
-    StatusIndicator.Update()
-    timer := SetTimer(() => StatusIndicator.Update(), 250)
-    StateManager.SetLeftClickHoldTimer(timer)
-    
-    KeyWait("Numpad5")
-    
-    StateManager.SetLeftButtonHeld(false)
-    StateManager.ClearLeftClickHoldTimer()
-    
-    Click("Left", , , , , "U")
-    TooltipSystem.ShowMouseAction("🖱️ Left Released", "info")
-    
-    if (Config.EnableAudioFeedback) {
-        SoundBeep(400, 50)
-    }
-    
-    StatusIndicator.Update()
+    Click("left")
 }
 
 NumpadClear::{
@@ -231,6 +207,22 @@ NumpadDot::{
         StateManager.SetRightButtonHeld(true)
         Click("Right", , , , , "D")
         TooltipSystem.ShowMouseAction("🔄🖱️ Both On", "success")
+        Sleep(150)
+        StatusIndicator.Update()
+    }
+}
+
+!Numpad1::{
+    wasInvertedMode := StateManager.IsInvertedMode()
+
+    if wasInvertedMode  {
+        StateManager.ToggleInvertedMode()
+        TooltipSystem.ShowMouseAction("🔄 Inverted Off", "warning")
+        Sleep(150)
+        StatusIndicator.Update()
+    } else if !wasInvertedMode  {
+        StateManager.ToggleInvertedMode()
+        TooltipSystem.ShowMouseAction("🔄 Inverted On", "success")
         Sleep(150)
         StatusIndicator.Update()
     }

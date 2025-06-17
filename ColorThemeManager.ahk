@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 
 ; ######################################################################################################################
-; Color Theme Manager - Manages application-wide color themes
+; Fixed Color Theme Manager - Corrected Static Method Syntax
 ; ######################################################################################################################
 
 class ColorThemeManager {
@@ -144,31 +144,48 @@ class ColorThemeManager {
         }
     )
     
-    ; Current theme
+    ; Current theme storage
     static currentTheme := "Default"
-    static currentColors := ColorThemeManager.themes["Default"].colors
+    static currentColors := ""
+    
+    ; Initialize static property with default colors
+    static __New() {
+        ; Set default colors on class initialization
+        ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
+    }
     
     ; Initialize theme system
     static Initialize() {
+        ; Set default colors first
+        ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
+        
         ; Load saved theme from config
-        if (Config.ColorTheme != "") {
-            ColorThemeManager.SetTheme(Config.ColorTheme)
+        if (Config.ColorTheme != "" && ColorThemeManager.themes.Has(Config.ColorTheme)) {
+            ColorThemeManager.ApplyTheme(Config.ColorTheme)
+        } else {
+            ; Default to "Default" theme
+            ColorThemeManager.ApplyTheme("Default")
         }
     }
     
-    ; Set active theme
-    static SetTheme(themeName) {
+    ; Set active theme - renamed from SetTheme to avoid confusion
+    static ApplyTheme(themeName) {
         if (ColorThemeManager.themes.Has(themeName)) {
             ColorThemeManager.currentTheme := themeName
             ColorThemeManager.currentColors := ColorThemeManager.themes[themeName].colors
             Config.ColorTheme := themeName
             
             ; Apply theme to existing GUIs
-            ColorThemeManager.ApplyTheme()
+            ColorThemeManager.UpdateAllGUIs()
             
             return true
         }
         return false
+    }
+    
+    ; Wrapper method for compatibility
+    static SetTheme(themeName) {
+        return ColorThemeManager.ApplyTheme(themeName)
     }
     
     ; Get current theme name
@@ -178,33 +195,33 @@ class ColorThemeManager {
     
     ; Get color from current theme
     static GetColor(colorKey) {
+        ; Ensure currentColors is initialized
+        if (ColorThemeManager.currentColors = "") {
+            ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
+        }
+        
         if (ColorThemeManager.currentColors.HasOwnProp(colorKey)) {
             return ColorThemeManager.currentColors.%colorKey%
         }
-        return "0x000000" ; Default to black if not found
+        ; Default fallback color
+        return "0x000000"
     }
     
-    ; Apply theme to all existing GUIs
-    static ApplyTheme() {
+    ; Apply theme to all existing GUIs - renamed from ApplyTheme
+    static UpdateAllGUIs() {
         try {
-            ; Update tooltip colors
-            if (TooltipSystem.globalTooltip != "") {
-                ; The background color will be applied when showing tooltips
+            ; Apply to tooltip system
+            if (HasProp(TooltipSystem, "isInitialized") && TooltipSystem.isInitialized) {
                 TooltipSystem.ApplyTheme()
             }
             
-            if (TooltipSystem.mouseTooltip != "") {
-                ; The background color will be applied when showing tooltips
+            ; Apply to status indicator
+            if (HasProp(StatusIndicator, "isInitialized") && StatusIndicator.isInitialized) {
+                StatusIndicator.ApplyTheme()
             }
             
-            ; Update status indicator colors
-            if (StatusIndicator.statusIndicator != "") {
-                ; The background color will be applied on next update
-                StatusIndicator.Update()
-            }
-            
-            ; Update settings GUI if open
-            if (SettingsGUI.isOpen && SettingsGUI.gui != "") {
+            ; Apply to settings GUI if open
+            if (HasProp(SettingsGUI, "isOpen") && SettingsGUI.isOpen && SettingsGUI.gui != "") {
                 ColorThemeManager.ApplyThemeToGUI(SettingsGUI.gui)
             }
         }
@@ -213,31 +230,18 @@ class ColorThemeManager {
     ; Apply theme to a specific GUI
     static ApplyThemeToGUI(gui) {
         try {
-            ; Set GUI background color
-            gui.BackColor := ColorThemeManager.GetColor("guiBackground")
-            
-            ; Update text controls
-            for hwnd, ctrl in gui {
-                switch Type(ctrl) {
-                    case "Gui.Text":
-                        ; Text controls can have their color changed
-                        ctrl.SetFont("c" . ColorThemeManager.GetColor("guiTextColor"))
-                    
-                    case "Gui.Edit":
-                        ; Edit controls - apply background if supported
-                        try {
-                            ctrl.Opt("+Background" . ColorThemeManager.GetColor("editBackground"))
-                            ctrl.SetFont("c" . ColorThemeManager.GetColor("editText"))
-                        }
-                    
-                    case "Gui.ListView":
-                        ; ListView controls
-                        try {
-                            ctrl.Opt("+Background" . ColorThemeManager.GetColor("listViewBackground"))
-                            ctrl.SetFont("c" . ColorThemeManager.GetColor("listViewText"))
-                        }
-                }
+            ; Only apply a light background to settings GUI, keep text black
+            if (gui = SettingsGUI.gui) {
+                gui.BackColor := "e9e9e9"  ; Always light gray
+                return
             }
+            
+            ; For other GUIs, apply full theme
+            bgColor := ColorThemeManager.GetColor("guiBackground")
+            if (SubStr(bgColor, 1, 2) = "0x") {
+                bgColor := SubStr(bgColor, 3)
+            }
+            gui.BackColor := bgColor
         }
     }
     
@@ -263,78 +267,36 @@ class ColorThemeManager {
         output := "Current Theme: " . ColorThemeManager.currentTheme . "`n`n"
         output .= "Colors:`n"
         
-        for key, value in ColorThemeManager.currentColors.OwnProps() {
-            output .= "  " . key . ": " . value . "`n"
+        if (ColorThemeManager.currentColors != "") {
+            for key, value in ColorThemeManager.currentColors.OwnProps() {
+                output .= "  " . key . ": " . value . "`n"
+            }
         }
         
         return output
     }
     
-    ; Create a custom theme (for future use)
-    static CreateCustomTheme(name, description, colors) {
-        if (!ColorThemeManager.themes.Has(name)) {
-            ColorThemeManager.themes[name] := {
-                name: name,
-                description: description,
-                colors: colors
-            }
-            return true
-        }
-        return false
-    }
-    
-    ; Save custom themes to file (for future use)
-    static SaveCustomThemes() {
-        ; This would save custom themes to an INI file
-        ; Implementation for future version
-    }
-    
-    ; Load custom themes from file (for future use)
-    static LoadCustomThemes() {
-        ; This would load custom themes from an INI file
-        ; Implementation for future version
+    ; Save theme preference
+    static SaveTheme() {
+        Config.ColorTheme := ColorThemeManager.currentTheme
+        Config.Save()
     }
 }
 
 ; ######################################################################################################################
-; Updated methods for existing classes to use ColorThemeManager
+; Helper Functions for Color Manipulation
 ; ######################################################################################################################
 
-; Extension methods for TooltipSystem
-class TooltipSystemThemed {
-    static GetTooltipColor(type) {
-        switch type {
-            case "success": return ColorThemeManager.GetColor("tooltipSuccess")
-            case "warning": return ColorThemeManager.GetColor("tooltipWarning")
-            case "info": return ColorThemeManager.GetColor("tooltipInfo")
-            case "error": return ColorThemeManager.GetColor("tooltipError")
-            default: return ColorThemeManager.GetColor("tooltipDefault")
-        }
-    }
-}
-
-; Extension methods for StatusIndicator
-class StatusIndicatorThemed {
-    static GetStatusColor(mode) {
-        if (!StateManager.IsMouseMode()) {
-            return ColorThemeManager.GetColor("statusOff")
-        } else if (StateManager.IsSaveMode()) {
-            return ColorThemeManager.GetColor("statusSave")
-        } else if (StateManager.IsLoadMode()) {
-            return ColorThemeManager.GetColor("statusLoad")
-        } else if (StateManager.IsInvertedMode()) {
-            return ColorThemeManager.GetColor("statusInverted")
-        } else {
-            return ColorThemeManager.GetColor("statusOn")
-        }
-    }
-}
-
-; Helper function to convert hex color to RGB components
+; Convert hex color to RGB components
 ConvertHexToRGB(hexColor) {
     ; Remove 0x prefix if present
     if (SubStr(hexColor, 1, 2) = "0x") {
         hexColor := SubStr(hexColor, 3)
+    }
+    
+    ; Ensure we have 6 characters
+    if (StrLen(hexColor) != 6) {
+        return {r: 0, g: 0, b: 0}
     }
     
     ; Extract RGB components
@@ -345,13 +307,47 @@ ConvertHexToRGB(hexColor) {
     return {r: r, g: g, b: b}
 }
 
-; Helper function to create a contrasting color
+; Get contrasting color (black or white) based on background
 GetContrastingColor(hexColor) {
     rgb := ConvertHexToRGB(hexColor)
     
-    ; Calculate luminance
+    ; Calculate luminance using W3C formula
     luminance := (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255
     
     ; Return black or white based on luminance
     return luminance > 0.5 ? "0x000000" : "0xFFFFFF"
 }
+
+; Convert RGB to hex color
+ConvertRGBToHex(r, g, b) {
+    return Format("0x{:02X}{:02X}{:02X}", r, g, b)
+}
+
+; Lighten a color by a percentage (0-100)
+LightenColor(hexColor, percent) {
+    rgb := ConvertHexToRGB(hexColor)
+    
+    ; Calculate new values
+    factor := 1 + (percent / 100)
+    newR := Min(255, Round(rgb.r * factor))
+    newG := Min(255, Round(rgb.g * factor))
+    newB := Min(255, Round(rgb.b * factor))
+    
+    return ConvertRGBToHex(newR, newG, newB)
+}
+
+; Darken a color by a percentage (0-100)
+DarkenColor(hexColor, percent) {
+    rgb := ConvertHexToRGB(hexColor)
+    
+    ; Calculate new values
+    factor := 1 - (percent / 100)
+    newR := Max(0, Round(rgb.r * factor))
+    newG := Max(0, Round(rgb.g * factor))
+    newB := Max(0, Round(rgb.b * factor))
+    
+    return ConvertRGBToHex(newR, newG, newB)
+}
+
+; Initialize the static properties when the script loads
+ColorThemeManager.__New()

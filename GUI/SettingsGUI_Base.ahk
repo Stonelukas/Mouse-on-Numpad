@@ -46,10 +46,10 @@ class SettingsGUI {
 
         ; Create tab manager
         SettingsGUI.tabManager := SettingsTabManager(SettingsGUI.gui)
-        
+
         ; Create tab control with explicit height to leave room for buttons
         SettingsGUI.controls["TabControl"] := SettingsGUI.tabManager.CreateTabControl(
-            "x10 y10 w780 h500", 
+            "x10 y10 w780 h500",
             ["Movement", "Positions", "Visuals", "Hotkeys", "Advanced", "Profiles", "About"]
         )
 
@@ -119,7 +119,8 @@ class SettingsGUI {
         SettingsGUI.controls["ImportSettings"] := SettingsGUI.gui.Add("Button", "x20 y535 w100 h25", "Import Settings")
         SettingsGUI.controls["ImportSettings"].OnEvent("Click", (*) => SettingsGUI._ImportSettings())
 
-        SettingsGUI.controls["ExportSettings"] := SettingsGUI.gui.Add("Button", "x130 y535 w100 h25", "Export Settings")
+        SettingsGUI.controls["ExportSettings"] := SettingsGUI.gui.Add("Button", "x130 y535 w100 h25", "Export Settings"
+        )
         SettingsGUI.controls["ExportSettings"].OnEvent("Click", (*) => SettingsGUI._ExportSettings())
 
         ; Right side buttons
@@ -239,6 +240,12 @@ class SettingsGUI {
                 Config.TooltipX := visualData["tooltipX"]
                 Config.TooltipY := visualData["tooltipY"]
                 Config.ColorTheme := visualData["colorTheme"]
+
+                ; IMPORTANT: Apply and save the color theme
+                if (visualData.Has("colorTheme")) {
+                    Config.ColorTheme := visualData["colorTheme"]
+                    ColorThemeManager.SetTheme(visualData["colorTheme"])
+                }
             }
 
             ; Save configuration
