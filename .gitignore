@@ -1,2 +1,4 @@
 # Ignore Config files
 *.ini
+*.log
+Test*.txt

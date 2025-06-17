@@ -133,7 +133,7 @@ checkFullscreenPeriodically() {
 }
 
 ; Theme debug info (Ctrl+Alt+Shift+T) - shows current theme details
-^!+t::{
+^!+d::{
     currentTheme := ColorThemeManager.GetCurrentTheme()
     savedTheme := Config.ColorTheme
     
@@ -169,3 +169,4 @@ checkFullscreenPeriodically() {
 
 ; Initialize and start
 initialize()
+
