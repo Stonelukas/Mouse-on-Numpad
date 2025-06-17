@@ -19,7 +19,19 @@
 #Include "MouseActions.ahk"
 #Include "PositionMemory.ahk"
 #Include "HotkeyManager.ahk"
-#Include "SettingsGUI.ahk"
+
+; Include Settings GUI modules
+#Include "GUI\SettingsGUI_Base.ahk"
+#Include "GUI\SettingsGUI_TabManager.ahk"
+
+; Include Tab modules
+#Include "GUI\Tabs\MovementTabModule.ahk"
+#Include "GUI\Tabs\PositionsTabModule.ahk"
+#Include "GUI\Tabs\VisualsTabModule.ahk"
+#Include "GUI\Tabs\HotkeysTabModule.ahk"
+#Include "GUI\Tabs\AdvancedTabModule.ahk"
+#Include "GUI\Tabs\ProfilesTabModule.ahk"
+#Include "GUI\Tabs\AboutTabModule.ahk"
 
 ; ======================================================================================================================
 ; Main Initialization

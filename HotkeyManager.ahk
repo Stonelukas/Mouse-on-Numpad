@@ -37,6 +37,7 @@ NumpadDiv::{
 ^NumpadAdd::{
     StateManager.ToggleStatusVisibility()
     StatusIndicator.UpdateVisibility()
+    StatusIndicator.Update()
     StatusIndicator.ShowToggleMessage()
 }
 
