@@ -35,13 +35,93 @@ class Config {
     static ScrollAccelerationRate := 1.1
     static MaxScrollSpeed := 10
 
-    ; Visuals settings
-    static ColorTheme := ""
+    ; Visual settings - Color Themes
+    static ColorTheme := "Default"
+    static ColorThemes := Map(
+        "Default", Map(
+            "StatusOn", "0x4CAF50",        ; Green
+            "StatusOff", "0xF44336",       ; Red
+            "StatusInverted", "0xFF9800",  ; Orange
+            "StatusSave", "0x9C27B0",      ; Purple
+            "StatusLoad", "0x2196F3",      ; Blue
+            "TooltipDefault", "0x607D8B",  ; Blue Grey
+            "TooltipSuccess", "0x4CAF50",  ; Green
+            "TooltipWarning", "0xFF9800",  ; Orange
+            "TooltipInfo", "0x2196F3",     ; Blue
+            "TooltipError", "0xF44336"     ; Red
+        ),
+        "Dark Mode", Map(
+            "StatusOn", "0x388E3C",        ; Dark Green
+            "StatusOff", "0xC62828",       ; Dark Red
+            "StatusInverted", "0xE65100",  ; Dark Orange
+            "StatusSave", "0x6A1B9A",      ; Dark Purple
+            "StatusLoad", "0x1565C0",      ; Dark Blue
+            "TooltipDefault", "0x37474F",  ; Dark Blue Grey
+            "TooltipSuccess", "0x2E7D32",  ; Dark Green
+            "TooltipWarning", "0xEF6C00",  ; Dark Orange
+            "TooltipInfo", "0x0277BD",     ; Dark Blue
+            "TooltipError", "0xB71C1C"     ; Dark Red
+        ),
+        "High Contrast", Map(
+            "StatusOn", "0x00FF00",        ; Bright Green
+            "StatusOff", "0xFF0000",       ; Bright Red
+            "StatusInverted", "0xFFFF00",  ; Yellow
+            "StatusSave", "0xFF00FF",      ; Magenta
+            "StatusLoad", "0x00FFFF",      ; Cyan
+            "TooltipDefault", "0xFFFFFF",  ; White
+            "TooltipSuccess", "0x00FF00",  ; Bright Green
+            "TooltipWarning", "0xFFFF00",  ; Yellow
+            "TooltipInfo", "0x00FFFF",     ; Cyan
+            "TooltipError", "0xFF0000"     ; Bright Red
+        ),
+        "Minimal", Map(
+            "StatusOn", "0x212121",        ; Almost Black
+            "StatusOff", "0x757575",       ; Grey
+            "StatusInverted", "0x424242",  ; Dark Grey
+            "StatusSave", "0x616161",      ; Medium Grey
+            "StatusLoad", "0x9E9E9E",      ; Light Grey
+            "TooltipDefault", "0xBDBDBD",  ; Light Grey
+            "TooltipSuccess", "0x424242",  ; Dark Grey
+            "TooltipWarning", "0x616161",  ; Medium Grey
+            "TooltipInfo", "0x757575",     ; Grey
+            "TooltipError", "0x212121"     ; Almost Black
+        )
+    )
+
+    ; Tooltip duration settings (theme-specific)
+    static TooltipDuration := 3000
+    static StatusMessageDuration := 800
 
     ; Hotkey settings
     static PrefixKey := ""
     static InvertModeToggleKey := "NumpadClear"
     static AbsoluteMovementToggleKey := "NumpadIns"
+
+    ; Get current theme colors
+    static GetThemeColor(colorType) {
+        ; Ensure we have a valid theme name
+        themeName := Config.ColorTheme
+        if (themeName = "") {
+            themeName := "Default"
+        }
+        ; Check if the theme exists
+        if (Config.ColorThemes.Has(themeName)) {
+            theme := Config.ColorThemes[themeName]
+            ; Check if the color type exists in the theme
+            if (theme.Has(colorType)) {
+                return theme[colorType]
+            }
+        }
+        
+        ; Fallback to default theme if anything fails
+        defaultTheme := Config.ColorThemes["Default"]
+        if (defaultTheme.Has(colorType)) {
+            return defaultTheme[colorType]
+        }
+        
+        ; Ultimate fallback - return a default grey color
+        return "0x25c462"
+    }
 
     static Load() {
         ; Load settings from INI file
@@ -55,10 +135,12 @@ class Config {
     static _LoadMovementSettings() {
         tempMoveStep := IniRead(Config.PersistentPositionsFile, "Settings", "MoveStep", Config.MoveStep)
         tempMoveDelay := IniRead(Config.PersistentPositionsFile, "Settings", "MoveDelay", Config.MoveDelay)
-        tempAccelerationRate := IniRead(Config.PersistentPositionsFile, "Settings", "AccelerationRate", Config.AccelerationRate)
+        tempAccelerationRate := IniRead(Config.PersistentPositionsFile, "Settings", "AccelerationRate", Config.AccelerationRate
+        )
         tempMaxSpeed := IniRead(Config.PersistentPositionsFile, "Settings", "MaxSpeed", Config.MaxSpeed)
         tempMaxUndoLevels := IniRead(Config.PersistentPositionsFile, "Settings", "MaxUndoLevels", Config.MaxUndoLevels)
-        tempMaxSavedPositions := IniRead(Config.PersistentPositionsFile, "Settings", "MaxSavedPositions", Config.MaxSavedPositions)
+        tempMaxSavedPositions := IniRead(Config.PersistentPositionsFile, "Settings", "MaxSavedPositions", Config.MaxSavedPositions
+        )
 
         if (tempMoveStep != "" && IsNumber(tempMoveStep))
             Config.MoveStep := Number(tempMoveStep)
@@ -80,7 +162,11 @@ class Config {
         tempStatusX := IniRead(Config.PersistentPositionsFile, "GUI", "StatusX", Config.StatusX)
         tempStatusY := IniRead(Config.PersistentPositionsFile, "GUI", "StatusY", Config.StatusY)
         tempColorTheme := IniRead(Config.PersistentPositionsFile, "Settings", "ColorTheme", Config.ColorTheme)
-        
+        tempTooltipDuration := IniRead(Config.PersistentPositionsFile, "Settings", "TooltipDuration", Config.TooltipDuration
+        )
+        tempStatusMessageDuration := IniRead(Config.PersistentPositionsFile, "Settings", "StatusMessageDuration",
+            Config.StatusMessageDuration)
+
         if (tempTooltipX != "")
             Config.TooltipX := tempTooltipX
         if (tempTooltipY != "")
@@ -89,14 +175,20 @@ class Config {
             Config.StatusX := tempStatusX
         if (tempStatusY != "")
             Config.StatusY := tempStatusY
-        if (tempColorTheme != "")
+        if (tempColorTheme != "" && Config.ColorThemes.Has(tempColorTheme))
             Config.ColorTheme := tempColorTheme
+        if (tempTooltipDuration != "" && IsNumber(tempTooltipDuration))
+            Config.TooltipDuration := Number(tempTooltipDuration)
+        if (tempStatusMessageDuration != "" && IsNumber(tempStatusMessageDuration))
+            Config.StatusMessageDuration := Number(tempStatusMessageDuration)
     }
 
     static _LoadScrollSettings() {
         tempScrollStep := IniRead(Config.PersistentPositionsFile, "Settings", "ScrollStep", Config.ScrollStep)
-        tempScrollAccelerationRate := IniRead(Config.PersistentPositionsFile, "Settings", "ScrollAccelerationRate", Config.ScrollAccelerationRate)
-        tempMaxScrollSpeed := IniRead(Config.PersistentPositionsFile, "Settings", "MaxScrollSpeed", Config.MaxScrollSpeed)
+        tempScrollAccelerationRate := IniRead(Config.PersistentPositionsFile, "Settings", "ScrollAccelerationRate",
+            Config.ScrollAccelerationRate)
+        tempMaxScrollSpeed := IniRead(Config.PersistentPositionsFile, "Settings", "MaxScrollSpeed", Config.MaxScrollSpeed
+        )
 
         if (tempScrollStep != "" && IsNumber(tempScrollStep))
             Config.ScrollStep := Number(tempScrollStep)
@@ -108,8 +200,10 @@ class Config {
 
     static _LoadHotkeySettings() {
         tempPrefixKey := IniRead(Config.PersistentPositionsFile, "Settings", "PrefixKey", Config.PrefixKey)
-        tempInvertModeToggleKey := IniRead(Config.PersistentPositionsFile, "Settings", "InvertModeToggleKey", Config.InvertModeToggleKey)
-        tempAbsoluteMovementToggleKey := IniRead(Config.PersistentPositionsFile, "Settings", "AbsoluteMovementToggleKey", Config.AbsoluteMovementToggleKey)
+        tempInvertModeToggleKey := IniRead(Config.PersistentPositionsFile, "Settings", "InvertModeToggleKey", Config.InvertModeToggleKey
+        )
+        tempAbsoluteMovementToggleKey := IniRead(Config.PersistentPositionsFile, "Settings",
+            "AbsoluteMovementToggleKey", Config.AbsoluteMovementToggleKey)
 
         if (tempPrefixKey != "")
             Config.PrefixKey := tempPrefixKey
@@ -120,10 +214,14 @@ class Config {
     }
 
     static _LoadFeatureSettings() {
-        tempEnableAudioFeedback := IniRead(Config.PersistentPositionsFile, "Settings", "EnableAudioFeedback", Config.EnableAudioFeedback)
-        tempStatusVisibleOnStartup := IniRead(Config.PersistentPositionsFile, "Settings", "StatusVisibleOnStartup", Config.StatusVisibleOnStartup)
-        tempEnableAbsoluteMovement := IniRead(Config.PersistentPositionsFile, "Settings", "EnableAbsoluteMovement", Config.EnableAbsoluteMovement)
-        tempUseSecondaryMonitor := IniRead(Config.PersistentPositionsFile, "Settings", "UseSecondaryMonitor", Config.UseSecondaryMonitor)
+        tempEnableAudioFeedback := IniRead(Config.PersistentPositionsFile, "Settings", "EnableAudioFeedback", Config.EnableAudioFeedback
+        )
+        tempStatusVisibleOnStartup := IniRead(Config.PersistentPositionsFile, "Settings", "StatusVisibleOnStartup",
+            Config.StatusVisibleOnStartup)
+        tempEnableAbsoluteMovement := IniRead(Config.PersistentPositionsFile, "Settings", "EnableAbsoluteMovement",
+            Config.EnableAbsoluteMovement)
+        tempUseSecondaryMonitor := IniRead(Config.PersistentPositionsFile, "Settings", "UseSecondaryMonitor", Config.UseSecondaryMonitor
+        )
 
         if (tempEnableAudioFeedback != "")
             Config.EnableAudioFeedback := (tempEnableAudioFeedback = "true" || tempEnableAudioFeedback = "1")
@@ -156,6 +254,8 @@ class Config {
 
     static _SaveGeneralSettings() {
         IniWrite(Config.ColorTheme, Config.PersistentPositionsFile, "Settings", "ColorTheme")
+        IniWrite(Config.TooltipDuration, Config.PersistentPositionsFile, "Settings", "TooltipDuration")
+        IniWrite(Config.StatusMessageDuration, Config.PersistentPositionsFile, "Settings", "StatusMessageDuration")
     }
 
     static _SaveGUISettings() {
@@ -174,7 +274,8 @@ class Config {
     static _SaveHotkeySettings() {
         IniWrite(Config.PrefixKey, Config.PersistentPositionsFile, "Settings", "PrefixKey")
         IniWrite(Config.InvertModeToggleKey, Config.PersistentPositionsFile, "Settings", "InvertModeToggleKey")
-        IniWrite(Config.AbsoluteMovementToggleKey, Config.PersistentPositionsFile, "Settings", "AbsoluteMovementToggleKey")
+        IniWrite(Config.AbsoluteMovementToggleKey, Config.PersistentPositionsFile, "Settings",
+            "AbsoluteMovementToggleKey")
     }
 
     static _SaveFeatureSettings() {

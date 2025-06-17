@@ -19,7 +19,7 @@ class TooltipSystem {
 
     static _InitializeTooltip() {
         TooltipSystem.globalTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        TooltipSystem.globalTooltip.BackColor := "0x607D8B"
+        TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
         TooltipSystem.globalTooltip.MarginX := 5
         TooltipSystem.globalTooltip.MarginY := 2
         
@@ -34,7 +34,7 @@ class TooltipSystem {
 
     static _InitializeMouseTooltip() {
         TooltipSystem.mouseTooltip := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        TooltipSystem.mouseTooltip.BackColor := "0x4CAF50"
+        TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
         TooltipSystem.mouseTooltip.MarginX := 8
         TooltipSystem.mouseTooltip.MarginY := 4
         
@@ -113,11 +113,11 @@ class TooltipSystem {
         
         ; Set color based on type
         switch type {
-            case "success": TooltipSystem.mouseTooltip.BackColor := "0x4CAF50"
-            case "warning": TooltipSystem.mouseTooltip.BackColor := "0xFF9800"
-            case "info": TooltipSystem.mouseTooltip.BackColor := "0x2196F3"
-            case "error": TooltipSystem.mouseTooltip.BackColor := "0xF44336"
-            default: TooltipSystem.mouseTooltip.BackColor := "0x4CAF50"
+            case "success": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
+            case "warning": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipWarning")
+            case "info": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipInfo")
+            case "error": TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipError")
+            default: TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
         }
         
         TooltipSystem.mouseTooltip.textCtrl.Text := text
@@ -165,11 +165,11 @@ class TooltipSystem {
 
     static _GetTooltipColor(type) {
         switch type {
-            case "success": return "0x4CAF50"
-            case "warning": return "0xFF9800"
-            case "info": return "0x2196F3"
-            case "error": return "0xF44336"
-            default: return "0x607D8B"
+            case "success": return Config.GetThemeColor("TooltipSuccess")
+            case "warning": return Config.GetThemeColor("TooltipWarning")
+            case "info": return Config.GetThemeColor("TooltipInfo")
+            case "error": return Config.GetThemeColor("TooltipError")
+            default: return Config.GetThemeColor("TooltipDefault")
         }
     }
 

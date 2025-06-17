@@ -9,7 +9,7 @@ class StatusIndicator {
 
     static Initialize() {
         StatusIndicator.statusIndicator := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
-        StatusIndicator.statusIndicator.BackColor := "0xF44336"
+        StatusIndicator.statusIndicator.BackColor := Config.GetThemeColor("StatusOff")
         StatusIndicator.statusIndicator.MarginX := 4
         StatusIndicator.statusIndicator.MarginY := 2
         
@@ -31,19 +31,19 @@ class StatusIndicator {
         backgroundColor := ""
         
         if (!StateManager.IsMouseMode()) {
-            backgroundColor := "0xF44336"
+            backgroundColor := Config.GetThemeColor("StatusOff")
             mainStatus := "⌨️ OFF"
         } else if (StateManager.IsSaveMode()) {
-            backgroundColor := "0x9C27B0"
+            backgroundColor := Config.GetThemeColor("StatusSave")
             mainStatus := "💾 SAVE"
         } else if (StateManager.IsLoadMode()) {
-            backgroundColor := "0x2196F3"
+            backgroundColor := Config.GetThemeColor("StatusLoad")
             mainStatus := "📂 LOAD"
         } else if (StateManager.IsInvertedMode()) {
-            backgroundColor := "0xFF9800"
+            backgroundColor := Config.GetThemeColor("StatusInverted")
             mainStatus := "🔄 INV"
         } else {
-            backgroundColor := "0x4CAF50"
+            backgroundColor := Config.GetThemeColor("StatusOn")
             mainStatus := "🖱️ ON"
         }
         
@@ -99,20 +99,23 @@ class StatusIndicator {
         return (regularChars * 5) + (totalEmojis * 8)
     }
 
-    static ShowTemporaryMessage(text, type := "info", duration := 800) {
+    static ShowTemporaryMessage(text, type := "info") {
         StatusIndicator.statusIndicator.BackColor := StatusIndicator._GetColorForType(type)
         StatusIndicator.statusIndicator.textCtrl.Text := text
+        if (duration = "") {
+            duration := Config.StatusMessageDuration
+        }
         
         SetTimer(() => StatusIndicator.Update(), -duration)
     }
 
     static _GetColorForType(type) {
         switch type {
-            case "success": return "0x4CAF50"
-            case "warning": return "0xFF9800"
-            case "info": return "0x2196F3"
-            case "error": return "0xF44336"
-            default: return "0x607D8B"
+            case "success": return Config.GetThemeColor("TooltipSuccess")
+            case "warning": return Config.GetThemeColor("TooltipWarning")
+            case "info": return Config.GetThemeColor("TooltipInfo")
+            case "error": return Config.GetThemeColor("TooltipError")
+            default: return Config.GetThemeColor("TooltipDefault")
         }
     }
 

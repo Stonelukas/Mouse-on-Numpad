@@ -11,6 +11,7 @@ class SettingsGUI {
     static controls := Map()
     static isOpen := false
     static tempSettings := Map()
+    static isDarkMode := false ; Track dark mode state
 
     static Show() {
         if (SettingsGUI.isOpen) {
@@ -28,7 +29,14 @@ class SettingsGUI {
     static _CreateGUI() {
         ; Create main GUI window with fixed size
         SettingsGUI.gui := Gui("+Resize +MaximizeBox -MinimizeBox", "Mouse on Numpad Enhanced - Settings v3.0.0")
-        SettingsGUI.gui.BackColor := "0xF5F5F5"
+
+        ; Check if we should use dark mode based on current color theme
+        if (Config.ColorTheme = "Dark Mode" || Config.ColorTheme = "Minimal") {
+            SettingsGUI.isDarkMode := true
+        }
+        ; Apply theme colors
+        SettingsGUI._ApplyGUITheme()
+
         SettingsGUI.gui.MarginX := 0
         SettingsGUI.gui.MarginY := 0
 
@@ -41,6 +49,11 @@ class SettingsGUI {
 
         ; Initialize temp settings with current values
         SettingsGUI._InitializeTempSettings()
+
+        ; Add dark mode toggle button in top right
+        SettingsGUI.controls["DarkModeToggle"] := SettingsGUI.gui.Add("Button", "x720 y5 w70 h25", SettingsGUI.isDarkMode ?
+            "☀ Light" : "🌙 Dark")
+        SettingsGUI.controls["DarkModeToggle"].OnEvent("Click", (*) => SettingsGUI._ToggleDarkMode())
 
         ; Create tab control FIRST with explicit height to leave room for buttons
         SettingsGUI._CreateTabControl()
@@ -88,8 +101,13 @@ class SettingsGUI {
         SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.ScrollAccelerationRate
         SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.MaxScrollSpeed
         ; Visuals Settings
-        ; TODO: Add Colortheme Settings implemantation 
         SettingsGUI.tempSettings["ColorTheme"] := Config.ColorTheme
+        SettingsGUI.tempSettings["TooltipDuration"] := Config.TooltipDuration
+        SettingsGUI.tempSettings["StatusMessageDuration"] := Config.StatusMessageDuration
+        SettingsGUI.tempSettings["StatusX"] := Config.StatusX
+        SettingsGUI.tempSettings["StatusY"] := Config.StatusY
+        SettingsGUI.tempSettings["TooltipX"] := Config.TooltipX
+        SettingsGUI.tempSettings["TooltipY"] := Config.TooltipY
     }
 
     static _CreateBottomButtonBar() {
@@ -126,7 +144,7 @@ class SettingsGUI {
     static _CreateTabControl() {
         ; Create tab control with explicit height that leaves room for button bar
         ; Window height is 600, leave 90px for button area (including separator and margins)
-        SettingsGUI.controls["TabControl"] := SettingsGUI.gui.Add("Tab3", "x10 y10 w780 h500", [
+        SettingsGUI.controls["TabControl"] := SettingsGUI.gui.Add("Tab3", "x10 y35 w780 475", [
             "Movement", "Positions", "Visuals", "Hotkeys", "Advanced", "Profiles", "About"
         ])
 
@@ -145,7 +163,11 @@ class SettingsGUI {
         yOffset := 50
 
         ; Movement Speed Section
-        SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w200 h20 +0x200", "Movement Speed").SetFont("s10 Bold")
+        movementSpeedText := SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w200 h20 +0x200", "Movement Speed")
+        movementSpeedText.SetFont("s10 Bold")
+        if (SettingsGUI.isDarkMode) {
+            movementSpeedText.Opt("cE0E0E0")
+        }
 
         yOffset += 25
         SettingsGUI.gui.Add("Text", "x30 y" . yOffset . " w120", "Move Step:")
@@ -343,11 +365,14 @@ class SettingsGUI {
 
         SettingsGUI.controls["StatusVisibleOnStartup"] := SettingsGUI.gui.Add("CheckBox", "x30 y75 w300",
             "Show Status on Startup")
-        SettingsGUI.controls["StatusVisibleOnStartup"].Value := SettingsGUI.tempSettings["StatusVisibleOnStartup"] ? 1 : 0
+        SettingsGUI.controls["StatusVisibleOnStartup"].Value := SettingsGUI.tempSettings["StatusVisibleOnStartup"] ? 1 :
+            0
+        SettingsGUI.controls["StatusVisibleOnStartup"].OnEvent("Click", (*) => SettingsGUI._UpdateVisualsPreview())
 
         SettingsGUI.controls["UseSecondaryMonitor"] := SettingsGUI.gui.Add("CheckBox", "x30 y100 w300",
             "Use Secondary Monitor")
         SettingsGUI.controls["UseSecondaryMonitor"].Value := SettingsGUI.tempSettings["UseSecondaryMonitor"] ? 1 : 0
+        SettingsGUI.controls["UseSecondaryMonitor"].OnEvent("Click", (*) => SettingsGUI._UpdateVisualsPreview())
 
         ; Status Position Section
         SettingsGUI.gui.Add("Text", "x30 y140 w200 h20 +0x200", "Status Position").SetFont("s10 Bold")
@@ -355,11 +380,13 @@ class SettingsGUI {
         SettingsGUI.gui.Add("Text", "x30 y165 w80", "Status X:")
         SettingsGUI.controls["StatusX"] := SettingsGUI.gui.Add("Edit", "x110 y162 w150")
         SettingsGUI.controls["StatusX"].Text := Config.StatusX
+        SettingsGUI.controls["StatusX"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
         SettingsGUI.gui.Add("Text", "x270 y165 w200", "X position or expression")
 
         SettingsGUI.gui.Add("Text", "x30 y190 w80", "Status Y:")
         SettingsGUI.controls["StatusY"] := SettingsGUI.gui.Add("Edit", "x110 y187 w150")
         SettingsGUI.controls["StatusY"].Text := Config.StatusY
+        SettingsGUI.controls["StatusY"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
         SettingsGUI.gui.Add("Text", "x270 y190 w200", "Y position or expression")
 
         ; Tooltip Position Section
@@ -368,11 +395,13 @@ class SettingsGUI {
         SettingsGUI.gui.Add("Text", "x30 y255 w80", "Tooltip X:")
         SettingsGUI.controls["TooltipX"] := SettingsGUI.gui.Add("Edit", "x110 y252 w150")
         SettingsGUI.controls["TooltipX"].Text := Config.TooltipX
+        SettingsGUI.controls["TooltipX"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
         SettingsGUI.gui.Add("Text", "x270 y255 w200", "X position or expression")
 
         SettingsGUI.gui.Add("Text", "x30 y280 w80", "Tooltip Y:")
         SettingsGUI.controls["TooltipY"] := SettingsGUI.gui.Add("Edit", "x110 y277 w150")
         SettingsGUI.controls["TooltipY"].Text := Config.TooltipY
+        SettingsGUI.controls["TooltipY"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
         SettingsGUI.gui.Add("Text", "x270 y280 w200", "Y position or expression")
 
         ; Audio Feedback Section
@@ -381,6 +410,7 @@ class SettingsGUI {
         SettingsGUI.controls["EnableAudioFeedback"] := SettingsGUI.gui.Add("CheckBox", "x30 y345 w200",
             "Enable Audio Feedback")
         SettingsGUI.controls["EnableAudioFeedback"].Value := SettingsGUI.tempSettings["EnableAudioFeedback"] ? 1 : 0
+        SettingsGUI.controls["EnableAudioFeedback"].OnEvent("Click", (*) => SettingsGUI._UpdateVisualsPreview())
 
         ; Test Audio Button
         SettingsGUI.controls["TestAudio"] := SettingsGUI.gui.Add("Button", "x250 y343 w100 h25", "Test Audio")
@@ -390,15 +420,66 @@ class SettingsGUI {
         SettingsGUI.gui.Add("Text", "x450 y50 w200 h20 +0x200", "Color Themes").SetFont("s10 Bold")
 
         SettingsGUI.gui.Add("Text", "x450 y75 w80", "Theme:")
-        SettingsGUI.controls["ColorTheme"] := SettingsGUI.gui.Add("DropDownList", "x530 y72 w150", 
+        SettingsGUI.controls["ColorTheme"] := SettingsGUI.gui.Add("DropDownList", "x530 y72 w150",
             ["Default", "Dark Mode", "High Contrast", "Minimal"])
-        SettingsGUI.controls["ColorTheme"].Choose(1)
-        ; SettingsGUI.controls["ColorTheme"].OnEvent("ItemSelect", (*) => SettingsGUI._UpdateVisualsPreview())
+
+        ; Find and select the current theme with error checking
+        themeIndex := 1
+        currentTheme := ""
+
+        ; Ensure ColorTheme is properly initialized
+        if (SettingsGUI.tempSettings.Has("ColorTheme")) {
+            currentTheme := SettingsGUI.tempSettings["ColorTheme"]
+        } else {
+            currentTheme := Config.ColorTheme  ; Fallback to Config value
+            SettingsGUI.tempSettings["ColorTheme"] := currentTheme
+        }
+
+        ; Find the theme in the list
+        themeNames := ["Default", "Dark Mode", "High Contrast", "Minimal"]
+        loop themeNames.Length {
+            if (themeNames[A_Index] = SettingsGUI.tempSettings["ColorTheme"]) {
+                themeIndex := A_Index
+                break
+            }
+        }
+
+        SettingsGUI.controls["ColorTheme"].Choose(themeIndex)
+        SettingsGUI.controls["ColorTheme"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+
+        ; Tooltip Duration Settings
+        SettingsGUI.gui.Add("Text", "x450 y105 w80", "Tooltip Duration:")
+        SettingsGUI.controls["TooltipDuration"] := SettingsGUI.gui.Add("Edit", "x530 y102 w60 Number")
+        SettingsGUI.controls["TooltipDuration"].Text := SettingsGUI.tempSettings["TooltipDuration"]
+        SettingsGUI.controls["TooltipDurationUpDown"] := SettingsGUI.gui.Add("UpDown",
+            "x590 y102 w20 h20 Range500-10000",
+            SettingsGUI.tempSettings["TooltipDuration"])
+        SettingsGUI.gui.Add("Text", "x615 y105 w80", "ms")
+        SettingsGUI.controls["TooltipDuration"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+
+        ; Status Message Duration Settings
+        SettingsGUI.gui.Add("Text", "x450 y130 w80", "Status Duration:")
+        SettingsGUI.controls["StatusMessageDuration"] := SettingsGUI.gui.Add("Edit", "x530 y127 w60 Number")
+        SettingsGUI.controls["StatusMessageDuration"].Text := SettingsGUI.tempSettings["StatusMessageDuration"]
+        SettingsGUI.controls["StatusMessageDurationUpDown"] := SettingsGUI.gui.Add("UpDown",
+            "x590 y127 w20 h20 Range200-5000",
+            SettingsGUI.tempSettings["StatusMessageDuration"])
+        SettingsGUI.gui.Add("Text", "x615 y130 w80", "ms")
+        SettingsGUI.controls["StatusMessageDuration"].OnEvent("Change", (*) => SettingsGUI._UpdateVisualsPreview())
+
+        ; Theme Buttuns
+        SettingsGUI.controls["ApplyTheme"] := SettingsGUI.gui.Add("Button", "x450 y410 w140 h25",
+            "Apply Theme Now")
+        SettingsGUI.controls["ApplyTheme"].OnEvent("Click", (*) => SettingsGUI._ApplyThemeNow())
+
+        SettingsGUI.controls["ResetVisuals"] := SettingsGUI.gui.Add("Button", "x600 y410 w140 h25",
+            "Reset to Default")
+        SettingsGUI.controls["ResetVisuals"].OnEvent("Click", (*) => SettingsGUI._ResetVisuals())
 
         ; Preview Section
-        SettingsGUI.gui.Add("Text", "x450 y110 w200 h20 +0x200", "Preview").SetFont("s10 Bold")
-        SettingsGUI.controls["VisualPreview"] := SettingsGUI.gui.Add("Edit", 
-            "x450 y135 w300 h200 +VScroll +ReadOnly +Wrap")
+        SettingsGUI.gui.Add("Text", "x450 y150 w200 h20 +0x200", "Preview").SetFont("s10 Bold")
+        SettingsGUI.controls["VisualPreview"] := SettingsGUI.gui.Add("Edit",
+            "x450 y175 w300 h150 +VScroll +ReadOnly +Wrap")
         SettingsGUI.controls["VisualPreview"].SetFont("s8", "Consolas")
         SettingsGUI._UpdateVisualsPreview()
 
@@ -676,7 +757,7 @@ class SettingsGUI {
             SettingsGUI.gui.GetPos(, , &width, &height)
 
             ; Resize tab control to fit above button bar (leave 100px for buttons)
-            SettingsGUI.controls["TabControl"].Move(10, 10, width - 20, height - 100)
+            SettingsGUI.controls["TabControl"].Move(10, 35, width - 20, height - 125)
 
             ; Update button positions
             buttonY := height - 65
@@ -685,6 +766,11 @@ class SettingsGUI {
             ; Update separator line
             if (SettingsGUI.controls.Has("Separator")) {
                 SettingsGUI.controls["Separator"].Move(10, separatorY, width - 20, 1)
+            }
+
+            ; Update dark mode toggle position
+            if (SettingsGUI.controls.Has("DarkModeToggle")) {
+                SettingsGUI.controls["DarkModeToggle"].Move(width - 80, 5)
             }
 
             ; Update button positions
@@ -784,15 +870,95 @@ class SettingsGUI {
         }
     }
 
+    static _ColorToRGB(hexcolor) {
+        ; Remove 0x prefix if present
+        hex := SubStr(hexcolor, 3)
+
+        ; Convert to RGB values
+        r := Integer("0x" . SubStr(hex, 1, 2))
+        g := Integer("0x" . SubStr(hex, 3, 2))
+        b := Integer("0x" . SubStr(hex, 5, 2))
+
+        return "RGB(" . r . ", " . g . ", " . b . ")"
+    }
+
     static _UpdateVisualsPreview() {
         try {
-            ; TODO: add the implemantation for this
+            ; Get current selections
             colorTheme := SettingsGUI.controls["ColorTheme"].Text
-            previewText := "=== STATUS, TOOLTIP & COLORTHEME PREVIEW ===`r`n`r`n"
-            previewText := "COLORTHEME SETTINGS:`r`n"
-            previewText := "Current Theme: " . colorTheme "`r`n"
-            previewText := "Status Color: Green`r`n"
-            previewText := "Tooltip Style: Standard`r`n"
+            tooltipDuration := SettingsGUI.controls["TooltipDuration"].Text
+            statusDuration := SettingsGUI.controls["StatusMessageDuration"].Text
+            statusVisible := SettingsGUI.controls["StatusVisibleOnStartup"].Value
+            useSecondary := SettingsGUI.controls["UseSecondaryMonitor"].Value
+            audioEnabled := SettingsGUI.controls["EnableAudioFeedback"].Value
+
+            ; Store temp theme
+            SettingsGUI.tempSettings["ColorTheme"] := colorTheme
+            SettingsGUI.tempSettings["TooltipDuration"] := tooltipDuration
+            SettingsGUI.tempSettings["StatusMessageDuration"] := statusDuration
+
+            previewText := "=== VISUAL SETTINGS PREVIEW ===`r`n`r`n"
+
+            ; Theme Settings
+            previewText .= "🎨 COLOR THEME SETTINGS:`r`n"
+            previewText .= "• Current Theme: " . colorTheme . "`r`n"
+            previewText .= "• Tooltip Duration: " . tooltipDuration . " ms`r`n"
+            previewText .= "• Status Message Duration: " . statusDuration . " ms`r`n`r`n"
+
+            ; Display Settings
+            previewText .= "📺 DISPLAY SETTINGS:`r`n"
+            previewText .= "• Status Visible on Startup: " . statusVisible . "`r`n"
+            previewText .= "• Use Secondary Monitor: " . useSecondary . "`r`n"
+            previewText .= "• Audio Feedback: " . audioEnabled . "`r`n`r`n"
+
+            ; Position Settings
+            previewText .= "📍 POSITION SETTINGS:`r`n"
+            previewText .= "• Status Position: " . SettingsGUI.controls["StatusX"].Text . ", " . SettingsGUI.controls[
+                "StatusY"].Text . "`r`n"
+            previewText .= "• Tooltip Position: " . SettingsGUI.controls["TooltipX"].Text . ", " . SettingsGUI.controls[
+                "TooltipY"].Text . "`r`n`r`n"
+
+            ; Color Preview
+            previewText .= "🎨 THEME COLOR PREVIEW:`r`n"
+            ; Get the colors for this theme
+            if (Config.ColorThemes.Has(colorTheme)) {
+                theme := Config.ColorThemes[colorTheme]
+
+                previewText .= "Status Colors:`r`n"
+                previewText .= "• ON: " . SettingsGUI._ColorToRGB(theme["StatusOn"]) . "`r`n"
+                previewText .= "• OFF: " . SettingsGUI._ColorToRGB(theme["StatusOff"]) . "`r`n"
+                previewText .= "• Inverted: " . SettingsGUI._ColorToRGB(theme["StatusInverted"]) . "`r`n"
+                previewText .= "• Save Mode: " . SettingsGUI._ColorToRGB(theme["StatusSave"]) . "`r`n"
+                previewText .= "• Load Mode: " . SettingsGUI._ColorToRGB(theme["StatusLoad"]) . "`r`n`r`n"
+
+                previewText .= "Tooltip Colors:`r`n"
+                previewText .= "• Default: " . SettingsGUI._ColorToRGB(theme["TooltipDefault"]) . "`r`n"
+                previewText .= "• Success: " . SettingsGUI._ColorToRGB(theme["TooltipSuccess"]) . "`r`n"
+                previewText .= "• Warning: " . SettingsGUI._ColorToRGB(theme["TooltipWarning"]) . "`r`n"
+                previewText .= "• Info: " . SettingsGUI._ColorToRGB(theme["TooltipInfo"]) . "`r`n"
+                previewText .= "• Error: " . SettingsGUI._ColorToRGB(theme["TooltipError"]) . "`r`n`r`n"
+            }
+
+            ; Theme Description
+            previewText .= "📝 THEME DESCRIPTION:`r`n"
+            switch colorTheme {
+                case "Default":
+                    previewText .= "Material Design inspired colors`r`n"
+                    previewText .= "Bright and clear visibility`r`n"
+                    previewText .= "Good for all lighting conditions`r`n"
+                case "Dark Mode":
+                    previewText .= "Darker, muted colors`r`n"
+                    previewText .= "Easier on the eyes in low light`r`n"
+                    previewText .= "Reduced eye strain`r`n"
+                case "High Contrast":
+                    previewText .= "Maximum visibility colors`r`n"
+                    previewText .= "Best for accessibility`r`n"
+                    previewText .= "Clear distinctions between states`r`n"
+                case "Minimal":
+                    previewText .= "Grayscale theme`r`n"
+                    previewText .= "Non-distracting appearance`r`n"
+                    previewText .= "Professional look`r`n"
+            }
 
             SettingsGUI.controls["VisualPreview"].Text := previewText
         } catch {
@@ -870,13 +1036,82 @@ class SettingsGUI {
     }
 
     static _TestStatusPosition() {
-        MsgBox("Status position test will show a preview of the status indicator at the configured position.",
-            "Test Status", "T3")
+        ; Create test status indicator at configured position
+        xPos := SettingsGUI.controls["StatusX"].text
+        yPos := SettingsGUI.controls["StatusY"].text
+
+        ; Evaluate expressions
+        testX := Config.TooltipX is Number ? xPos : MonitorUtils.EvaluateExpression(xPos)
+        testY := Config.TooltipY is Number ? yPos : MonitorUtils.EvaluateExpression(yPos)
+
+        ; Get monitor position
+        mon := MonitorUtils.GetMonitorInfo()
+        finalX := mon.left + testX
+        finalY := mon.top + testY
+
+        ; Create test GUI
+        testGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
+        testGui.BackColor := Config.GetThemeColor("StatusOn")
+        testGui.MarginX := 4
+        testGui.MarginY := 2
+
+        testGui.textCtrl := testGui.Add("Text", "cWhite Left h18", "🖱️ TEST STATUS")
+        testGui.textCtrl.SetFont("s8 Bold", "Segoe UI")
+
+        testGui.Show("x" . finalX . " y" . finalY . " w100 h22 NoActivate")
+
+        ; Flash and destroy after 3 seconds
+        loop 3 {
+            Sleep(300)
+            testGui.Hide()
+            Sleep(300)
+            testGui.Show("NoActivate")
+        }
+        testGui.Destroy()
+
+        MsgBox("Status position test completed at:`nX: " . finalX . ", Y: " . finalY, "Test Complete", "Iconi T3")
+
     }
 
     static _TestTooltipPosition() {
-        MsgBox("Tooltip position test will show a preview of tooltips at the configured position.", "Test Tooltip",
-            "T3")
+        ; Create test tooltip at configured position
+        xPos := SettingsGUI.controls["TooltipX"].Text
+        yPos := SettingsGUI.controls["TooltipY"].Text
+
+        ; Evaluate expressions
+        testX := Config.TooltipX is Number ? xPos : MonitorUtils.EvaluateExpression(xPos)
+        testY := Config.TooltipY is Number ? yPos : MonitorUtils.EvaluateExpression(yPos)
+
+        ; Get monitor position
+        mon := MonitorUtils.GetMonitorInfo()
+        finalX := mon.left + testX
+        finalY := mon.top + testY
+
+        ; Create test GUI
+        testGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
+        testGui.BackColor := Config.GetThemeColor("TooltipSuccess")
+        testGui.MarginX := 8
+        testGui.MarginY := 4
+
+        testGui.textCtrl := testGui.Add("Text", "cWhite Center w120 h20", "🎯 TEST TOOLTIP")
+        testGui.textCtrl.SetFont("s9 Bold", "Segoe UI")
+
+        testGui.Show("x" . finalX . " y" . finalY . " w140 h28 NoActivate")
+
+        ; Show different colors
+        colors := ["TooltipSuccess", "TooltipWarning", "TooltipInfo", "TooltipError", "TooltipDefault"]
+        labels := ["✓ Success", "⚠ Warning", "ℹ Info", "✕ Error", "• Default"]
+
+        for i, colorType in colors {
+            Sleep(800)
+            testGui.BackColor := Config.GetThemeColor(colorType)
+            testGui.textCtrl.Text := labels[i]
+        }
+
+        Sleep(800)
+        testGui.Destroy()
+
+        MsgBox("Tooltip position test completed at:`nX: " . finalX . ", Y: " . finalY, "Test Complete", "Iconi T3")
     }
 
     static _ApplySettings() {
@@ -911,6 +1146,19 @@ class SettingsGUI {
             Config.TooltipX := SettingsGUI.controls["TooltipX"].Text
             Config.TooltipY := SettingsGUI.controls["TooltipY"].Text
 
+            ; Color Theme Settings
+            Config.ColorTheme := SettingsGUI.controls["ColorTheme"].Text
+            Config.TooltipDuration := Integer(SettingsGUI.controls["TooltipDuration"].Text)
+            Config.StatusMessageDuration := Integer(SettingsGUI.controls["StatusMessageDuration"].Text)
+
+            ; Update tooltip colors if theme changed
+            if (TooltipSystem.globalTooltip != "") {
+                TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
+            }
+            if (TooltipSystem.mouseTooltip != "") {
+                TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
+            }
+
             ; Save configuration
             Config.Save()
 
@@ -922,6 +1170,69 @@ class SettingsGUI {
 
         } catch Error as e {
             MsgBox("Error applying settings: " . e.Message . "`n`nPlease check your input values.", "Error", "IconX")
+        }
+    }
+
+    static _ApplyThemeNow() {
+        ;Apply the selected theme immediately without saving to config
+        Config.ColorTheme := SettingsGUI.controls["ColorTheme"].Text
+        Config.TooltipDuration := Integer(SettingsGUI.controls["TooltipDuration"].Text)
+        Config.StatusMessageDuration := Integer(SettingsGUI.controls["StatusMessageDuration"].Text)
+
+        ;Update all active GUI elements
+        StatusIndicator.Update()
+
+        ;Recreate tooltips with new colors
+        if (TooltipSystem.globalTooltip != "") {
+            TooltipSystem.globalTooltip.BackColor := Config.GetThemeColor("TooltipDefault")
+        }
+        if (TooltipSystem.mouseTooltip != "") {
+            TooltipSystem.mouseTooltip.BackColor := Config.GetThemeColor("TooltipSuccess")
+        }
+
+        ;Show confirmation
+        confirmGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox +LastFound -Caption +Border", "")
+        confirmGui.BackColor := Config.GetThemeColor("TooltipSuccess")
+        confirmGui.MarginX := 10
+        confirmGui.MarginY := 5
+
+        confirmGui.textCtrl := confirmGui.Add("Text", "cWhite Center w150 h20", "✓ Theme Applied!")
+        confirmGui.textCtrl.SetFont("s10 Bold", "Segoe UI")
+
+        centerX := (A_ScreenWidth - 170) // 2
+        centerY := (A_ScreenHeight - 30) // 2
+        confirmGui.Show("x" . centerX . " y" . centerY . " w170 h30 NoActivate")
+
+        SetTimer(() => confirmGui.Destroy(), -2000)
+    }
+
+    static _ResetVisuals() {
+        result := MsgBox(
+            "Reset all visual settings to default?`n`nThis will reset:`n• Color theme to Default`n• All positions to default`n• Tooltip durations to default",
+            "Reset Visual Settings", "YesNo Icon?")
+
+        if (result = "Yes") {
+            ; Reset to defaults
+            SettingsGUI.controls["ColorTheme"].Choose(1)  ; Default theme
+            SettingsGUI.controls["TooltipDuration"].Text := "3000"
+            SettingsGUI.controls["StatusMessageDuration"].Text := "800"
+            SettingsGUI.controls["StatusX"].Text := "Round(A_ScreenWidth * 0.65)"
+            SettingsGUI.controls["StatusY"].Text := "15"
+            SettingsGUI.controls["TooltipX"].Text := "20"
+            SettingsGUI.controls["TooltipY"].Text := "A_ScreenHeight - 80"
+            SettingsGUI.controls["StatusVisibleOnStartup"].Value := 1
+            SettingsGUI.controls["UseSecondaryMonitor"].Value := 0
+            SettingsGUI.controls["EnableAudioFeedback"].Value := 0
+
+            ; Update temp settings
+            SettingsGUI.tempSettings["ColorTheme"] := "Default"
+            SettingsGUI.tempSettings["TooltipDuration"] := 3000
+            SettingsGUI.tempSettings["StatusMessageDuration"] := 800
+
+            ; Update preview
+            SettingsGUI._UpdateVisualsPreview()
+
+            MsgBox("Visual settings have been reset to defaults.", "Reset Complete", "Iconi T2")
         }
     }
 
@@ -1618,5 +1929,88 @@ class SettingsGUI {
         ; Show confirmation
         MsgBox("Monitor configuration refreshed!`n`nPosition descriptions have been updated.", "Monitors Refreshed",
             "Iconi T2")
+    }
+
+    ; Dark Mode Methods
+    static _ApplyGUITheme() {
+        if (SettingsGUI.isDarkMode) {
+            ; Dark mode colors
+            SettingsGUI.gui.BackColor := "0x1E1E1E"  ; Dark background
+
+            ; We'll need to update text colors after controls are created
+            ; Store theme colors for later use
+            SettingsGUI.darkBgColor := "0x1E1E1E"
+            SettingsGUI.darkControlBg := "0x2D2D30"
+            SettingsGUI.darkTextColor := "0xE0E0E0"
+            SettingsGUI.darkBorderColor := "0x3E3E42"
+        } else {
+            ; Light mode colors (default)
+            SettingsGUI.gui.BackColor := "0xF5F5F5"
+
+            SettingsGUI.lightBgColor := "0xF5F5F5"
+            SettingsGUI.lightControlBg := "0xFFFFFF"
+            SettingsGUI.lightTextColor := "0x000000"
+            SettingsGUI.lightBorderColor := "0xCCCCCC"
+        }
+    }
+
+    static _ToggleDarkMode() {
+        SettingsGUI.isDarkMode := !SettingsGUI.isDarkMode
+
+        ; Update button text
+        SettingsGUI.controls["DarkModeToggle"].Text := SettingsGUI.isDarkMode ? "☀ Light" : "🌙 Dark"
+
+        ; Apply theme
+        SettingsGUI._ApplyGUITheme()
+
+        ; Update all controls
+        SettingsGUI._UpdateAllControlColors()
+
+        ; Show feedback
+        feedbackGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "")
+        feedbackGui.BackColor := SettingsGUI.isDarkMode ? "0x2D2D30" : "0xF0F0F0"
+        feedbackGui.MarginX := 10
+        feedbackGui.MarginY := 5
+
+        feedbackText := feedbackGui.Add("Text", "Center w150 h20",
+            SettingsGUI.isDarkMode ? "🌙 Dark Mode ON" : "☀ Light Mode ON")
+        feedbackText.SetFont("s10 Bold", "Segoe UI")
+
+        if (SettingsGUI.isDarkMode) {
+            feedbackText.Opt("cWhite")
+        }
+
+        centerX := (A_ScreenWidth - 170) // 2
+        centerY := (A_ScreenHeight - 30) // 2
+        feedbackGui.Show("x" . centerX . " y" . centerY . " w170 h30 NoActivate")
+
+        SetTimer(() => feedbackGui.Destroy(), -1500)
+    }
+
+    static _UpdateAllControlColors() {
+        ; This would require keeping track of all text controls
+        ; For now, we'll need to recreate the GUI for full theme change
+        ; In a production app, you'd iterate through all controls and update their colors
+
+        ; Store current tab
+        currentTab := SettingsGUI.controls["TabControl"].Value
+
+        ; Close and recreate
+        SettingsGUI.gui.Destroy()
+        SettingsGUI.isOpen := false
+
+        ; Recreate with new theme
+        SettingsGUI.Show()
+
+        ; Restore tab
+        SettingsGUI.controls["TabControl"].Choose(currentTab)
+    }
+
+    static _GetThemeTextColor() {
+        return SettingsGUI.isDarkMode ? "cE0E0E0" : "c000000"
+    }
+
+    static _GetThemeControlBg() {
+        return SettingsGUI.isDarkMode ? "0x2D2D30" : "0xFFFFFF"
     }
 }
