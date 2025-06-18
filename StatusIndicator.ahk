@@ -61,7 +61,7 @@ class StatusIndicator {
             mainStatus := "🖱️ ON"
         }
         
-        movementMode := Config.get("Movement.EnableAbsoluteMovement") ? "🎯 ABS" : "🔄 REL"
+        movementMode := Config.Get("Movement.EnableAbsoluteMovement") ? "🎯 ABS" : "🔄 REL"
         
         heldButtons := ""
         if (StateManager.IsLeftButtonHeld() || GetKeyState("LButton", "P")) {
@@ -92,7 +92,7 @@ class StatusIndicator {
         StatusIndicator.statusIndicator.BackColor := backgroundColor
         
         ; Get contrasting text color and apply it
-        textColor := GetContrastingColor(backgroundColor)
+        textColor := ColorThemeManager.GetContrastingColor(backgroundColor)
         ; Remove the 0x prefix if present for SetFont
         if (SubStr(textColor, 1, 2) = "0x") {
             textColor := SubStr(textColor, 3)
@@ -129,7 +129,7 @@ class StatusIndicator {
         StatusIndicator.statusIndicator.BackColor := bgColor
         
         ; Update text color for contrast
-        textColor := GetContrastingColor(bgColor)
+        textColor := ColorThemeManager.GetContrastingColor(bgColor)
         if (SubStr(textColor, 1, 2) = "0x") {
             textColor := SubStr(textColor, 3)
         }
@@ -182,7 +182,7 @@ class StatusIndicator {
         tempStatusGui.BackColor := bgColor
         
         ; Get contrasting text color
-        textColor := GetContrastingColor(bgColor)
+        textColor := ColorThemeManager.GetContrastingColor(bgColor)
         if (SubStr(textColor, 1, 2) = "0x") {
             textColor := SubStr(textColor, 3)
         }
@@ -206,7 +206,7 @@ class StatusIndicator {
         tempGui.MarginX := 8
         tempGui.MarginY := 4
         
-        if (Config.get("Visual.UseSecondaryMonitor")) {
+        if (Config.Get("Visual.UseSecondaryMonitor")) {
             bgColor := ColorThemeManager.GetColor("statusOn")
             statusText := "Secondary Monitor ON"
         } else {
@@ -217,7 +217,7 @@ class StatusIndicator {
         tempGui.BackColor := bgColor
         
         ; Get contrasting text color
-        textColor := GetContrastingColor(bgColor)
+        textColor := ColorThemeManager.GetContrastingColor(bgColor)
         if (SubStr(textColor, 1, 2) = "0x") {
             textColor := SubStr(textColor, 3)
         }

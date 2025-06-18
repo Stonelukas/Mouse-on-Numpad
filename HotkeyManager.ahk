@@ -1,5 +1,5 @@
 ; ######################################################################################################################
-; Hotkey Manager Module - Complete with all hold features and NumpadDot
+; Hotkey Manager Module - Fixed version with corrected typos and handlers
 ; ######################################################################################################################
 
 #Requires AutoHotkey v2.0
@@ -104,22 +104,22 @@ class HotkeyManager {
             },
             "MoveDiagNW", {
                 handler: (*) => MouseActions.MoveInDirection("UpLeft"), 
-                default: "Numpad8 + Numpad4",
+                default: "Numpad7",  ; Fixed: removed invalid combination
                 description: "Move Diagonal Up-Left"
             },
             "MoveDiagNE", {
                 handler: (*) => MouseActions.MoveInDirection("UpRight"), 
-                default: "Numpad8 + Numpad6",
+                default: "Numpad9",  ; Fixed: removed invalid combination
                 description: "Move Diagonal Up-Right"
             },
             "MoveDiagSW", {
                 handler: (*) => MouseActions.MoveInDirection("DownLeft"), 
-                default: "Nunpad4 + Numpad2",
+                default: "Numpad1",  ; Fixed: typo and removed invalid combination
                 description: "Move Diagonal Down-Left"
             },
             "MoveDiagSE", {
                 handler: (*) => MouseActions.MoveInDirection("DownRight"), 
-                default: "Numpad6 + Numpad2",
+                default: "Numpad3",  ; Fixed: removed invalid combination
                 description: "Move Diagonal Down-Right"
             }
         )
@@ -167,26 +167,26 @@ class HotkeyManager {
             }
         )
         
-        ; Scroll hotkeys
+        ; Scroll hotkeys - Fixed conflicts with movement keys
         scrollKeys := Map(
             "ScrollUp", {
-                handler: (*) => MouseActions.ScrollWithAcceleration("Up", "Numpad7"),
-                default: "Numpad7",
+                handler: (*) => MouseActions.ScrollWithAcceleration("Up", "!Numpad8"),
+                default: "!Numpad8",  ; Alt+Numpad8 to avoid conflict
                 description: "Scroll Up"
             },
             "ScrollDown", {
-                handler: (*) => MouseActions.ScrollWithAcceleration("Down", "Numpad1"),
-                default: "Numpad1",
+                handler: (*) => MouseActions.ScrollWithAcceleration("Down", "!Numpad2"),
+                default: "!Numpad2",  ; Alt+Numpad2 to avoid conflict
                 description: "Scroll Down"
             },
             "ScrollLeft", {
-                handler: (*) => MouseActions.ScrollWithAcceleration("Left", "Numpad9"),
-                default: "Numpad9",
+                handler: (*) => MouseActions.ScrollWithAcceleration("Left", "!Numpad4"),
+                default: "!Numpad4",  ; Alt+Numpad4 to avoid conflict
                 description: "Scroll Left"
             },
             "ScrollRight", {
-                handler: (*) => MouseActions.ScrollWithAcceleration("Right", "Numpad3"),
-                default: "Numpad3",
+                handler: (*) => MouseActions.ScrollWithAcceleration("Right", "!Numpad6"),
+                default: "!Numpad6",  ; Alt+Numpad6 to avoid conflict
                 description: "Scroll Right"
             }
         )
@@ -291,10 +291,28 @@ class HotkeyManager {
                 } catch as e {
                     return false
                 }
+            } else {
+                oldInfo.currentKey := ""
             }
         }
         
         return true
+    }
+    
+    ; Get list of all hotkeys for settings GUI
+    static GetHotkeyList() {
+        hotkeyList := []
+        
+        for configKey, info in HotkeyManager.hotkeys {
+            hotkeyList.Push({
+                configKey: configKey,
+                description: info.description,
+                currentKey: info.currentKey,
+                default: info.default
+            })
+        }
+        
+        return hotkeyList
     }
     
     ; =====================================
@@ -387,7 +405,7 @@ class HotkeyManager {
             TooltipSystem.ShowMouseAction("🖱️ Right Held", "success")
             
             if (Config.Get("Visual.AudioFeedback", false)) {
-                SoundBeep(600, 100)
+                SoundBeep(500, 100)
             }
         }
         
@@ -418,13 +436,17 @@ class HotkeyManager {
         StatusIndicator.Update()
     }
     
-    ; Special NumpadDot functionality
+    static ToggleInvertedMode(*) {
+        StateManager.ToggleInvertedMode()
+    }
+    
+    ; Special NumpadDot handler
     static NumpadDotSpecial(*) {
         wasInvertedMode := StateManager.IsInvertedMode()
         wasRightHeld := StateManager.IsRightButtonHeld()
         
         if (wasInvertedMode && wasRightHeld) {
-            StateManager.ToggleInvertedMode()
+            StateManager.SetInvertedMode(false)
             StateManager.SetRightButtonHeld(false)
             Click("Right", , , , , "U")
             TooltipSystem.ShowMouseAction("🔄🖱️ Both Off", "warning")
@@ -450,54 +472,5 @@ class HotkeyManager {
             Sleep(150)
             StatusIndicator.Update()
         }
-    }
-    
-    ; Toggle inverted mode
-    static ToggleInvertedMode(*) {
-        wasInvertedMode := StateManager.IsInvertedMode()
-        
-        if (wasInvertedMode) {
-            StateManager.ToggleInvertedMode()
-            TooltipSystem.ShowMouseAction("🔄 Inverted Off", "warning")
-            Sleep(150)
-            StatusIndicator.Update()
-        } else {
-            StateManager.ToggleInvertedMode()
-            TooltipSystem.ShowMouseAction("🔄 Inverted On", "success")
-            Sleep(150)
-            StatusIndicator.Update()
-        }
-    }
-    
-    ; Get all registered hotkeys for display
-    static GetHotkeyList() {
-        list := []
-        
-        ; Create a proper order for display
-        orderedKeys := [
-            "ToggleMouseMode", "SaveMode", "LoadMode", "UndoMove",
-            "ToggleStatus", "ReloadScript", "OpenSettings",
-            "SecondaryMonitor", "MonitorTest",
-            "MoveLeft", "MoveRight", "MoveUp", "MoveDown",
-            "MoveDiagNW", "MoveDiagNE", "MoveDiagSW", "MoveDiagSE",
-            "MouseClick", "RightClick", "MiddleClick",
-            "ToggleLeftHold", "ToggleRightHold", "ToggleMiddleHold",
-            "ScrollUp", "ScrollDown", "ScrollLeft", "ScrollRight",
-            "SpecialNumpadDot", "ToggleInverted"
-        ]
-        
-        for configKey in orderedKeys {
-            if (HotkeyManager.hotkeys.Has(configKey)) {
-                info := HotkeyManager.hotkeys[configKey]
-                list.Push({
-                    configKey: configKey,
-                    description: info.description,
-                    currentKey: info.currentKey,
-                    default: info.default
-                })
-            }
-        }
-        
-        return list
     }
 }

@@ -16,11 +16,11 @@
 #Include "PositionMemory.ahk"
 #Include "HotkeyManager.ahk"
 
-; Include Settings GUI modules
+; Include Settings GUI modules - IMPORTANT: Base classes must come first
 #Include "GUI\SettingsGUI_Base.ahk"
 #Include "GUI\SettingsGUI_TabManager.ahk"
 
-; Include Tab modules
+; Include Tab modules - IMPORTANT: These must be included BEFORE they are used
 #Include "GUI\Tabs\MovementTabModule.ahk"
 #Include "GUI\Tabs\PositionsTabModule.ahk"
 #Include "GUI\Tabs\VisualsTabModule.ahk"

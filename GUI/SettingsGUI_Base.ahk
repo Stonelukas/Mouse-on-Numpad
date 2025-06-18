@@ -91,21 +91,21 @@ class SettingsGUI {
     static _InitializeTempSettings() {
         ; Copy current settings to temp storage for preview
         ; Movement Settings
-        SettingsGUI.tempSettings["MoveStep"] := Config.get("Movement.BaseSpeed")
-        SettingsGUI.tempSettings["MoveDelay"] := Config.get("Movement.MoveDelay")
-        SettingsGUI.tempSettings["AccelerationRate"] := Config.get("Movement.AccelerationRate")
-        SettingsGUI.tempSettings["MaxSpeed"] := Config.get("Movement.MaxSpeed")
-        SettingsGUI.tempSettings["EnableAbsoluteMovement"] := Config.get("Movement.EnableAbsoluteMovement")
-        SettingsGUI.tempSettings["MaxSavedPositions"] := Config.get("Positions.MaxSaved")
-        SettingsGUI.tempSettings["MaxUndoLevels"] := Config.get("Movement.MaxUndoLevels")
-        SettingsGUI.tempSettings["EnableAudioFeedback"] := Config.get("Visual.EnableAudioFeedback")
+        SettingsGUI.tempSettings["MoveStep"] := Config.Get("Movement.BaseSpeed")
+        SettingsGUI.tempSettings["MoveDelay"] := Config.Get("Movement.MoveDelay")
+        SettingsGUI.tempSettings["AccelerationRate"] := Config.Get("Movement.AccelerationRate")
+        SettingsGUI.tempSettings["MaxSpeed"] := Config.Get("Movement.MaxSpeed")
+        SettingsGUI.tempSettings["EnableAbsoluteMovement"] := Config.Get("Movement.EnableAbsoluteMovement")
+        SettingsGUI.tempSettings["MaxSavedPositions"] := Config.Get("Positions.MaxSaved")
+        SettingsGUI.tempSettings["MaxUndoLevels"] := Config.Get("Movement.MaxUndoLevels")
+        SettingsGUI.tempSettings["EnableAudioFeedback"] := Config.Get("Visual.EnableAudioFeedback")
         SettingsGUI.tempSettings["StatusVisibleOnStartup"] := Config.StatusVisibleOnStartup
-        SettingsGUI.tempSettings["UseSecondaryMonitor"] := Config.get("Visual.UseSecondaryMonitor")
-        SettingsGUI.tempSettings["ScrollStep"] := Config.get("Movement.ScrollStep")
-        SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.get("Movement.ScrollAccelerationRate")
-        SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.get("Movement.MaxScrollSpeed")
+        SettingsGUI.tempSettings["UseSecondaryMonitor"] := Config.Get("Visual.UseSecondaryMonitor")
+        SettingsGUI.tempSettings["ScrollStep"] := Config.Get("Movement.ScrollStep")
+        SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.Get("Movement.ScrollAccelerationRate")
+        SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.Get("Movement.MaxScrollSpeed")
         ; Visuals Settings
-        SettingsGUI.tempSettings["ColorTheme"] := Config.get("Visual.ColorTheme")
+        SettingsGUI.tempSettings["ColorTheme"] := Config.Get("Visual.ColorTheme")
     }
 
     static _CreateBottomButtonBar() {
@@ -211,7 +211,7 @@ class SettingsGUI {
         if (allData.Has("Movement")) {
             movementData := allData["Movement"]
             ; OLD (INCORRECT):
-            ; Config.get("Movement.BaseSpeed") := movementData["moveStep"]
+            ; Config.Get("Movement.BaseSpeed") := movementData["moveStep"]
 
             ; NEW (CORRECT):
             Config.Set("Movement.BaseSpeed", movementData["moveStep"])

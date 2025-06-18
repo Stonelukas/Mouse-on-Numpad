@@ -63,7 +63,7 @@ class MovementTabModule extends BaseTabModule {
         yOffset += 25
         this.AddControl("EnableAbsoluteMovement", this.gui.Add("CheckBox", "x30 y" . yOffset . " w300",
             "Enable Absolute Movement"))
-        this.controls["EnableAbsoluteMovement"].Value := Config.get("Movement.EnableAbsoluteMovement") ? 1 : 0
+        this.controls["EnableAbsoluteMovement"].Value := Config.Get("Movement.EnableAbsoluteMovement") ? 1 : 0
         this.controls["EnableAbsoluteMovement"].OnEvent("Click", (*) => this._UpdateMovementPreview())
         yOffset += 20
         this.gui.Add("Text", "x50 y" . yOffset . " w400", "Use absolute coordinates instead of relative movement")

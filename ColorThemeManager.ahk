@@ -1,155 +1,110 @@
+; ######################################################################################################################
+; Color Theme Manager Module - Fixed version with correct Config method calls
+; ######################################################################################################################
+
 #Requires AutoHotkey v2.0
 
-; ######################################################################################################################
-; Fixed Color Theme Manager - Corrected Static Method Syntax
-; ######################################################################################################################
-
 class ColorThemeManager {
-
-    ; Theme definitions
+    ; Store available themes
     static themes := Map(
         "Default", {
             name: "Default",
-            description: "Standard blue/green theme",
             colors: {
-                ; GUI backgrounds
-                guiBackground: "0xF5F5F5",
-                guiTextColor: "0x000000",
-                
-                ; Status indicator colors
-                statusOff: "0xF44336",         ; Red
-                statusOn: "0x4CAF50",          ; Green
-                statusSave: "0x9C27B0",        ; Purple
-                statusLoad: "0x2196F3",        ; Blue
-                statusInverted: "0xFF9800",    ; Orange
-                
-                ; Tooltip colors
-                tooltipDefault: "0x607D8B",    ; Blue-grey
-                tooltipSuccess: "0x4CAF50",    ; Green
-                tooltipWarning: "0xFF9800",    ; Orange
-                tooltipInfo: "0x2196F3",       ; Blue
-                tooltipError: "0xF44336",      ; Red
-                
-                ; Text colors
-                textDefault: "0xFFFFFF",       ; White
-                textDark: "0x000000",          ; Black
-                
-                ; Control backgrounds
-                editBackground: "0xFFFFFF",
-                editText: "0x000000",
-                listViewBackground: "0xFFFFFF",
-                listViewText: "0x000000"
+                info: 0x4A90E2,      ; Blue
+                success: 0x7ED321,   ; Green
+                warning: 0xF5A623,   ; Orange
+                error: 0xD0021B,     ; Red
+                background: 0x1A1A1A, ; Dark background
+                text: 0xFFFFFF,      ; White text
+                inactive: 0x808080,  ; Gray
+                accent: 0x00D4FF     ; Cyan accent
             }
         },
-        
         "Dark Mode", {
             name: "Dark Mode",
-            description: "Dark theme for reduced eye strain",
             colors: {
-                ; GUI backgrounds
-                guiBackground: "0x1E1E1E",
-                guiTextColor: "0xE0E0E0",
-                
-                ; Status indicator colors
-                statusOff: "0xB71C1C",         ; Dark Red
-                statusOn: "0x2E7D32",          ; Dark Green
-                statusSave: "0x6A1B9A",        ; Dark Purple
-                statusLoad: "0x1565C0",        ; Dark Blue
-                statusInverted: "0xE65100",    ; Dark Orange
-                
-                ; Tooltip colors
-                tooltipDefault: "0x37474F",    ; Dark Blue-grey
-                tooltipSuccess: "0x2E7D32",    ; Dark Green
-                tooltipWarning: "0xE65100",    ; Dark Orange
-                tooltipInfo: "0x1565C0",       ; Dark Blue
-                tooltipError: "0xB71C1C",      ; Dark Red
-                
-                ; Text colors
-                textDefault: "0xE0E0E0",       ; Light Grey
-                textDark: "0xFFFFFF",          ; White
-                
-                ; Control backgrounds
-                editBackground: "0x2D2D2D",
-                editText: "0xE0E0E0",
-                listViewBackground: "0x2D2D2D",
-                listViewText: "0xE0E0E0"
+                info: 0x3498DB,      ; Softer blue
+                success: 0x2ECC71,   ; Softer green
+                warning: 0xF39C12,   ; Softer orange
+                error: 0xE74C3C,     ; Softer red
+                background: 0x0D0D0D, ; Very dark
+                text: 0xECECEC,      ; Off-white
+                inactive: 0x5A5A5A,  ; Dark gray
+                accent: 0x9B59B6     ; Purple accent
             }
         },
-        
         "High Contrast", {
             name: "High Contrast",
-            description: "Maximum contrast for accessibility",
             colors: {
-                ; GUI backgrounds
-                guiBackground: "0x000000",
-                guiTextColor: "0xFFFFFF",
-                
-                ; Status indicator colors
-                statusOff: "0xFF0000",         ; Pure Red
-                statusOn: "0x00FF00",          ; Pure Green
-                statusSave: "0xFF00FF",        ; Magenta
-                statusLoad: "0x00FFFF",        ; Cyan
-                statusInverted: "0xFFFF00",    ; Yellow
-                
-                ; Tooltip colors
-                tooltipDefault: "0xFFFFFF",    ; White
-                tooltipSuccess: "0x00FF00",    ; Green
-                tooltipWarning: "0xFFFF00",    ; Yellow
-                tooltipInfo: "0x00FFFF",       ; Cyan
-                tooltipError: "0xFF0000",      ; Red
-                
-                ; Text colors
-                textDefault: "0x000000",       ; Black
-                textDark: "0xFFFFFF",          ; White
-                
-                ; Control backgrounds
-                editBackground: "0xFFFFFF",
-                editText: "0x000000",
-                listViewBackground: "0xFFFFFF",
-                listViewText: "0x000000"
+                info: 0x0080FF,      ; Bright blue
+                success: 0x00FF00,   ; Bright green
+                warning: 0xFFFF00,   ; Yellow
+                error: 0xFF0000,     ; Bright red
+                background: 0x000000, ; Black
+                text: 0xFFFFFF,      ; White
+                inactive: 0x808080,  ; Gray
+                accent: 0xFF00FF     ; Magenta
             }
         },
-        
+        "Ocean", {
+            name: "Ocean",
+            colors: {
+                info: 0x006994,      ; Ocean blue
+                success: 0x00A86B,   ; Sea green
+                warning: 0xFFB347,   ; Sandy orange
+                error: 0xFF6B6B,     ; Coral red
+                background: 0x001F3F, ; Deep ocean
+                text: 0xE6F3FF,      ; Light blue-white
+                inactive: 0x4B7A94,  ; Muted ocean
+                accent: 0x00CED1     ; Dark turquoise
+            }
+        },
+        "Forest", {
+            name: "Forest",
+            colors: {
+                info: 0x5DADE2,      ; Sky blue
+                success: 0x58D68D,   ; Leaf green
+                warning: 0xF7DC6F,   ; Sunlight yellow
+                error: 0xEC7063,     ; Autumn red
+                background: 0x0B3D0B, ; Deep forest
+                text: 0xF0FFF0,      ; Honeydew
+                inactive: 0x6B8E6B,  ; Moss green
+                accent: 0x98FB98     ; Pale green
+            }
+        },
+        "Sunset", {
+            name: "Sunset",
+            colors: {
+                info: 0x5499C7,      ; Twilight blue
+                success: 0x52BE80,   ; Mint green
+                warning: 0xF8C471,   ; Sunset orange
+                error: 0xE59866,     ; Burnt orange
+                background: 0x2C1810, ; Dark brown
+                text: 0xFFF5E6,      ; Warm white
+                inactive: 0x8B6347,  ; Sienna
+                accent: 0xFF7F50     ; Coral
+            }
+        },
         "Minimal", {
             name: "Minimal",
-            description: "Clean, minimal grayscale theme",
             colors: {
-                ; GUI backgrounds
-                guiBackground: "0xFAFAFA",
-                guiTextColor: "0x212121",
-                
-                ; Status indicator colors
-                statusOff: "0x757575",         ; Grey
-                statusOn: "0x424242",          ; Dark Grey
-                statusSave: "0x616161",        ; Medium Grey
-                statusLoad: "0x9E9E9E",        ; Light Grey
-                statusInverted: "0x424242",    ; Dark Grey
-                
-                ; Tooltip colors
-                tooltipDefault: "0x616161",    ; Grey
-                tooltipSuccess: "0x424242",    ; Dark Grey
-                tooltipWarning: "0x757575",    ; Grey
-                tooltipInfo: "0x9E9E9E",       ; Light Grey
-                tooltipError: "0x424242",      ; Dark Grey
-                
-                ; Text colors
-                textDefault: "0xFFFFFF",       ; White
-                textDark: "0x212121",          ; Dark Grey
-                
-                ; Control backgrounds
-                editBackground: "0xFFFFFF",
-                editText: "0x212121",
-                listViewBackground: "0xFFFFFF",
-                listViewText: "0x212121"
+                info: 0x666666,      ; Dark gray
+                success: 0x4CAF50,   ; Material green
+                warning: 0xFF9800,   ; Material orange
+                error: 0xF44336,     ; Material red
+                background: 0xFAFAFA, ; Near white
+                text: 0x212121,      ; Near black
+                inactive: 0xBDBDBD,  ; Light gray
+                accent: 0x2196F3     ; Material blue
             }
         }
     )
     
-    ; Current theme storage
+    ; Current theme tracking
     static currentTheme := "Default"
     static currentColors := ""
     
-    ; Initialize static property with default colors
+    ; Initialize with default colors
     static __New() {
         ; Set default colors on class initialization
         ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
@@ -160,24 +115,23 @@ class ColorThemeManager {
         ; Set default colors first
         ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
         
-        ; Load saved theme from config
-        if (Config.get("Visual.ColorTheme") != "" && ColorThemeManager.themes.Has(Config.get("Visual.ColorTheme"))) {
-            ColorThemeManager.ApplyTheme(Config.get("Visual.ColorTheme"))
+        ; Load saved theme from config - FIXED: use Config.Get
+        savedTheme := Config.Get("Visual.ColorTheme", "Default")
+        if (savedTheme != "" && ColorThemeManager.themes.Has(savedTheme)) {
+            ColorThemeManager.ApplyTheme(savedTheme)
         } else {
             ; Default to "Default" theme
             ColorThemeManager.ApplyTheme("Default")
         }
     }
     
-    ; Set active theme - renamed from SetTheme to avoid confusion
+    ; Set active theme
     static ApplyTheme(themeName) {
         if (ColorThemeManager.themes.Has(themeName)) {
             ColorThemeManager.currentTheme := themeName
             ColorThemeManager.currentColors := ColorThemeManager.themes[themeName].colors
             
-
-            
-            ; NEW (CORRECT):
+            ; Save to config - FIXED: use Config.Set
             Config.Set("Visual.ColorTheme", themeName)
             
             ; Apply theme to existing GUIs
@@ -208,151 +162,94 @@ class ColorThemeManager {
         if (ColorThemeManager.currentColors.HasOwnProp(colorKey)) {
             return ColorThemeManager.currentColors.%colorKey%
         }
-        ; Default fallback color
-        return "0x000000"
+        
+        ; Return a default color if key not found
+        return 0x808080  ; Gray
     }
     
-    ; Apply theme to all existing GUIs - renamed from ApplyTheme
-    static UpdateAllGUIs() {
-        try {
-            ; Apply to tooltip system
-            if (HasProp(TooltipSystem, "isInitialized") && TooltipSystem.isInitialized) {
-                TooltipSystem.ApplyTheme()
-            }
-            
-            ; Apply to status indicator
-            if (HasProp(StatusIndicator, "isInitialized") && StatusIndicator.isInitialized) {
-                StatusIndicator.ApplyTheme()
-            }
-            
-            ; Apply to settings GUI if open
-            if (HasProp(SettingsGUI, "isOpen") && SettingsGUI.isOpen && SettingsGUI.gui != "") {
-                ColorThemeManager.ApplyThemeToGUI(SettingsGUI.gui)
-            }
-        }
+    ; Get contrasting color for text visibility
+    static GetContrastingColor(bgColor) {
+        ; Extract RGB components
+        r := (bgColor >> 16) & 0xFF
+        g := (bgColor >> 8) & 0xFF
+        b := bgColor & 0xFF
+        
+        ; Calculate luminance using standard formula
+        luminance := (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        
+        ; Return white for dark backgrounds, black for light backgrounds
+        return luminance > 0.5 ? 0x000000 : 0xFFFFFF
     }
     
-    ; Apply theme to a specific GUI
-    static ApplyThemeToGUI(gui) {
-        try {
-            ; Only apply a light background to settings GUI, keep text black
-            if (gui = SettingsGUI.gui) {
-                gui.BackColor := "e9e9e9"  ; Always light gray
-                return
-            }
-            
-            ; For other GUIs, apply full theme
-            bgColor := ColorThemeManager.GetColor("guiBackground")
-            if (SubStr(bgColor, 1, 2) = "0x") {
-                bgColor := SubStr(bgColor, 3)
-            }
-            gui.BackColor := bgColor
-        }
-    }
-    
-    ; Get theme list for dropdown
-    static GetThemeList() {
-        themeList := []
+    ; Get all theme names
+    static GetThemeNames() {
+        names := []
         for name, theme in ColorThemeManager.themes {
-            themeList.Push(name)
+            names.Push(name)
         }
-        return themeList
+        return names
     }
     
-    ; Get theme description
-    static GetThemeDescription(themeName) {
-        if (ColorThemeManager.themes.Has(themeName)) {
-            return ColorThemeManager.themes[themeName].description
-        }
-        return ""
-    }
-    
-    ; Export theme colors for debugging
-    static ExportCurrentTheme() {
-        output := "Current Theme: " . ColorThemeManager.currentTheme . "`n`n"
-        output .= "Colors:`n"
+    ; Update all GUIs with new theme
+    static UpdateAllGUIs() {
+        ; This would be called to update any existing GUIs
+        ; Each GUI module should register itself to receive theme updates
         
-        if (ColorThemeManager.currentColors != "") {
-            for key, value in ColorThemeManager.currentColors.OwnProps() {
-                output .= "  " . key . ": " . value . "`n"
+        ; Update tooltips if they exist
+        if (IsSet(TooltipSystem)) {
+            ; TooltipSystem will use GetColor() to get current colors
+        }
+        
+        ; Update status indicator if it exists
+        if (IsSet(StatusIndicator)) {
+            StatusIndicator.Update()
+        }
+    }
+    
+    ; Get theme info for display
+    static GetThemeInfo(themeName := "") {
+        if (themeName = "") {
+            themeName := ColorThemeManager.currentTheme
+        }
+        
+        if (ColorThemeManager.themes.Has(themeName)) {
+            theme := ColorThemeManager.themes[themeName]
+            info := "Theme: " . theme.name . "`n`n"
+            info .= "Colors:`n"
+            
+            for colorName, colorValue in theme.colors {
+                ; Convert to hex string
+                hexColor := Format("0x{:06X}", colorValue)
+                info .= "  " . colorName . ": " . hexColor . "`n"
+            }
+            
+            return info
+        }
+        
+        return "Theme not found: " . themeName
+    }
+    
+    ; Export current theme as string (for debugging)
+    static ExportCurrentTheme() {
+        return ColorThemeManager.GetThemeInfo(ColorThemeManager.currentTheme)
+    }
+    
+    ; Add custom theme
+    static AddCustomTheme(name, colors) {
+        ; Validate required color keys
+        requiredKeys := ["info", "success", "warning", "error", "background", "text", "inactive", "accent"]
+        
+        for key in requiredKeys {
+            if (!colors.HasOwnProp(key)) {
+                throw Error("Missing required color key: " . key)
             }
         }
         
-        return output
+        ColorThemeManager.themes[name] := {
+            name: name,
+            colors: colors
+        }
+        
+        return true
     }
-    
-    ; Save theme preference
-    static SaveTheme() {
-        Config.set("Visual.ColorTheme", ColorThemeManager.currentTheme)
-        Config.Save()
-    }
 }
-
-; ######################################################################################################################
-; Helper Functions for Color Manipulation
-; ######################################################################################################################
-
-; Convert hex color to RGB components
-ConvertHexToRGB(hexColor) {
-    ; Remove 0x prefix if present
-    if (SubStr(hexColor, 1, 2) = "0x") {
-        hexColor := SubStr(hexColor, 3)
-    }
-    
-    ; Ensure we have 6 characters
-    if (StrLen(hexColor) != 6) {
-        return {r: 0, g: 0, b: 0}
-    }
-    
-    ; Extract RGB components
-    r := Integer("0x" . SubStr(hexColor, 1, 2))
-    g := Integer("0x" . SubStr(hexColor, 3, 2))
-    b := Integer("0x" . SubStr(hexColor, 5, 2))
-    
-    return {r: r, g: g, b: b}
-}
-
-; Get contrasting color (black or white) based on background
-GetContrastingColor(hexColor) {
-    rgb := ConvertHexToRGB(hexColor)
-    
-    ; Calculate luminance using W3C formula
-    luminance := (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255
-    
-    ; Return black or white based on luminance
-    return luminance > 0.5 ? "0x000000" : "0xFFFFFF"
-}
-
-; Convert RGB to hex color
-ConvertRGBToHex(r, g, b) {
-    return Format("0x{:02X}{:02X}{:02X}", r, g, b)
-}
-
-; Lighten a color by a percentage (0-100)
-LightenColor(hexColor, percent) {
-    rgb := ConvertHexToRGB(hexColor)
-    
-    ; Calculate new values
-    factor := 1 + (percent / 100)
-    newR := Min(255, Round(rgb.r * factor))
-    newG := Min(255, Round(rgb.g * factor))
-    newB := Min(255, Round(rgb.b * factor))
-    
-    return ConvertRGBToHex(newR, newG, newB)
-}
-
-; Darken a color by a percentage (0-100)
-DarkenColor(hexColor, percent) {
-    rgb := ConvertHexToRGB(hexColor)
-    
-    ; Calculate new values
-    factor := 1 - (percent / 100)
-    newR := Max(0, Round(rgb.r * factor))
-    newG := Max(0, Round(rgb.g * factor))
-    newB := Max(0, Round(rgb.b * factor))
-    
-    return ConvertRGBToHex(newR, newG, newB)
-}
-
-; Initialize the static properties when the script loads
-ColorThemeManager.__New() 
