@@ -104,22 +104,22 @@ class HotkeyManager {
             },
             "MoveDiagNW", {
                 handler: (*) => MouseActions.MoveInDirection("UpLeft"), 
-                default: "Numpad7",
+                default: "Numpad8 + Numpad4",
                 description: "Move Diagonal Up-Left"
             },
             "MoveDiagNE", {
                 handler: (*) => MouseActions.MoveInDirection("UpRight"), 
-                default: "Numpad9",
+                default: "Numpad8 + Numpad6",
                 description: "Move Diagonal Up-Right"
             },
             "MoveDiagSW", {
                 handler: (*) => MouseActions.MoveInDirection("DownLeft"), 
-                default: "Numpad1",
+                default: "Nunpad4 + Numpad2",
                 description: "Move Diagonal Down-Left"
             },
             "MoveDiagSE", {
                 handler: (*) => MouseActions.MoveInDirection("DownRight"), 
-                default: "Numpad3",
+                default: "Numpad6 + Numpad2",
                 description: "Move Diagonal Down-Right"
             }
         )

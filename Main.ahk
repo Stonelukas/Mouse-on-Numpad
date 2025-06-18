@@ -47,48 +47,48 @@ initialize() {
     ; Initialize state manager
     StateManager.Initialize()
 
-    ; Initialize color theme system BEFORE creating any GUIs 
-    ColorThemeManager.Initialize()
-    
-    ; Load configuration FIRST
-    Config.Load()
-    
-    ; Initialize state manager
-    StateManager.Initialize()
-    
     ; Initialize color theme system BEFORE creating any GUIs
     ColorThemeManager.Initialize()
-    
+
+    ; Load configuration FIRST
+    Config.Load()
+
     ; Set up exit handler
     OnExit(onScriptExit)
-    
+
     ; Initialize monitor system
     MonitorUtils.Init()
-    
+
     ; Initialize all GUI systems (they will use the current theme)
     TooltipSystem.Initialize()
     StatusIndicator.Initialize()
-    
+
     ; Load position memory
     PositionMemory.LoadPositions()
-    
+
+    ; Initialize HotkeyManager to register all hotkeys
+    HotkeyManager.Initialize()
+
     ; Start periodic checks
     SetTimer(checkFullscreenPeriodically, 500)
-    
+
     ; Force initial status update to ensure colors are applied
     StatusIndicator.Update()
+
+    ; Show initialization success
+    TooltipSystem.ShowStandard("Mouse on Numpad Enhanced initialized successfully!", "success", 2000)
 }
 
 onScriptExit(*) {
     ; Save configuration
     Config.Save()
-    
+
     ; Save positions
     PositionMemory.SavePositions()
-    
+
     ; Clean up tooltips
-    TooltipSystem.HideAll()
-    
+    TooltipSystem.Cleanup()
+
     ; Hide status indicator
     StatusIndicator.Hide()
 }
@@ -97,7 +97,7 @@ checkFullscreenPeriodically() {
     ; Check if any app is fullscreen
     wasFullscreen := StateManager.isFullscreenActive
     StateManager.isFullscreenActive := MonitorUtils.IsFullscreen()
-    
+
     ; Handle state change
     if (StateManager.isFullscreenActive && !wasFullscreen) {
         TooltipSystem.HideAll()
@@ -114,7 +114,7 @@ checkFullscreenPeriodically() {
 ; ======================================================================================================================
 
 ; Show help (Ctrl+Alt+H)
-^!h::{
+^!h:: {
     helpText := "
     (
 🖱️ MOUSE ON NUMPAD ENHANCED - KEYBOARD SHORTCUTS 🖱️
@@ -152,62 +152,62 @@ Numpad .        Middle Click
 ====== POSITION MEMORY (In Save/Load Mode) ======
 Numpad 1-9      Save/Load Position Slot
     )"
-    
+
     MsgBox(helpText, "Keyboard Shortcuts", "Iconi")
 }
 
 ; Open Settings GUI (Ctrl+Alt+S)
-^!s::{
+^!s:: {
     SettingsGUI.Show()
 }
 
 ; Reload Script (Ctrl+Alt+R)
-^!r::{
+^!r:: {
     StateManager.ReloadScript()
 }
 
 ; Quick theme switching (Ctrl+Shift+1 through 7)
-^+1::ColorThemeManager.SetTheme("Default")
-^+2::ColorThemeManager.SetTheme("Dark Mode")
-^+3::ColorThemeManager.SetTheme("High Contrast")
-^+4::ColorThemeManager.SetTheme("Ocean")
-^+5::ColorThemeManager.SetTheme("Forest")
-^+6::ColorThemeManager.SetTheme("Sunset")
-^+7::ColorThemeManager.SetTheme("Minimal")
+^+1:: ColorThemeManager.SetTheme("Default")
+^+2:: ColorThemeManager.SetTheme("Dark Mode")
+^+3:: ColorThemeManager.SetTheme("High Contrast")
+^+4:: ColorThemeManager.SetTheme("Ocean")
+^+5:: ColorThemeManager.SetTheme("Forest")
+^+6:: ColorThemeManager.SetTheme("Sunset")
+^+7:: ColorThemeManager.SetTheme("Minimal")
 
 ; Theme change notification
-^+8::{
+^+8:: {
     currentTheme := ColorThemeManager.GetCurrentTheme()
     TooltipSystem.ShowStandard("Current theme: " . currentTheme, "success", 2000)
 }
 
 ; Theme debug info (Ctrl+Alt+Shift+T) - shows current theme details
-^!+d::{
+^!+d:: {
     currentTheme := ColorThemeManager.GetCurrentTheme()
     savedTheme := Config.Get("Visual.ColorTheme", "Default")
-    
+
     debugInfo := "Theme Debug Info:`n`n"
     debugInfo .= "Current Active Theme: " . currentTheme . "`n"
     debugInfo .= "Saved Config Theme: " . savedTheme . "`n`n"
-    
+
     ; Get theme colors
     debugInfo .= "Current Theme Colors:`n"
     debugInfo .= ColorThemeManager.ExportCurrentTheme()
-    
+
     MsgBox(debugInfo, "Theme Debug", "Iconi")
 }
 
 ; Debug mode (Ctrl+Alt+D) - checks for stray GUI elements
-^!d::{
+^!d:: {
     ; Test theme colors with different tooltip types
     TooltipSystem.ShowStandard("Info Tooltip", "info", 1500)
     SetTimer(() => TooltipSystem.ShowStandard("Success Tooltip", "success", 1500), -1700)
     SetTimer(() => TooltipSystem.ShowStandard("Warning Tooltip", "warning", 1500), -3400)
     SetTimer(() => TooltipSystem.ShowStandard("Error Tooltip", "error", 1500), -5100)
-    
+
     ; Test mouse action tooltip
     SetTimer(() => TooltipSystem.ShowMouseAction("Mouse Action Test", "success"), -7000)
-    
+
     ; Test status messages
     SetTimer(() => StatusIndicator.ShowTemporaryMessage("Temporary Status", "info", 1000), -11500)
 }
