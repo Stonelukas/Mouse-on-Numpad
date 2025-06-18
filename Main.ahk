@@ -40,6 +40,15 @@ initialize() {
     CoordMode("ToolTip", "Screen")
     CoordMode("Menu", "Screen")
     CoordMode("Caret", "Screen")
+
+    ; Initialize configuration system FIRST
+    Config.Initialize() ; This will create the file if needed and load settings
+
+    ; Initialize state manager
+    StateManager.Initialize()
+
+    ; Initialize color theme system BEFORE creating any GUIs 
+    ColorThemeManager.Initialize()
     
     ; Load configuration FIRST
     Config.Load()
@@ -87,7 +96,7 @@ onScriptExit(*) {
 checkFullscreenPeriodically() {
     ; Check if any app is fullscreen
     wasFullscreen := StateManager.isFullscreenActive
-    StateManager.isFullscreenActive := MonitorUtils.IsFullscreenAppActive()
+    StateManager.isFullscreenActive := MonitorUtils.IsFullscreen()
     
     ; Handle state change
     if (StateManager.isFullscreenActive && !wasFullscreen) {

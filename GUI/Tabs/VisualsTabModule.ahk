@@ -22,12 +22,12 @@ class VisualsTabModule extends BaseTabModule {
 
         this.gui.Add("Text", "x30 y165 w80", "Status X:")
         this.AddControl("StatusX", this.gui.Add("Edit", "x110 y162 w150"))
-        this.controls["StatusX"].Text := Config.StatusX
+        this.controls["StatusX"].Text := Config.Get("Visual.StatusX")
         this.gui.Add("Text", "x270 y165 w200", "X position or expression")
 
         this.gui.Add("Text", "x30 y190 w80", "Status Y:")
         this.AddControl("StatusY", this.gui.Add("Edit", "x110 y187 w150"))
-        this.controls["StatusY"].Text := Config.StatusY
+        this.controls["StatusY"].Text := Config.Get("Visual.TooltipY")
         this.gui.Add("Text", "x270 y190 w200", "Y position or expression")
 
         ; Tooltip Position Section
@@ -35,12 +35,12 @@ class VisualsTabModule extends BaseTabModule {
 
         this.gui.Add("Text", "x30 y255 w80", "Tooltip X:")
         this.AddControl("TooltipX", this.gui.Add("Edit", "x110 y252 w150"))
-        this.controls["TooltipX"].Text := Config.TooltipX
+        this.controls["TooltipX"].Text := Config.Get("Visual.TooltipX")
         this.gui.Add("Text", "x270 y255 w200", "X position or expression")
 
         this.gui.Add("Text", "x30 y280 w80", "Tooltip Y:")
         this.AddControl("TooltipY", this.gui.Add("Edit", "x110 y277 w150"))
-        this.controls["TooltipY"].Text := Config.TooltipY
+        this.controls["TooltipY"].Text := Config.Get("Visual.TooltipY")
         this.gui.Add("Text", "x270 y280 w200", "Y position or expression")
 
         ; Audio Feedback Section

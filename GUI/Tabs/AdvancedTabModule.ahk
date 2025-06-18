@@ -139,17 +139,17 @@ class AdvancedTabModule extends BaseTabModule {
             "Reset to Defaults", "YesNo Icon?")
             
         if (result = "Yes") {
-            ; Reset to default values
-            Config.get("Movement.BaseSpeed") := 4
-            Config.get("Movement.MoveDelay") := 15
-            Config.get("Movement.AccelerationRate") := 1.1
-            Config.get("Movement.MaxSpeed") := 30
-            Config.get("Movement.EnableAbsoluteMovement") := false
-            Config.get("Visual.EnableAudioFeedback") := false
-            Config.get("Movement.ScrollStep") := 1
-            Config.get("Movement.ScrollAccelerationRate") := 1.1
-            Config.get("Movement.MaxScrollSpeed") := 10
-
+            ; Reset to default values using Config.Set()
+            Config.Set("Movement.BaseSpeed", 4)
+            Config.Set("Movement.MoveDelay", 15)
+            Config.Set("Movement.AccelerationRate", 1.1)
+            Config.Set("Movement.MaxSpeed", 30)
+            Config.Set("Movement.EnableAbsoluteMovement", false)
+            Config.Set("Visual.EnableAudioFeedback", false)
+            Config.Set("Movement.ScrollStep", 1)
+            Config.Set("Movement.ScrollAccelerationRate", 1.1)
+            Config.Set("Movement.MaxScrollSpeed", 10)
+    
             ; Re-initialize temp settings
             SettingsGUI._InitializeTempSettings()
             

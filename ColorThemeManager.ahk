@@ -174,7 +174,11 @@ class ColorThemeManager {
         if (ColorThemeManager.themes.Has(themeName)) {
             ColorThemeManager.currentTheme := themeName
             ColorThemeManager.currentColors := ColorThemeManager.themes[themeName].colors
-            Config.get("Visual.ColorTheme") := themeName
+            
+
+            
+            ; NEW (CORRECT):
+            Config.Set("Visual.ColorTheme", themeName)
             
             ; Apply theme to existing GUIs
             ColorThemeManager.UpdateAllGUIs()
@@ -279,7 +283,7 @@ class ColorThemeManager {
     
     ; Save theme preference
     static SaveTheme() {
-        Config.get("Visual.ColorTheme") := ColorThemeManager.currentTheme
+        Config.set("Visual.ColorTheme", ColorThemeManager.currentTheme)
         Config.Save()
     }
 }

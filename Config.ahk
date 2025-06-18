@@ -13,12 +13,17 @@ class Config {
     static __New() {
         ; Movement settings
         Config.defaults["Movement.BaseSpeed"] := 10
-        Config.defaults["Movement.AccelerationEnabled"] := true
+        Config.defaults["Movement.MoveDelay"] := 15
+        Config.defaults["Movement.AccelerationRate"] := 1.1
         Config.defaults["Movement.MaxSpeed"] := 50
-        Config.defaults["Movement.AccelerationRate"] := 2
-        Config.defaults["Movement.ScrollSpeed"] := 3
-        Config.defaults["Movement.SmoothScrolling"] := true
-        Config.defaults["Movement.MovementMode"] := "Normal"
+        Config.defaults["Movement.EnableAbsoluteMovement"] := false
+        Config.defaults["Movement.ScrollStep"] := 3
+        Config.defaults["Movement.ScrollAccelerationRate"] := 1.1
+        Config.defaults["Movement.MaxScrollSpeed"] := 10
+        Config.defaults["Movement.MaxUndoLevels"] := 10
+
+        ; Position settings
+        Config.defaults["Positions.MaxSaved"] := 5
 
         ; Visual settings
         Config.defaults["Visual.StatusIndicatorEnabled"] := true
@@ -27,8 +32,14 @@ class Config {
         Config.defaults["Visual.StatusIndicatorOpacity"] := 80
         Config.defaults["Visual.ShowTooltips"] := true
         Config.defaults["Visual.TooltipDuration"] := 1500
-        Config.defaults["Visual.ColorTheme"] := "Blue"
-        Config.defaults["Visual.AudioFeedback"] := false
+        Config.defaults["Visual.ColorTheme"] := "Default"
+        Config.defaults["Visual.EnableAudioFeedback"] := false
+        Config.defaults["Visual.StatusVisibleOnStartup"] := true
+        Config.defaults["Visual.UseSecondaryMonitor"] := false
+        Config.defaults["Visual.StatusX"] := "Round(A_ScreenWidth * 0.65)"
+        Config.defaults["Visual.StatusY"] := "15"
+        Config.defaults["Visual.TooltipX"] := "20"
+        Config.defaults["Visual.TooltipY"] := "A_ScreenHeight - 80"
 
         ; Hotkey defaults
         Config.defaults["Hotkeys.ToggleMouseMode"] := "NumpadAdd"
@@ -52,14 +63,20 @@ class Config {
         Config.defaults["Hotkeys.MoveDiagSE"] := "Numpad3"
         Config.defaults["Hotkeys.MouseClick"] := "Numpad5"
         Config.defaults["Hotkeys.RightClick"] := "Numpad0"
-        Config.defaults["Hotkeys.MiddleClick"] := "NumpadDot"
+        Config.defaults["Hotkeys.MiddleClick"] := "NumpadEnter"
 
-        ; Click hold defaults Hotkeys
+        ; Click hold toggle hotkeys
         Config.defaults["Hotkeys.ToggleLeftHold"] := "NumpadClear"
         Config.defaults["Hotkeys.ToggleRightHold"] := "NumpadIns"
         Config.defaults["Hotkeys.ToggleMiddleHold"] := "+NumpadEnter"
         Config.defaults["Hotkeys.SpecialNumpadDot"] := "NumpadDot"
         Config.defaults["Hotkeys.ToggleInverted"] := "!Numpad1"
+
+        ; Scroll hotkeys (when mouse mode is active)
+        Config.defaults["Hotkeys.ScrollUp"] := "Numpad7"
+        Config.defaults["Hotkeys.ScrollDown"] := "Numpad1"
+        Config.defaults["Hotkeys.ScrollLeft"] := "Numpad9"
+        Config.defaults["Hotkeys.ScrollRight"] := "Numpad3"
 
         ; Advanced settings
         Config.defaults["Advanced.LowMemoryMode"] := false
@@ -77,54 +94,98 @@ class Config {
         Config.defaults["Files.SavedPositions"] := A_ScriptDir . "\positions.dat"
     }
 
-    ; Load settings from INI file
-    static Load() {
-        Config.settings.Clear()
-
-        ; Load all defaults first
+    ; Initialize the config system - call this from Main.ahk
+    static Initialize() {
+        ; Load defaults into settings first
         for key, value in Config.defaults {
             Config.settings[key] := value
         }
+        
+        ; Create config file if it doesn't exist
+        if (!FileExist(Config.iniFile)) {
+            Config.CreateDefaultConfigFile()
+        }
+        
+        ; Load settings from file
+        Config.Load()
+    }
 
+    ; Create default config file
+    static CreateDefaultConfigFile() {
+        ; Ensure directory exists
+        SplitPath(Config.iniFile, , &dir)
+        if (!DirExist(dir)) {
+            DirCreate(dir)
+        }
+
+        ; Create file with default values
+        for key, value in Config.defaults {
+            parts := StrSplit(key, ".", , 2)
+            if (parts.Length = 2) {
+                section := parts[1]
+                keyName := parts[2]
+                
+                ; Convert boolean to string
+                if (value = true) {
+                    value := "1"
+                } else if (value = false) {
+                    value := "0"
+                }
+                
+                IniWrite(value, Config.iniFile, section, keyName)
+            }
+        }
+    }
+
+    ; Load settings from INI file
+    static Load() {
+        ; Don't clear settings - they already have defaults
+        
         ; Override with saved settings if file exists
         if (FileExist(Config.iniFile)) {
-            ; Read each section
-            sections := ["Movement", "Visual", "Hotkeys", "Advanced", "Files"]
-
+            ; Read all sections
+            sections := ["Movement", "Visual", "Hotkeys", "Advanced", "Files", "Status", "Positions"]
+            
             for section in sections {
-                ; Get all keys in this section
-                sectionContent := IniRead(Config.iniFile, section, "")
-                if (sectionContent != "") {
-                    ; Parse each line
-                    loop parse, sectionContent, "`n", "`r" {
-                        if (A_LoopField = "")
-                            continue
-
-                        ; Split key=value
-                        parts := StrSplit(A_LoopField, "=", , 2)
-                        if (parts.Length = 2) {
-                            key := section . "." . parts[1]
-                            value := parts[2]
-
-                            ; Convert string values to appropriate types
-                            if (Config.defaults.Has(key)) {
-                                defaultValue := Config.defaults[key]
-                                if (Type(defaultValue) = "Integer") {
-                                    value := Integer(value)
-                                } else if (Type(defaultValue) = "Float") {
-                                    value := Float(value)
-                                } else if (defaultValue = true || defaultValue = false) {
-                                    value := (value = "1" || value = "true")
+                try {
+                    ; First check if section exists by trying to read the entire section
+                    sectionContent := IniRead(Config.iniFile, section)
+                    
+                    if (sectionContent != "") {
+                        ; Parse each line
+                        loop parse, sectionContent, "`n", "`r" {
+                            if (A_LoopField = "")
+                                continue
+                            
+                            ; Split key=value
+                            parts := StrSplit(A_LoopField, "=", , 2)
+                            if (parts.Length = 2) {
+                                key := section . "." . parts[1]
+                                value := parts[2]
+                                
+                                ; Convert string values to appropriate types
+                                if (Config.defaults.Has(key)) {
+                                    defaultValue := Config.defaults[key]
+                                    if (Type(defaultValue) = "Integer") {
+                                        value := Integer(value)
+                                    } else if (Type(defaultValue) = "Float") {
+                                        value := Float(value)
+                                    } else if (defaultValue = true || defaultValue = false) {
+                                        value := (value = "1" || value = "true")
+                                    }
                                 }
+                                
+                                Config.settings[key] := value
                             }
-
-                            Config.settings[key] := value
                         }
                     }
+                } catch {
+                    ; Section doesn't exist, continue with defaults
+                    continue
                 }
             }
         }
-
+        
         return true
     }
 
@@ -183,43 +244,22 @@ class Config {
         result := Map()
         prefix := section . "."
 
-        ; Get from defaults first
-        for key, value in Config.defaults {
+        ; Get from both defaults and settings
+        for key, value in Config.settings {
             if (SubStr(key, 1, StrLen(prefix)) = prefix) {
                 shortKey := SubStr(key, StrLen(prefix) + 1)
-                result[shortKey] := Config.Get(key)
+                result[shortKey] := value
             }
         }
 
         return result
     }
 
-    ; Reset a setting to default
-    static Reset(key) {
-        if (Config.defaults.Has(key)) {
-            Config.settings[key] := Config.defaults[key]
-            return true
-        }
-        return false
-    }
-
-    ; Reset all settings to defaults
-    static ResetAll() {
-        Config.settings.Clear()
-        for key, value in Config.defaults {
-            Config.settings[key] := value
-        }
-        Config.Save()
-    }
-
     ; Persistent positions file path
     static PersistentPositionsFile => Config.Get("Files.SavedPositions", A_ScriptDir . "\positions.dat")
 
-    ; Common status properties
-    static StatusVisibleOnStartup => Config.Get("Status.VisibleOnStartup", true)
-
-    ; Add this to the end of your Config.ahk file to provide compatibility with old property access
-
+    ; Common status properties (for compatibility)
+    static StatusVisibleOnStartup => Config.Get("Visual.StatusVisibleOnStartup", true)
 }
 
 

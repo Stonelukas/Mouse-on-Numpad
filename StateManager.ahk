@@ -12,6 +12,7 @@ class StateManager {
     static _isReloading := false
     static _lastLoadedSlot := 0
     static _showingPositionFeedback := false
+    static isFullscreenActive := false
 
     ; Mouse button states
     static _leftButtonHeld := false
@@ -67,7 +68,7 @@ class StateManager {
     }
 
     static ToggleAbsoluteMovement() {
-        Config.get("Movement.EnableAbsoluteMovement") := !Config.get("Movement.EnableAbsoluteMovement")
+        Config.set("Movement.EnableAbsoluteMovement", !Config.get("Movement.EnableAbsoluteMovement"))
         
         if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(Config.get("Movement.EnableAbsoluteMovement") ? 850 : 450, 150)
@@ -83,7 +84,7 @@ class StateManager {
     }
 
     static ToggleSecondaryMonitor() {
-        Config.get("Visual.UseSecondaryMonitor") := !Config.get("Visual.UseSecondaryMonitor")
+        Config.set("Visual.UseSecondaryMonitor", !Config.get("Visual.UseSecondaryMonitor"))
         
         if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(Config.get("Visual.UseSecondaryMonitor") ? 900 : 500, 150)
@@ -103,7 +104,31 @@ class StateManager {
         StateManager._middleButtonHeld := held
     }
 
+    static SetFullscreenState(active) {
+        previousState := StateManager.isFullscreenActive
+        StateManager.isFullscreenActive := active
+        
+        ; Handle state change
+        if (active && !previousState) {
+            ; Entering fullscreen - hide UI elements
+            TooltipSystem.HideAll()
+            StatusIndicator.Hide()
+        } else if (!active && previousState) {
+            ; Exiting fullscreen - restore UI elements
+            if (StateManager._statusVisible) {
+                StatusIndicator.Show()
+            }
+        }
+    }
+
     ; Getters
+    ; Fullscreen management methods
+
+    
+    static IsinFullscreen() {
+        return StateManager.isFullscreenActive
+    }
+
     static IsMouseMode() {
         return StateManager._mouseMode
     }

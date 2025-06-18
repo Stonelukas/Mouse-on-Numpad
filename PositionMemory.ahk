@@ -8,7 +8,7 @@ class PositionMemory {
     static savedPositions := Map()
 
     static SavePosition(slot) {
-        if (slot < 1 || slot > Config.get("Positions.MaxSaved")Positions) {
+        if (slot < 1 || slot > Config.get("Positions.MaxSaved")) {
             TooltipSystem.ShowStandard("Invalid Slot!", "error")
             return
         }
@@ -27,7 +27,7 @@ class PositionMemory {
     }
 
     static RestorePosition(slot) {
-        if (slot < 1 || slot > Config.get("Positions.MaxSaved")Positions) {
+        if (slot < 1 || slot > Config.get("Positions.MaxSaved")) {
             TooltipSystem.ShowStandard("Invalid Slot!", "error")
             return
         }
@@ -79,7 +79,7 @@ class PositionMemory {
     static LoadPositions() {
         PositionMemory.savedPositions := Map()
         
-        Loop Config.get("Positions.MaxSaved")Positions {
+        Loop Config.get("Positions.MaxSaved") {
             x := IniRead(Config.PersistentPositionsFile, "Positions", "Slot" . A_Index . "X", "")
             y := IniRead(Config.PersistentPositionsFile, "Positions", "Slot" . A_Index . "Y", "")
             
