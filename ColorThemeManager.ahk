@@ -5,6 +5,7 @@
 ; ######################################################################################################################
 
 class ColorThemeManager {
+
     ; Theme definitions
     static themes := Map(
         "Default", {
@@ -350,4 +351,4 @@ DarkenColor(hexColor, percent) {
 }
 
 ; Initialize the static properties when the script loads
-ColorThemeManager.__New()
+ColorThemeManager.__New() 
