@@ -140,15 +140,15 @@ class AdvancedTabModule extends BaseTabModule {
             
         if (result = "Yes") {
             ; Reset to default values
-            Config.MoveStep := 4
-            Config.MoveDelay := 15
-            Config.AccelerationRate := 1.1
-            Config.MaxSpeed := 30
-            Config.EnableAbsoluteMovement := false
-            Config.EnableAudioFeedback := false
-            Config.ScrollStep := 1
-            Config.ScrollAccelerationRate := 1.1
-            Config.MaxScrollSpeed := 10
+            Config.get("Movement.BaseSpeed") := 4
+            Config.get("Movement.MoveDelay") := 15
+            Config.get("Movement.AccelerationRate") := 1.1
+            Config.get("Movement.MaxSpeed") := 30
+            Config.get("Movement.EnableAbsoluteMovement") := false
+            Config.get("Visual.EnableAudioFeedback") := false
+            Config.get("Movement.ScrollStep") := 1
+            Config.get("Movement.ScrollAccelerationRate") := 1.1
+            Config.get("Movement.MaxScrollSpeed") := 10
 
             ; Re-initialize temp settings
             SettingsGUI._InitializeTempSettings()

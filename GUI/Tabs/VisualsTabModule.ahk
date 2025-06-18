@@ -62,7 +62,7 @@ class VisualsTabModule extends BaseTabModule {
             ColorThemeManager.GetThemeList()))
         
         ; Select current theme - Fixed to properly show saved theme
-        currentTheme := Config.ColorTheme != "" ? Config.ColorTheme : "Default"
+        currentTheme := Config.get("Visual.ColorTheme") != "" ? Config.get("Visual.ColorTheme") : "Default"
         themeIndex := 1
         themeList := ColorThemeManager.GetThemeList()
         for i, theme in themeList {

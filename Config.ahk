@@ -217,4 +217,9 @@ class Config {
 
     ; Common status properties
     static StatusVisibleOnStartup => Config.Get("Status.VisibleOnStartup", true)
+
+    ; Add this to the end of your Config.ahk file to provide compatibility with old property access
+
 }
+
+

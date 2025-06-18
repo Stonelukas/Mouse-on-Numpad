@@ -121,7 +121,7 @@ class MonitorUtils {
             }
             
             ; If using secondary monitor and it exists
-            if (Config.UseSecondaryMonitor && MonitorUtils.monitors.Length >= 2) {
+            if (Config.get("Visual.UseSecondaryMonitor") && MonitorUtils.monitors.Length >= 2) {
                 ; Find first non-primary monitor
                 for monitor in MonitorUtils.monitors {
                     if (!monitor.IsPrimary) {

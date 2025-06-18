@@ -91,21 +91,21 @@ class SettingsGUI {
     static _InitializeTempSettings() {
         ; Copy current settings to temp storage for preview
         ; Movement Settings
-        SettingsGUI.tempSettings["MoveStep"] := Config.MoveStep
-        SettingsGUI.tempSettings["MoveDelay"] := Config.MoveDelay
-        SettingsGUI.tempSettings["AccelerationRate"] := Config.AccelerationRate
-        SettingsGUI.tempSettings["MaxSpeed"] := Config.MaxSpeed
-        SettingsGUI.tempSettings["EnableAbsoluteMovement"] := Config.EnableAbsoluteMovement
-        SettingsGUI.tempSettings["MaxSavedPositions"] := Config.MaxSavedPositions
-        SettingsGUI.tempSettings["MaxUndoLevels"] := Config.MaxUndoLevels
-        SettingsGUI.tempSettings["EnableAudioFeedback"] := Config.EnableAudioFeedback
+        SettingsGUI.tempSettings["MoveStep"] := Config.get("Movement.BaseSpeed")
+        SettingsGUI.tempSettings["MoveDelay"] := Config.get("Movement.MoveDelay")
+        SettingsGUI.tempSettings["AccelerationRate"] := Config.get("Movement.AccelerationRate")
+        SettingsGUI.tempSettings["MaxSpeed"] := Config.get("Movement.MaxSpeed")
+        SettingsGUI.tempSettings["EnableAbsoluteMovement"] := Config.get("Movement.EnableAbsoluteMovement")
+        SettingsGUI.tempSettings["MaxSavedPositions"] := Config.get("Positions.MaxSaved")Positions
+        SettingsGUI.tempSettings["MaxUndoLevels"] := Config.get("Movement.MaxUndoLevels")
+        SettingsGUI.tempSettings["EnableAudioFeedback"] := Config.get("Visual.EnableAudioFeedback")
         SettingsGUI.tempSettings["StatusVisibleOnStartup"] := Config.StatusVisibleOnStartup
-        SettingsGUI.tempSettings["UseSecondaryMonitor"] := Config.UseSecondaryMonitor
-        SettingsGUI.tempSettings["ScrollStep"] := Config.ScrollStep
-        SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.ScrollAccelerationRate
-        SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.MaxScrollSpeed
+        SettingsGUI.tempSettings["UseSecondaryMonitor"] := Config.get("Visual.UseSecondaryMonitor")
+        SettingsGUI.tempSettings["ScrollStep"] := Config.get("Movement.ScrollStep")
+        SettingsGUI.tempSettings["ScrollAccelerationRate"] := Config.get("Movement.ScrollAccelerationRate")
+        SettingsGUI.tempSettings["MaxScrollSpeed"] := Config.get("Movement.MaxScrollSpeed")
         ; Visuals Settings
-        SettingsGUI.tempSettings["ColorTheme"] := Config.ColorTheme
+        SettingsGUI.tempSettings["ColorTheme"] := Config.get("Visual.ColorTheme")
     }
 
     static _CreateBottomButtonBar() {
@@ -212,38 +212,38 @@ class SettingsGUI {
             ; Movement Settings
             if (allData.Has("Movement")) {
                 movementData := allData["Movement"]
-                Config.MoveStep := movementData["moveStep"]
-                Config.MoveDelay := movementData["moveDelay"]
-                Config.AccelerationRate := movementData["accelerationRate"]
-                Config.MaxSpeed := movementData["maxSpeed"]
-                Config.EnableAbsoluteMovement := movementData["enableAbsoluteMovement"]
-                Config.ScrollStep := movementData["scrollStep"]
-                Config.ScrollAccelerationRate := movementData["scrollAccelerationRate"]
-                Config.MaxScrollSpeed := movementData["maxScrollSpeed"]
+                Config.get("Movement.BaseSpeed") := movementData["moveStep"]
+                Config.get("Movement.MoveDelay") := movementData["moveDelay"]
+                Config.get("Movement.AccelerationRate") := movementData["accelerationRate"]
+                Config.get("Movement.MaxSpeed") := movementData["maxSpeed"]
+                Config.get("Movement.EnableAbsoluteMovement") := movementData["enableAbsoluteMovement"]
+                Config.get("Movement.ScrollStep") := movementData["scrollStep"]
+                Config.get("Movement.ScrollAccelerationRate") := movementData["scrollAccelerationRate"]
+                Config.get("Movement.MaxScrollSpeed") := movementData["maxScrollSpeed"]
             }
 
             ; Position Settings
             if (allData.Has("Positions")) {
                 positionData := allData["Positions"]
-                Config.MaxSavedPositions := positionData["maxSavedPositions"]
-                Config.MaxUndoLevels := positionData["maxUndoLevels"]
+                Config.get("Positions.MaxSaved")Positions := positionData["maxSavedPositions"]
+                Config.get("Movement.MaxUndoLevels") := positionData["maxUndoLevels"]
             }
 
             ; Visual Settings
             if (allData.Has("Visuals")) {
                 visualData := allData["Visuals"]
-                Config.EnableAudioFeedback := visualData["enableAudioFeedback"]
+                Config.get("Visual.EnableAudioFeedback") := visualData["enableAudioFeedback"]
                 Config.StatusVisibleOnStartup := visualData["statusVisibleOnStartup"]
-                Config.UseSecondaryMonitor := visualData["useSecondaryMonitor"]
+                Config.get("Visual.UseSecondaryMonitor") := visualData["useSecondaryMonitor"]
                 Config.StatusX := visualData["statusX"]
                 Config.StatusY := visualData["statusY"]
                 Config.TooltipX := visualData["tooltipX"]
                 Config.TooltipY := visualData["tooltipY"]
-                Config.ColorTheme := visualData["colorTheme"]
+                Config.get("Visual.ColorTheme") := visualData["colorTheme"]
 
                 ; IMPORTANT: Apply and save the color theme
                 if (visualData.Has("colorTheme")) {
-                    Config.ColorTheme := visualData["colorTheme"]
+                    Config.get("Visual.ColorTheme") := visualData["colorTheme"]
                     ColorThemeManager.SetTheme(visualData["colorTheme"])
                 }
             }

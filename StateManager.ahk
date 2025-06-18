@@ -31,7 +31,7 @@ class StateManager {
         StateManager._saveMode := false
         StateManager._loadMode := false
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(StateManager._mouseMode ? 900 : 400, 150)
         }
     }
@@ -39,7 +39,7 @@ class StateManager {
     static ToggleInvertedMode() {
         StateManager._invertedMode := !StateManager._invertedMode
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(StateManager._invertedMode ? 600 : 300, 100)
         }
     }
@@ -48,7 +48,7 @@ class StateManager {
         StateManager._saveMode := !StateManager._saveMode
         StateManager._loadMode := false
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(StateManager._saveMode ? 750 : 350, 100)
         }
     }
@@ -61,32 +61,32 @@ class StateManager {
             StateManager._lastLoadedSlot := 0
         }
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(StateManager._loadMode ? 750 : 350, 100)
         }
     }
 
     static ToggleAbsoluteMovement() {
-        Config.EnableAbsoluteMovement := !Config.EnableAbsoluteMovement
+        Config.get("Movement.EnableAbsoluteMovement") := !Config.get("Movement.EnableAbsoluteMovement")
         
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(Config.EnableAbsoluteMovement ? 850 : 450, 150)
+        if (Config.get("Visual.EnableAudioFeedback")) {
+            SoundBeep(Config.get("Movement.EnableAbsoluteMovement") ? 850 : 450, 150)
         }
     }
 
     static ToggleStatusVisibility() {
         StateManager._statusVisible := !StateManager._statusVisible
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(StateManager._statusVisible ? 800 : 400, 150)
         }
     }
 
     static ToggleSecondaryMonitor() {
-        Config.UseSecondaryMonitor := !Config.UseSecondaryMonitor
+        Config.get("Visual.UseSecondaryMonitor") := !Config.get("Visual.UseSecondaryMonitor")
         
-        if (Config.EnableAudioFeedback) {
-            SoundBeep(Config.UseSecondaryMonitor ? 900 : 500, 150)
+        if (Config.get("Visual.EnableAudioFeedback")) {
+            SoundBeep(Config.get("Visual.UseSecondaryMonitor") ? 900 : 500, 150)
         }
     }
 

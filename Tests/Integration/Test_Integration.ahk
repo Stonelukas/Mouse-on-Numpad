@@ -15,18 +15,18 @@ class Test_Integration extends TestBase {
     
     TestSettingsPersistence(t) {
         ; Save current settings
-        originalMoveStep := Config.MoveStep
+        originalMoveStep := Config.get("Movement.BaseSpeed")
         
         ; Change a setting
-        Config.MoveStep := 10
+        Config.get("Movement.BaseSpeed") := 10
         Config.Save()
         
         ; Reload and verify
         Config.Load()
-        t.AssertEqual(10, Config.MoveStep, "Setting should persist after save/load")
+        t.AssertEqual(10, Config.get("Movement.BaseSpeed"), "Setting should persist after save/load")
         
         ; Restore original
-        Config.MoveStep := originalMoveStep
+        Config.get("Movement.BaseSpeed") := originalMoveStep
         Config.Save()
         
         t.Pass("Settings persistence working")

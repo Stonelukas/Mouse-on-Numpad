@@ -61,7 +61,7 @@ class StatusIndicator {
             mainStatus := "🖱️ ON"
         }
         
-        movementMode := Config.EnableAbsoluteMovement ? "🎯 ABS" : "🔄 REL"
+        movementMode := Config.get("Movement.EnableAbsoluteMovement") ? "🎯 ABS" : "🔄 REL"
         
         heldButtons := ""
         if (StateManager.IsLeftButtonHeld() || GetKeyState("LButton", "P")) {
@@ -206,7 +206,7 @@ class StatusIndicator {
         tempGui.MarginX := 8
         tempGui.MarginY := 4
         
-        if (Config.UseSecondaryMonitor) {
+        if (Config.get("Visual.UseSecondaryMonitor")) {
             bgColor := ColorThemeManager.GetColor("statusOn")
             statusText := "Secondary Monitor ON"
         } else {

@@ -14,7 +14,7 @@ class MouseActions {
         
         MouseGetPos(&currentX, &currentY)
         MouseActions.mousePositionHistory.Push({x: currentX, y: currentY})
-        if (MouseActions.mousePositionHistory.Length > Config.MaxUndoLevels) {
+        if (MouseActions.mousePositionHistory.Length > Config.get("Movement.MaxUndoLevels")) {
             MouseActions.mousePositionHistory.RemoveAt(1)
         }
         
@@ -31,32 +31,32 @@ class MouseActions {
             rightPressed := GetKeyState("Numpad6", "P")
             
             if (upPressed && leftPressed) {
-                finalDx := -Config.MoveStep
-                finalDy := -Config.MoveStep
+                finalDx := -Config.get("Movement.BaseSpeed")
+                finalDy := -Config.get("Movement.BaseSpeed")
                 feedbackDirection := "up-left"
             } else if (upPressed && rightPressed) {
-                finalDx := Config.MoveStep
-                finalDy := -Config.MoveStep
+                finalDx := Config.get("Movement.BaseSpeed")
+                finalDy := -Config.get("Movement.BaseSpeed")
                 feedbackDirection := "up-right"
             } else if (downPressed && leftPressed) {
-                finalDx := -Config.MoveStep
-                finalDy := Config.MoveStep
+                finalDx := -Config.get("Movement.BaseSpeed")
+                finalDy := Config.get("Movement.BaseSpeed")
                 feedbackDirection := "down-left"
             } else if (downPressed && rightPressed) {
-                finalDx := Config.MoveStep
-                finalDy := Config.MoveStep
+                finalDx := Config.get("Movement.BaseSpeed")
+                finalDy := Config.get("Movement.BaseSpeed")
                 feedbackDirection := "down-right"
             } else if (upPressed) {
-                finalDy := -Config.MoveStep
+                finalDy := -Config.get("Movement.BaseSpeed")
                 feedbackDirection := "up"
             } else if (downPressed) {
-                finalDy := Config.MoveStep
+                finalDy := Config.get("Movement.BaseSpeed")
                 feedbackDirection := "down"
             } else if (leftPressed) {
-                finalDx := -Config.MoveStep
+                finalDx := -Config.get("Movement.BaseSpeed")
                 feedbackDirection := "left"
             } else if (rightPressed) {
-                finalDx := Config.MoveStep
+                finalDx := Config.get("Movement.BaseSpeed")
                 feedbackDirection := "right"
             }
             
@@ -74,7 +74,7 @@ class MouseActions {
             }
             
             if (accelDx != 0 || accelDy != 0) {
-                if (Config.EnableAbsoluteMovement) {
+                if (Config.get("Movement.EnableAbsoluteMovement")) {
                     MouseGetPos(&currentAbsX, &currentAbsY)
                     MouseMove(currentAbsX + accelDx, currentAbsY + accelDy, 0)
                 } else {
@@ -82,12 +82,12 @@ class MouseActions {
                 }
             }
             
-            currentSpeed := currentSpeed * Config.AccelerationRate
-            if (currentSpeed > Config.MaxSpeed / Config.MoveStep) {
-                currentSpeed := Config.MaxSpeed / Config.MoveStep
+            currentSpeed := currentSpeed * Config.get("Movement.AccelerationRate")
+            if (currentSpeed > Config.get("Movement.MaxSpeed") / Config.get("Movement.BaseSpeed")) {
+                currentSpeed := Config.get("Movement.MaxSpeed") / Config.get("Movement.BaseSpeed")
             }
             
-            Sleep(Config.MoveDelay)
+            Sleep(Config.get("Movement.MoveDelay"))
         }
     }
 
@@ -109,7 +109,7 @@ class MouseActions {
         currentScrollSpeed := 1.0
         
         while GetKeyState(key, "P") {
-            scrollAmount := Round(Config.ScrollStep * currentScrollSpeed)
+            scrollAmount := Round(Config.get("Movement.ScrollStep") * currentScrollSpeed)
             
             if (scrollAmount < 1) {
                 scrollAmount := 1
@@ -119,20 +119,20 @@ class MouseActions {
                 Send("{Wheel" . direction . "}")
             }
             
-            currentScrollSpeed := currentScrollSpeed * Config.ScrollAccelerationRate
+            currentScrollSpeed := currentScrollSpeed * Config.get("Movement.ScrollAccelerationRate")
             
-            if (currentScrollSpeed > Config.MaxScrollSpeed / Config.ScrollStep) {
-                currentScrollSpeed := Config.MaxScrollSpeed / Config.ScrollStep
+            if (currentScrollSpeed > Config.get("Movement.MaxScrollSpeed") / Config.get("Movement.ScrollStep")) {
+                currentScrollSpeed := Config.get("Movement.MaxScrollSpeed") / Config.get("Movement.ScrollStep")
             }
             
-            Sleep(Config.MoveDelay)
+            Sleep(Config.get("Movement.MoveDelay"))
         }
     }
 
     static UndoLastMovement() {
         if (MouseActions.mousePositionHistory.Length <= 1) {
             StatusIndicator.ShowTemporaryMessage("❌ NO UNDO", "error")
-            if (Config.EnableAudioFeedback) {
+            if (Config.get("Visual.EnableAudioFeedback")) {
                 SoundBeep(200, 150)
             }
             return
@@ -148,7 +148,7 @@ class MouseActions {
         
         StatusIndicator.ShowTemporaryMessage("↶ UNDONE", "success")
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(650, 100)
         }
     }
@@ -160,7 +160,7 @@ class MouseActions {
     static AddToHistory(x, y) {
         ; x and y should already be in screen coordinates
         MouseActions.mousePositionHistory.Push({x: x, y: y})
-        if (MouseActions.mousePositionHistory.Length > Config.MaxUndoLevels) {
+        if (MouseActions.mousePositionHistory.Length > Config.get("Movement.MaxUndoLevels")) {
             MouseActions.mousePositionHistory.RemoveAt(1)
         }
     }

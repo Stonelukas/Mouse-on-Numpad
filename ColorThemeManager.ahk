@@ -161,8 +161,8 @@ class ColorThemeManager {
         ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
         
         ; Load saved theme from config
-        if (Config.ColorTheme != "" && ColorThemeManager.themes.Has(Config.ColorTheme)) {
-            ColorThemeManager.ApplyTheme(Config.ColorTheme)
+        if (Config.get("Visual.ColorTheme") != "" && ColorThemeManager.themes.Has(Config.get("Visual.ColorTheme"))) {
+            ColorThemeManager.ApplyTheme(Config.get("Visual.ColorTheme"))
         } else {
             ; Default to "Default" theme
             ColorThemeManager.ApplyTheme("Default")
@@ -174,7 +174,7 @@ class ColorThemeManager {
         if (ColorThemeManager.themes.Has(themeName)) {
             ColorThemeManager.currentTheme := themeName
             ColorThemeManager.currentColors := ColorThemeManager.themes[themeName].colors
-            Config.ColorTheme := themeName
+            Config.get("Visual.ColorTheme") := themeName
             
             ; Apply theme to existing GUIs
             ColorThemeManager.UpdateAllGUIs()
@@ -279,7 +279,7 @@ class ColorThemeManager {
     
     ; Save theme preference
     static SaveTheme() {
-        Config.ColorTheme := ColorThemeManager.currentTheme
+        Config.get("Visual.ColorTheme") := ColorThemeManager.currentTheme
         Config.Save()
     }
 }

@@ -74,7 +74,7 @@ class SettingsGUI {
     static _InitializeTempSettings() {
         ; Copy current settings to temp storage for preview
         ; Movement Settings
-        SettingsGUI.tempSettings["MoveStep"] := Config.MoveStep
+        SettingsGUI.tempSettings["MoveStep"] := Config.get("Movement.BaseSpeed")
         SettingsGUI.tempSettings["MoveDelay"] := Config.MoveDelay
         SettingsGUI.tempSettings["AccelerationRate"] := Config.AccelerationRate
         SettingsGUI.tempSettings["MaxSpeed"] := Config.MaxSpeed
@@ -883,7 +883,7 @@ class SettingsGUI {
         ; Apply all settings from temp storage to actual config
         try {
             ; Movement Settings
-            Config.MoveStep := Integer(SettingsGUI.controls["MoveStep"].Text)
+            Config.get("Movement.BaseSpeed") := Integer(SettingsGUI.controls["MoveStep"].Text)
             Config.MoveDelay := Integer(SettingsGUI.controls["MoveDelay"].Text)
             Config.AccelerationRate := Float(SettingsGUI.controls["AccelerationRate"].Text)
             Config.MaxSpeed := Integer(SettingsGUI.controls["MaxSpeed"].Text)
@@ -1467,7 +1467,7 @@ class SettingsGUI {
             "Reset to Defaults", "YesNo Icon?")
         if (result = "Yes") {
             ; Reset to default values
-            Config.MoveStep := 4
+            Config.get("Movement.BaseSpeed") := 4
             Config.MoveDelay := 15
             Config.AccelerationRate := 1.1
             Config.MaxSpeed := 30

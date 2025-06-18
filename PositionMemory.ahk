@@ -8,7 +8,7 @@ class PositionMemory {
     static savedPositions := Map()
 
     static SavePosition(slot) {
-        if (slot < 1 || slot > Config.MaxSavedPositions) {
+        if (slot < 1 || slot > Config.get("Positions.MaxSaved")Positions) {
             TooltipSystem.ShowStandard("Invalid Slot!", "error")
             return
         }
@@ -21,20 +21,20 @@ class PositionMemory {
 
         StatusIndicator.ShowTemporaryMessage("💾 SAVED " . slot, "success")
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(700, 100)
         }
     }
 
     static RestorePosition(slot) {
-        if (slot < 1 || slot > Config.MaxSavedPositions) {
+        if (slot < 1 || slot > Config.get("Positions.MaxSaved")Positions) {
             TooltipSystem.ShowStandard("Invalid Slot!", "error")
             return
         }
         
         if (!PositionMemory.savedPositions.Has(slot)) {
             StatusIndicator.ShowTemporaryMessage("❌ NO POS " . slot, "error")
-            if (Config.EnableAudioFeedback) {
+            if (Config.get("Visual.EnableAudioFeedback")) {
                 SoundBeep(200, 150)
             }
             return
@@ -52,7 +52,7 @@ class PositionMemory {
         
         StatusIndicator.ShowTemporaryMessage("📍 POS " . slot, "info")
         
-        if (Config.EnableAudioFeedback) {
+        if (Config.get("Visual.EnableAudioFeedback")) {
             SoundBeep(500, 100)
         }
     }
@@ -79,7 +79,7 @@ class PositionMemory {
     static LoadPositions() {
         PositionMemory.savedPositions := Map()
         
-        Loop Config.MaxSavedPositions {
+        Loop Config.get("Positions.MaxSaved")Positions {
             x := IniRead(Config.PersistentPositionsFile, "Positions", "Slot" . A_Index . "X", "")
             y := IniRead(Config.PersistentPositionsFile, "Positions", "Slot" . A_Index . "Y", "")
             

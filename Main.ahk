@@ -2,7 +2,7 @@
 
 ; ######################################################################################################################
 ; Main Entry Point - Mouse on Numpad Enhanced with Working Color Theme Support
-; Version: 2.1.5 - Fixed Theme Application
+; Version: 2.1.5 - Fixed Theme Application and Config Access
 ; ######################################################################################################################
 
 ; Include all modules in correct order
@@ -70,72 +70,112 @@ initialize() {
     StatusIndicator.Update()
 }
 
-onScriptExit(ExitReason, ExitCode) {
-    if (!StateManager.IsReloading()) {
-        ; Save current theme preference
-        ColorThemeManager.SaveTheme()
-        Config.Save()
-    }
+onScriptExit(*) {
+    ; Save configuration
+    Config.Save()
     
+    ; Save positions
     PositionMemory.SavePositions()
-    TooltipSystem.Cleanup()
-    StatusIndicator.Cleanup()
     
-    SetTimer(checkFullscreenPeriodically, 0)
+    ; Clean up tooltips
+    TooltipSystem.HideAll()
+    
+    ; Hide status indicator
+    StatusIndicator.Hide()
 }
 
 checkFullscreenPeriodically() {
-    ; Refresh monitor configuration periodically (every 10 checks)
-    static checkCount := 0
-    checkCount++
-    if (checkCount >= 10) {
-        MonitorUtils.Refresh()
-        checkCount := 0
-    }
+    ; Check if any app is fullscreen
+    wasFullscreen := StateManager.isFullscreenActive
+    StateManager.isFullscreenActive := MonitorUtils.IsFullscreenAppActive()
     
-    StatusIndicator.UpdateVisibility()
-    TooltipSystem.HandleFullscreen()
+    ; Handle state change
+    if (StateManager.isFullscreenActive && !wasFullscreen) {
+        TooltipSystem.HideAll()
+        StatusIndicator.Hide()
+    } else if (!StateManager.isFullscreenActive && wasFullscreen) {
+        if (StateManager.statusVisible) {
+            StatusIndicator.Show()
+        }
+    }
 }
 
 ; ======================================================================================================================
-; Theme Testing and Debug Hotkeys
+; Global Shortcut Documentation
 ; ======================================================================================================================
 
-; Theme cycle test (Ctrl+Alt+T) - cycles through all themes
-^!t::{
-    static themeIndex := 1
-    themes := ColorThemeManager.GetThemeList()
+; Show help (Ctrl+Alt+H)
+^!h::{
+    helpText := "
+    (
+🖱️ MOUSE ON NUMPAD ENHANCED - KEYBOARD SHORTCUTS 🖱️
+
+====== MAIN CONTROLS ======
+Numpad +        Toggle Mouse Mode ON/OFF
+Numpad *        Enter Save Position Mode
+Numpad -        Enter Load Position Mode
+Numpad /        Undo Last Movement
+
+====== SETTINGS & DISPLAY ======
+Ctrl+Numpad +   Toggle Status Display
+Ctrl+Alt+S      Open Settings GUI
+Ctrl+Alt+R      Reload Script
+Ctrl+Alt+H      Show This Help
+
+====== MONITOR CONTROLS ======
+Alt+Numpad 9    Toggle Secondary Monitor
+Ctrl+Alt+Numpad 9   Test Monitor Configuration
+
+====== THEME SHORTCUTS ======
+Ctrl+Shift+1-7  Quick Theme Switch
+Ctrl+Alt+Shift+T    Theme Debug Info
+
+====== MOUSE MOVEMENT (When Mouse Mode ON) ======
+Numpad 8        Move Up
+Numpad 2        Move Down
+Numpad 4        Move Left
+Numpad 6        Move Right
+Numpad 7/9/1/3  Diagonal Movement
+Numpad 5        Left Click (hold to drag)
+Numpad 0        Right Click
+Numpad .        Middle Click
+
+====== POSITION MEMORY (In Save/Load Mode) ======
+Numpad 1-9      Save/Load Position Slot
+    )"
     
-    themeIndex++
-    if (themeIndex > themes.Length) {
-        themeIndex := 1
-    }
-    
-    ColorThemeManager.SetTheme(themes[themeIndex])
-    TooltipSystem.ShowStandard("Theme: " . themes[themeIndex], "info", 2000)
-    
-    ; Force status update
-    StatusIndicator.Update()
+    MsgBox(helpText, "Keyboard Shortcuts", "Iconi")
 }
 
-; Force theme application (Ctrl+Alt+F) - reapplies current theme
-^!f::{
+; Open Settings GUI (Ctrl+Alt+S)
+^!s::{
+    SettingsGUI.Show()
+}
+
+; Reload Script (Ctrl+Alt+R)
+^!r::{
+    StateManager.ReloadScript()
+}
+
+; Quick theme switching (Ctrl+Shift+1 through 7)
+^+1::ColorThemeManager.SetTheme("Default")
+^+2::ColorThemeManager.SetTheme("Dark Mode")
+^+3::ColorThemeManager.SetTheme("High Contrast")
+^+4::ColorThemeManager.SetTheme("Ocean")
+^+5::ColorThemeManager.SetTheme("Forest")
+^+6::ColorThemeManager.SetTheme("Sunset")
+^+7::ColorThemeManager.SetTheme("Minimal")
+
+; Theme change notification
+^+8::{
     currentTheme := ColorThemeManager.GetCurrentTheme()
-    
-    ; Force reapply the current theme
-    ColorThemeManager.SetTheme(currentTheme)
-    
-    ; Force update all components
-    StatusIndicator.Update()
-    
-    ; Show confirmation
-    TooltipSystem.ShowStandard("Theme Reapplied: " . currentTheme, "success", 2000)
+    TooltipSystem.ShowStandard("Current theme: " . currentTheme, "success", 2000)
 }
 
 ; Theme debug info (Ctrl+Alt+Shift+T) - shows current theme details
 ^!+d::{
     currentTheme := ColorThemeManager.GetCurrentTheme()
-    savedTheme := Config.ColorTheme
+    savedTheme := Config.Get("Visual.ColorTheme", "Default")
     
     debugInfo := "Theme Debug Info:`n`n"
     debugInfo .= "Current Active Theme: " . currentTheme . "`n"
@@ -169,4 +209,3 @@ checkFullscreenPeriodically() {
 
 ; Initialize and start
 initialize()
-

@@ -133,7 +133,7 @@ class PositionsTabModule extends BaseTabModule {
             ; Add metadata
             FileAppend("`n[Metadata]`n", selectedFile)
             FileAppend("ExportVersion=1.0`n", selectedFile)
-            FileAppend("MaxSlots=" . Config.MaxSavedPositions . "`n", selectedFile)
+            FileAppend("MaxSlots=" . Config.get("Positions.MaxSaved")Positions . "`n", selectedFile)
             FileAppend("PositionCount=" . exportedCount . "`n", selectedFile)
 
             MsgBox("Successfully exported " . exportedCount . " position(s) to:`n`n" . selectedFile, 
@@ -294,7 +294,7 @@ class PositionsTabModule extends BaseTabModule {
             importedCount := 0
 
             ; Read positions from the selected file
-            loop Config.MaxSavedPositions {
+            loop Config.get("Positions.MaxSaved")Positions {
                 x := IniRead(selectedFile, "Positions", "Slot" . A_Index . "X", "")
                 y := IniRead(selectedFile, "Positions", "Slot" . A_Index . "Y", "")
 
@@ -321,15 +321,15 @@ class PositionsTabModule extends BaseTabModule {
                         MouseGetPos(&originalX, &originalY)
 
                         ; Disable audio feedback temporarily during import
-                        originalAudioSetting := Config.EnableAudioFeedback
-                        Config.EnableAudioFeedback := false
+                        originalAudioSetting := Config.get("Visual.EnableAudioFeedback")
+                        Config.get("Visual.EnableAudioFeedback") := false
 
                         MouseMove(Integer(x), Integer(y), 0)
                         PositionMemory.SavePosition(A_Index)
                         MouseMove(originalX, originalY, 0)
 
                         ; Restore audio setting
-                        Config.EnableAudioFeedback := originalAudioSetting
+                        Config.get("Visual.EnableAudioFeedback") := originalAudioSetting
 
                         importedCount++
                     }
@@ -413,8 +413,8 @@ class PositionsTabModule extends BaseTabModule {
         ; Slot selection
         saveDialog.Add("Text", "x10 y85 w100", "Save to slot:")
         slotEdit := saveDialog.Add("Edit", "x110 y82 w50 Number")
-        slotUpDown := saveDialog.Add("UpDown", "x160 y82 w20 h20 Range1-" . Config.MaxSavedPositions, 1)
-        saveDialog.Add("Text", "x185 y85 w100", "(1-" . Config.MaxSavedPositions . ")")
+        slotUpDown := saveDialog.Add("UpDown", "x160 y82 w20 h20 Range1-" . Config.get("Positions.MaxSaved")Positions, 1)
+        saveDialog.Add("Text", "x185 y85 w100", "(1-" . Config.get("Positions.MaxSaved")Positions . ")")
 
         ; Set initial value
         slotEdit.Text := "1"
@@ -476,7 +476,7 @@ class PositionsTabModule extends BaseTabModule {
         ; Process the save if user clicked Save
         if (shouldSave) {
             slot := Integer(savedSlot)  ; Use the saved slot value
-            if (slot >= 1 && slot <= Config.MaxSavedPositions) {
+            if (slot >= 1 && slot <= Config.get("Positions.MaxSaved")Positions) {
                 ; Check if slot already has a position
                 if (PositionMemory.HasPosition(slot)) {
                     result := MsgBox("Slot " . slot . " already has a saved position. Overwrite?", 
@@ -502,7 +502,7 @@ class PositionsTabModule extends BaseTabModule {
                 MsgBox("Mouse position (" . savedX . ", " . savedY . ") saved to slot " . slot, 
                     "Success", "Iconi T3")
             } else {
-                MsgBox("Invalid slot number. Please enter a number between 1 and " . Config.MaxSavedPositions, 
+                MsgBox("Invalid slot number. Please enter a number between 1 and " . Config.get("Positions.MaxSaved")Positions, 
                     "Error", "IconX")
             }
         }
