@@ -1,186 +1,220 @@
-#Requires AutoHotkey v2.0
-
 ; ######################################################################################################################
 ; Configuration Management Module
 ; ######################################################################################################################
 
+#Requires AutoHotkey v2.0
+
 class Config {
-    ; Movement settings
-    static MoveStep := 4
-    static MoveDelay := 15
-    static AccelerationRate := 1.1
-    static MaxSpeed := 30
-    static EnableAbsoluteMovement := false
+    static iniFile := A_ScriptDir . "\settings.ini"
+    static settings := Map()
+    static defaults := Map()
 
-    ; Undo settings
-    static MaxUndoLevels := 10
+    ; Initialize default values
+    static __New() {
+        ; Movement settings
+        Config.defaults["Movement.BaseSpeed"] := 10
+        Config.defaults["Movement.AccelerationEnabled"] := true
+        Config.defaults["Movement.MaxSpeed"] := 50
+        Config.defaults["Movement.AccelerationRate"] := 2
+        Config.defaults["Movement.ScrollSpeed"] := 3
+        Config.defaults["Movement.SmoothScrolling"] := true
+        Config.defaults["Movement.MovementMode"] := "Normal"
 
-    ; Position memory
-    static MaxSavedPositions := 5
-    static PersistentPositionsFile := "MouseNumpadConfig.ini"
+        ; Visual settings
+        Config.defaults["Visual.StatusIndicatorEnabled"] := true
+        Config.defaults["Visual.StatusIndicatorPosition"] := "TopRight"
+        Config.defaults["Visual.StatusIndicatorSize"] := "Medium"
+        Config.defaults["Visual.StatusIndicatorOpacity"] := 80
+        Config.defaults["Visual.ShowTooltips"] := true
+        Config.defaults["Visual.TooltipDuration"] := 1500
+        Config.defaults["Visual.ColorTheme"] := "Blue"
+        Config.defaults["Visual.AudioFeedback"] := false
 
-    ; GUI settings
-    static TooltipX := 20
-    static TooltipY := "A_ScreenHeight - 80"
-    static StatusX := "Round(A_ScreenWidth * 0.65)"
-    static StatusY := 15
-    static StatusVisibleOnStartup := true
-    static FeedbackDurationShort := 200
-    static FeedbackDurationLong := 3000
-    static EnableAudioFeedback := false
-    static UseSecondaryMonitor := false
+        ; Hotkey defaults
+        Config.defaults["Hotkeys.ToggleMouseMode"] := "NumpadAdd"
+        Config.defaults["Hotkeys.SaveMode"] := "NumpadMult"
+        Config.defaults["Hotkeys.LoadMode"] := "NumpadSub"
+        Config.defaults["Hotkeys.UndoMove"] := "NumpadDiv"
+        Config.defaults["Hotkeys.ToggleStatus"] := "^NumpadAdd"
+        Config.defaults["Hotkeys.ReloadScript"] := "^!r"
+        Config.defaults["Hotkeys.OpenSettings"] := "^!s"
+        Config.defaults["Hotkeys.SecondaryMonitor"] := "!Numpad9"
+        Config.defaults["Hotkeys.MonitorTest"] := "^!Numpad9"
 
-    ; Scroll settings
-    static ScrollStep := 1
-    static ScrollAccelerationRate := 1.1
-    static MaxScrollSpeed := 10
+        ; Movement hotkeys (numpad)
+        Config.defaults["Hotkeys.MoveLeft"] := "Numpad4"
+        Config.defaults["Hotkeys.MoveRight"] := "Numpad6"
+        Config.defaults["Hotkeys.MoveUp"] := "Numpad8"
+        Config.defaults["Hotkeys.MoveDown"] := "Numpad2"
+        Config.defaults["Hotkeys.MoveDiagNW"] := "Numpad7"
+        Config.defaults["Hotkeys.MoveDiagNE"] := "Numpad9"
+        Config.defaults["Hotkeys.MoveDiagSW"] := "Numpad1"
+        Config.defaults["Hotkeys.MoveDiagSE"] := "Numpad3"
+        Config.defaults["Hotkeys.MouseClick"] := "Numpad5"
+        Config.defaults["Hotkeys.RightClick"] := "Numpad0"
+        Config.defaults["Hotkeys.MiddleClick"] := "NumpadDot"
 
-    ; Visuals settings
-    static ColorTheme := ""
+        ; Click hold defaults Hotkeys
+        Config.defaults["Hotkeys.ToggleLeftHold"] := "NumpadClear"
+        Config.defaults["Hotkeys.ToggleRightHold"] := "NumpadIns"
+        Config.defaults["Hotkeys.ToggleMiddleHold"] := "+NumpadEnter"
+        Config.defaults["Hotkeys.SpecialNumpadDot"] := "NumpadDot"
+        Config.defaults["Hotkeys.ToggleInverted"] := "!Numpad1"
 
-    ; Hotkey settings
-    static PrefixKey := ""
-    static InvertModeToggleKey := "NumpadClear"
-    static AbsoluteMovementToggleKey := "NumpadIns"
+        ; Advanced settings
+        Config.defaults["Advanced.LowMemoryMode"] := false
+        Config.defaults["Advanced.UpdateFrequency"] := "Normal"
+        Config.defaults["Advanced.EnableLogging"] := false
+        Config.defaults["Advanced.LogLevel"] := "Info"
+        Config.defaults["Advanced.StartWithWindows"] := false
+        Config.defaults["Advanced.CheckForUpdates"] := "Weekly"
 
+        ; Status settings
+        Config.defaults["Status.VisibleOnStartup"] := true
+        Config.defaults["Status.DefaultPosition"] := "TopRight"
+
+        ; Saved positions file
+        Config.defaults["Files.SavedPositions"] := A_ScriptDir . "\positions.dat"
+    }
+
+    ; Load settings from INI file
     static Load() {
-        ; Load settings from INI file
-        Config._LoadMovementSettings()
-        Config._LoadGUISettings()
-        Config._LoadScrollSettings()
-        Config._LoadHotkeySettings()
-        Config._LoadFeatureSettings()
+        Config.settings.Clear()
+
+        ; Load all defaults first
+        for key, value in Config.defaults {
+            Config.settings[key] := value
+        }
+
+        ; Override with saved settings if file exists
+        if (FileExist(Config.iniFile)) {
+            ; Read each section
+            sections := ["Movement", "Visual", "Hotkeys", "Advanced", "Files"]
+
+            for section in sections {
+                ; Get all keys in this section
+                sectionContent := IniRead(Config.iniFile, section, "")
+                if (sectionContent != "") {
+                    ; Parse each line
+                    loop parse, sectionContent, "`n", "`r" {
+                        if (A_LoopField = "")
+                            continue
+
+                        ; Split key=value
+                        parts := StrSplit(A_LoopField, "=", , 2)
+                        if (parts.Length = 2) {
+                            key := section . "." . parts[1]
+                            value := parts[2]
+
+                            ; Convert string values to appropriate types
+                            if (Config.defaults.Has(key)) {
+                                defaultValue := Config.defaults[key]
+                                if (Type(defaultValue) = "Integer") {
+                                    value := Integer(value)
+                                } else if (Type(defaultValue) = "Float") {
+                                    value := Float(value)
+                                } else if (defaultValue = true || defaultValue = false) {
+                                    value := (value = "1" || value = "true")
+                                }
+                            }
+
+                            Config.settings[key] := value
+                        }
+                    }
+                }
+            }
+        }
+
+        return true
     }
 
-    static _LoadMovementSettings() {
-        tempMoveStep := IniRead(Config.PersistentPositionsFile, "Settings", "MoveStep", Config.MoveStep)
-        tempMoveDelay := IniRead(Config.PersistentPositionsFile, "Settings", "MoveDelay", Config.MoveDelay)
-        tempAccelerationRate := IniRead(Config.PersistentPositionsFile, "Settings", "AccelerationRate", Config.AccelerationRate)
-        tempMaxSpeed := IniRead(Config.PersistentPositionsFile, "Settings", "MaxSpeed", Config.MaxSpeed)
-        tempMaxUndoLevels := IniRead(Config.PersistentPositionsFile, "Settings", "MaxUndoLevels", Config.MaxUndoLevels)
-        tempMaxSavedPositions := IniRead(Config.PersistentPositionsFile, "Settings", "MaxSavedPositions", Config.MaxSavedPositions)
-
-        if (tempMoveStep != "" && IsNumber(tempMoveStep))
-            Config.MoveStep := Number(tempMoveStep)
-        if (tempMoveDelay != "" && IsNumber(tempMoveDelay))
-            Config.MoveDelay := Number(tempMoveDelay)
-        if (tempAccelerationRate != "" && IsNumber(tempAccelerationRate))
-            Config.AccelerationRate := Number(tempAccelerationRate)
-        if (tempMaxSpeed != "" && IsNumber(tempMaxSpeed))
-            Config.MaxSpeed := Number(tempMaxSpeed)
-        if (tempMaxUndoLevels != "" && IsNumber(tempMaxUndoLevels))
-            Config.MaxUndoLevels := Number(tempMaxUndoLevels)
-        if (tempMaxSavedPositions != "" && IsNumber(tempMaxSavedPositions))
-            Config.MaxSavedPositions := Number(tempMaxSavedPositions)
-    }
-
-    static _LoadGUISettings() {
-        tempTooltipX := IniRead(Config.PersistentPositionsFile, "GUI", "TooltipX", Config.TooltipX)
-        tempTooltipY := IniRead(Config.PersistentPositionsFile, "GUI", "TooltipY", Config.TooltipY)
-        tempStatusX := IniRead(Config.PersistentPositionsFile, "GUI", "StatusX", Config.StatusX)
-        tempStatusY := IniRead(Config.PersistentPositionsFile, "GUI", "StatusY", Config.StatusY)
-        tempColorTheme := IniRead(Config.PersistentPositionsFile, "Settings", "ColorTheme", Config.ColorTheme)
-        
-        if (tempTooltipX != "")
-            Config.TooltipX := tempTooltipX
-        if (tempTooltipY != "")
-            Config.TooltipY := tempTooltipY
-        if (tempStatusX != "")
-            Config.StatusX := tempStatusX
-        if (tempStatusY != "")
-            Config.StatusY := tempStatusY
-        if (tempColorTheme != "")
-            Config.ColorTheme := tempColorTheme
-    }
-
-    static _LoadScrollSettings() {
-        tempScrollStep := IniRead(Config.PersistentPositionsFile, "Settings", "ScrollStep", Config.ScrollStep)
-        tempScrollAccelerationRate := IniRead(Config.PersistentPositionsFile, "Settings", "ScrollAccelerationRate", Config.ScrollAccelerationRate)
-        tempMaxScrollSpeed := IniRead(Config.PersistentPositionsFile, "Settings", "MaxScrollSpeed", Config.MaxScrollSpeed)
-
-        if (tempScrollStep != "" && IsNumber(tempScrollStep))
-            Config.ScrollStep := Number(tempScrollStep)
-        if (tempScrollAccelerationRate != "" && IsNumber(tempScrollAccelerationRate))
-            Config.ScrollAccelerationRate := Number(tempScrollAccelerationRate)
-        if (tempMaxScrollSpeed != "" && IsNumber(tempMaxScrollSpeed))
-            Config.MaxScrollSpeed := Number(tempMaxScrollSpeed)
-    }
-
-    static _LoadHotkeySettings() {
-        tempPrefixKey := IniRead(Config.PersistentPositionsFile, "Settings", "PrefixKey", Config.PrefixKey)
-        tempInvertModeToggleKey := IniRead(Config.PersistentPositionsFile, "Settings", "InvertModeToggleKey", Config.InvertModeToggleKey)
-        tempAbsoluteMovementToggleKey := IniRead(Config.PersistentPositionsFile, "Settings", "AbsoluteMovementToggleKey", Config.AbsoluteMovementToggleKey)
-
-        if (tempPrefixKey != "")
-            Config.PrefixKey := tempPrefixKey
-        if (tempInvertModeToggleKey != "")
-            Config.InvertModeToggleKey := tempInvertModeToggleKey
-        if (tempAbsoluteMovementToggleKey != "")
-            Config.AbsoluteMovementToggleKey := tempAbsoluteMovementToggleKey
-    }
-
-    static _LoadFeatureSettings() {
-        tempEnableAudioFeedback := IniRead(Config.PersistentPositionsFile, "Settings", "EnableAudioFeedback", Config.EnableAudioFeedback)
-        tempStatusVisibleOnStartup := IniRead(Config.PersistentPositionsFile, "Settings", "StatusVisibleOnStartup", Config.StatusVisibleOnStartup)
-        tempEnableAbsoluteMovement := IniRead(Config.PersistentPositionsFile, "Settings", "EnableAbsoluteMovement", Config.EnableAbsoluteMovement)
-        tempUseSecondaryMonitor := IniRead(Config.PersistentPositionsFile, "Settings", "UseSecondaryMonitor", Config.UseSecondaryMonitor)
-
-        if (tempEnableAudioFeedback != "")
-            Config.EnableAudioFeedback := (tempEnableAudioFeedback = "true" || tempEnableAudioFeedback = "1")
-        if (tempStatusVisibleOnStartup != "")
-            Config.StatusVisibleOnStartup := (tempStatusVisibleOnStartup = "true" || tempStatusVisibleOnStartup = "1")
-        if (tempEnableAbsoluteMovement != "")
-            Config.EnableAbsoluteMovement := (tempEnableAbsoluteMovement = "true" || tempEnableAbsoluteMovement = "1")
-        if (tempUseSecondaryMonitor != "")
-            Config.UseSecondaryMonitor := (tempUseSecondaryMonitor = "true" || tempUseSecondaryMonitor = "1")
-    }
-
+    ; Save settings to INI file
     static Save() {
-        ; Save all settings to INI file
-        Config._SaveGeneralSettings()
-        Config._SaveMovementSettings()
-        Config._SaveGUISettings()
-        Config._SaveScrollSettings()
-        Config._SaveHotkeySettings()
-        Config._SaveFeatureSettings()
+        ; Ensure directory exists
+        SplitPath(Config.iniFile, , &dir)
+        if (!DirExist(dir)) {
+            DirCreate(dir)
+        }
+
+        ; Save each setting
+        for key, value in Config.settings {
+            ; Split key into section.name
+            parts := StrSplit(key, ".", , 2)
+            if (parts.Length = 2) {
+                section := parts[1]
+                keyName := parts[2]
+
+                ; Convert boolean to string
+                if (value = true) {
+                    value := "1"
+                } else if (value = false) {
+                    value := "0"
+                }
+
+                IniWrite(value, Config.iniFile, section, keyName)
+            }
+        }
+
+        return true
     }
 
-    static _SaveMovementSettings() {
-        IniWrite(Config.MoveStep, Config.PersistentPositionsFile, "Settings", "MoveStep")
-        IniWrite(Config.MoveDelay, Config.PersistentPositionsFile, "Settings", "MoveDelay")
-        IniWrite(Config.AccelerationRate, Config.PersistentPositionsFile, "Settings", "AccelerationRate")
-        IniWrite(Config.MaxSpeed, Config.PersistentPositionsFile, "Settings", "MaxSpeed")
-        IniWrite(Config.MaxUndoLevels, Config.PersistentPositionsFile, "Settings", "MaxUndoLevels")
-        IniWrite(Config.MaxSavedPositions, Config.PersistentPositionsFile, "Settings", "MaxSavedPositions")
+    ; Get a setting value
+    static Get(key, defaultValue := "") {
+        if (Config.settings.Has(key)) {
+            return Config.settings[key]
+        } else if (Config.defaults.Has(key)) {
+            return Config.defaults[key]
+        }
+        return defaultValue
     }
 
-    static _SaveGeneralSettings() {
-        IniWrite(Config.ColorTheme, Config.PersistentPositionsFile, "Settings", "ColorTheme")
+    ; Set a setting value
+    static Set(key, value) {
+        Config.settings[key] := value
     }
 
-    static _SaveGUISettings() {
-        IniWrite(Config.TooltipX, Config.PersistentPositionsFile, "GUI", "TooltipX")
-        IniWrite(Config.TooltipY, Config.PersistentPositionsFile, "GUI", "TooltipY")
-        IniWrite(Config.StatusX, Config.PersistentPositionsFile, "GUI", "StatusX")
-        IniWrite(Config.StatusY, Config.PersistentPositionsFile, "GUI", "StatusY")
+    ; Check if a key exists
+    static Has(key) {
+        return Config.settings.Has(key) || Config.defaults.Has(key)
     }
 
-    static _SaveScrollSettings() {
-        IniWrite(Config.ScrollStep, Config.PersistentPositionsFile, "Settings", "ScrollStep")
-        IniWrite(Config.ScrollAccelerationRate, Config.PersistentPositionsFile, "Settings", "ScrollAccelerationRate")
-        IniWrite(Config.MaxScrollSpeed, Config.PersistentPositionsFile, "Settings", "MaxScrollSpeed")
+    ; Get all settings in a section
+    static GetSection(section) {
+        result := Map()
+        prefix := section . "."
+
+        ; Get from defaults first
+        for key, value in Config.defaults {
+            if (SubStr(key, 1, StrLen(prefix)) = prefix) {
+                shortKey := SubStr(key, StrLen(prefix) + 1)
+                result[shortKey] := Config.Get(key)
+            }
+        }
+
+        return result
     }
 
-    static _SaveHotkeySettings() {
-        IniWrite(Config.PrefixKey, Config.PersistentPositionsFile, "Settings", "PrefixKey")
-        IniWrite(Config.InvertModeToggleKey, Config.PersistentPositionsFile, "Settings", "InvertModeToggleKey")
-        IniWrite(Config.AbsoluteMovementToggleKey, Config.PersistentPositionsFile, "Settings", "AbsoluteMovementToggleKey")
+    ; Reset a setting to default
+    static Reset(key) {
+        if (Config.defaults.Has(key)) {
+            Config.settings[key] := Config.defaults[key]
+            return true
+        }
+        return false
     }
 
-    static _SaveFeatureSettings() {
-        IniWrite(Config.EnableAudioFeedback, Config.PersistentPositionsFile, "Settings", "EnableAudioFeedback")
-        IniWrite(Config.StatusVisibleOnStartup, Config.PersistentPositionsFile, "Settings", "StatusVisibleOnStartup")
-        IniWrite(Config.EnableAbsoluteMovement, Config.PersistentPositionsFile, "Settings", "EnableAbsoluteMovement")
-        IniWrite(Config.UseSecondaryMonitor, Config.PersistentPositionsFile, "Settings", "UseSecondaryMonitor")
+    ; Reset all settings to defaults
+    static ResetAll() {
+        Config.settings.Clear()
+        for key, value in Config.defaults {
+            Config.settings[key] := value
+        }
+        Config.Save()
     }
+
+    ; Persistent positions file path
+    static PersistentPositionsFile => Config.Get("Files.SavedPositions", A_ScriptDir . "\positions.dat")
+
+    ; Common status properties
+    static StatusVisibleOnStartup => Config.Get("Status.VisibleOnStartup", true)
 }

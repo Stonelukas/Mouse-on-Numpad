@@ -404,6 +404,8 @@ class TestRunner {
     }
 }
 
+
+
 ; ======================================================================================================================
 ; Start Test Runner
 ; ======================================================================================================================
@@ -412,6 +414,6 @@ class TestRunner {
 TestRunner.Initialize()
 
 ; Hotkeys for quick access
-F1::TestRunner.ShowGUI()
+^F1::TestRunner.ShowGUI()
 F5::TestRunner.RunAllTests()
 Escape::TestRunner.StopTests()

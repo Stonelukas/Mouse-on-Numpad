@@ -590,4 +590,6 @@ class Test_HotkeysTab extends TestBase {
             }
         }
     }
+
+    
 }
