@@ -7,6 +7,7 @@
 
 ; Include all modules in correct order
 #Include "Config.ahk"
+#Include "ErrorLogger.ahk"
 #Include "StateManager.ahk"
 #Include "MonitorUtils.ahk"
 #Include "ColorThemeManager.ahk"  ; MUST be before tooltip and status modules
@@ -45,6 +46,10 @@ initialize() {
         ; Initialize configuration system FIRST
         Config.Initialize() ; This will create the file if needed and load settings
 
+        ; Initialize error logging system
+        ErrorLogger.Initialize()
+        ErrorLogger.LogInfo("Starting Mouse on Numpad Enhanced initialization", "Main.initialize")
+
         ; Initialize state manager
         StateManager.Initialize()
 
@@ -78,13 +83,22 @@ initialize() {
 
         ; Show initialization success
         TooltipSystem.ShowStandard("Mouse on Numpad Enhanced initialized successfully!", "success", 2000)
+        ErrorLogger.LogInfo("Mouse on Numpad Enhanced initialized successfully", "Main.initialize")
         
     } catch Error as e {
+        ; Log the error first
+        ErrorLogger.LogError("Initialization failed: " . e.Message, "Main.initialize")
+        
         ; Show error message and exit gracefully
         errorMsg := "Failed to initialize Mouse on Numpad Enhanced:`n`n" . e.Message
         if (HasProp(e, "Extra") && e.Extra) {
             errorMsg .= "`n`nDetails: " . e.Extra
+            ErrorLogger.LogError("Additional error details: " . e.Extra, "Main.initialize")
         }
+        if (HasProp(e, "Stack") && e.Stack) {
+            ErrorLogger.LogError("Stack trace: " . e.Stack, "Main.initialize")
+        }
+        
         MsgBox(errorMsg, "Initialization Error", "IconX")
         ExitApp(1)
     }
@@ -92,6 +106,8 @@ initialize() {
 
 onScriptExit(*) {
     try {
+        ErrorLogger.LogInfo("Script shutdown initiated", "Main.onScriptExit")
+        
         ; Save configuration
         Config.Save()
 
@@ -107,10 +123,11 @@ onScriptExit(*) {
         ; Clean up color theme manager
         ColorThemeManager.Cleanup()
         
+        ErrorLogger.LogInfo("Script shutdown completed successfully", "Main.onScriptExit")
+        
     } catch Error as e {
         ; Log error but don't prevent exit
-        ; Could add logging to file here if needed
-        ; For now, just ensure clean exit
+        ErrorLogger.LogError("Error during shutdown: " . e.Message, "Main.onScriptExit")
     }
 }
 
@@ -124,14 +141,17 @@ checkFullscreenPeriodically() {
         if (StateManager.isFullscreenActive && !wasFullscreen) {
             TooltipSystem.HideAll()
             StatusIndicator.Hide()
+            ErrorLogger.LogInfo("Fullscreen mode detected - hiding UI elements", "Main.checkFullscreenPeriodically")
         } else if (!StateManager.isFullscreenActive && wasFullscreen) {
             if (StateManager.statusVisible) {
                 StatusIndicator.Show()
             }
+            ErrorLogger.LogInfo("Fullscreen mode ended - restoring UI elements", "Main.checkFullscreenPeriodically")
         }
     } catch Error as e {
         ; If fullscreen check fails, just continue - don't crash the app
         ; This could happen if monitor configuration changes
+        ErrorLogger.LogError("Fullscreen check failed: " . e.Message, "Main.checkFullscreenPeriodically")
     }
 }
 
@@ -181,6 +201,8 @@ Numpad 1-9      Save/Load Position Slot
 
 ====== DEBUG SHORTCUTS ======
 Ctrl+Alt+D      Test Theme Colors & Tooltips
+Ctrl+Alt+Shift+L    View Debug Log
+Ctrl+Alt+Shift+C    Clear Debug Log
     )"
 
     MsgBox(helpText, "Keyboard Shortcuts", "Iconi")
@@ -240,6 +262,32 @@ Ctrl+Alt+D      Test Theme Colors & Tooltips
 
     ; Test status messages
     SetTimer(() => StatusIndicator.ShowTemporaryMessage("Temporary Status", "info", 1000), -11500)
+    
+    ; Log debug event
+    ErrorLogger.LogInfo("Debug mode activated - testing UI elements", "Main.DebugMode")
+}
+
+; Show debug log (Ctrl+Alt+Shift+L)
+^!+l:: {
+    if (ErrorLogger.isEnabled) {
+        recentEntries := ErrorLogger.GetRecentEntries(30)
+        if (recentEntries = "") {
+            recentEntries := "No log entries found."
+        }
+        MsgBox(recentEntries, "Debug Log (Last 30 entries)", "Iconi")
+    } else {
+        MsgBox("Debug logging is disabled. Enable it in settings to view logs.", "Debug Log", "Iconi")
+    }
+}
+
+; Clear debug log (Ctrl+Alt+Shift+C)
+^!+c:: {
+    if (ErrorLogger.isEnabled) {
+        ErrorLogger.ClearLog()
+        MsgBox("Debug log cleared.", "Debug Log", "Iconi T2")
+    } else {
+        MsgBox("Debug logging is disabled.", "Debug Log", "Iconi T2")
+    }
 }
 
 ; ======================================================================================================================

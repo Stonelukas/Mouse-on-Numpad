@@ -78,6 +78,10 @@ class Config {
         Config.defaults["Hotkeys.ScrollLeft"] := "Numpad9"
         Config.defaults["Hotkeys.ScrollRight"] := "Numpad3"
 
+        ; Debug settings
+        Config.defaults["Debug.EnableLogging"] := false
+        Config.defaults["Debug.LogLevel"] := "ERROR"  ; ERROR, WARNING, INFO
+
         ; Advanced settings
         Config.defaults["Advanced.LowMemoryMode"] := false
         Config.defaults["Advanced.UpdateFrequency"] := "Normal"
