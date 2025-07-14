@@ -7,7 +7,6 @@
 class SettingsGUI {
     static gui := ""
     static currentTab := 1
-    static tabs := []
     static controls := Map()
     static isOpen := false
     static tempSettings := Map()
@@ -201,76 +200,12 @@ class SettingsGUI {
         ; First validate all tabs
         if (!SettingsGUI.tabManager.ValidateAll()) {
             MsgBox("Please correct the validation errors before applying settings.", "Validation Error", "IconX")
-            return
+            return false
         }
 
-        ; CRITICAL FIX: This line was missing - Get data from all tabs
+        ; Get data from all tabs
         allData := SettingsGUI.tabManager.GetAllData()
-
-        ; Movement Settings
-        if (allData.Has("Movement")) {
-            movementData := allData["Movement"]
-            ; OLD (INCORRECT):
-            ; Config.Get("Movement.BaseSpeed") := movementData["moveStep"]
-
-            ; NEW (CORRECT):
-            Config.Set("Movement.BaseSpeed", movementData["moveStep"])
-            Config.Set("Movement.MoveDelay", movementData["moveDelay"])
-            Config.Set("Movement.AccelerationRate", movementData["accelerationRate"])
-            Config.Set("Movement.MaxSpeed", movementData["maxSpeed"])
-            Config.Set("Movement.EnableAbsoluteMovement", movementData["enableAbsoluteMovement"])
-            Config.Set("Movement.ScrollStep", movementData["scrollStep"])
-            Config.Set("Movement.ScrollAccelerationRate", movementData["scrollAccelerationRate"])
-            Config.Set("Movement.MaxScrollSpeed", movementData["maxScrollSpeed"])
-        }
-
-        ; Position Settings
-        if (allData.Has("Positions")) {
-            positionData := allData["Positions"]
-            Config.Set("Positions.MaxSaved", positionData["maxSavedPositions"])
-            Config.Set("Movement.MaxUndoLevels", positionData["maxUndoLevels"])
-        }
-
-        ; Visual Settings
-        if (allData.Has("Visuals")) {
-            visualData := allData["Visuals"]
-            Config.Set("Visual.EnableAudioFeedback", visualData["enableAudioFeedback"])
-            Config.Set("Visual.StatusVisibleOnStartup", visualData["statusVisibleOnStartup"])
-            Config.Set("Visual.UseSecondaryMonitor", visualData["useSecondaryMonitor"])
-            Config.Set("Visual.StatusX", visualData["statusX"])
-            Config.Set("Visual.StatusY", visualData["statusY"])
-            Config.Set("Visual.TooltipX", visualData["tooltipX"])
-            Config.Set("Visual.TooltipY", visualData["tooltipY"])
-            Config.Set("Visual.ColorTheme", visualData["colorTheme"])
-
-            ; Apply and save the color theme
-            if (visualData.Has("colorTheme")) {
-                Config.Set("Visual.ColorTheme", visualData["colorTheme"])
-                ColorThemeManager.SetTheme(visualData["colorTheme"])
-            }
-        }
-
-        ; Save configuration
-        Config.Save()
-
-        ; Update status indicator to reflect changes
-        StatusIndicator.Update()
-
-        ; Show success message
-        MsgBox("Settings have been applied successfully!", "Settings Applied", "Iconi T3")
-    }
-
-    static _OKButtonClick() {
-        ; Validate all tabs
-        if (!SettingsGUI.tabManager.ValidateAll()) {
-            MsgBox("Please correct the validation errors before saving.", "Validation Error", "IconX")
-            return
-        }
-    
-        ; CRITICAL FIX: Get data from all tabs
-        allData := SettingsGUI.tabManager.GetAllData()
-    
-        ; Apply settings from each tab
+        
         try {
             ; Movement Settings
             if (allData.Has("Movement")) {
@@ -284,14 +219,14 @@ class SettingsGUI {
                 Config.Set("Movement.ScrollAccelerationRate", movementData["scrollAccelerationRate"])
                 Config.Set("Movement.MaxScrollSpeed", movementData["maxScrollSpeed"])
             }
-    
+
             ; Position Settings
             if (allData.Has("Positions")) {
                 positionData := allData["Positions"]
                 Config.Set("Positions.MaxSaved", positionData["maxSavedPositions"])
                 Config.Set("Movement.MaxUndoLevels", positionData["maxUndoLevels"])
             }
-    
+
             ; Visual Settings
             if (allData.Has("Visuals")) {
                 visualData := allData["Visuals"]
@@ -303,32 +238,37 @@ class SettingsGUI {
                 Config.Set("Visual.TooltipX", visualData["tooltipX"])
                 Config.Set("Visual.TooltipY", visualData["tooltipY"])
                 Config.Set("Visual.ColorTheme", visualData["colorTheme"])
-                
+
                 ; Apply and save the color theme
                 if (visualData.Has("colorTheme")) {
                     Config.Set("Visual.ColorTheme", visualData["colorTheme"])
                     ColorThemeManager.SetTheme(visualData["colorTheme"])
                 }
             }
-    
+
             ; Save configuration
             Config.Save()
-    
+
             ; Update status indicator to reflect changes
             StatusIndicator.Update()
-    
-            ; Close the GUI
-            SettingsGUI._OnClose()
-    
+
+            ; Show success message
+            MsgBox("Settings have been applied successfully!", "Settings Applied", "Iconi T3")
+            return true
+            
         } catch Error as e {
-            MsgBox("Error saving settings: " . e.Message . "`n`nPlease check your input values.", 
+            MsgBox("Error applying settings: " . e.Message . "`n`nPlease check your input values.", 
                 "Settings Error", "IconX")
+            return false
         }
     }
 
     static _ApplyAndClose() {
-        SettingsGUI._ApplySettings()
-        SettingsGUI._OnClose()
+        ; Apply settings first
+        if (SettingsGUI._ApplySettings()) {
+            ; Only close if apply was successful
+            SettingsGUI._OnClose()
+        }
     }
 
     static _Cancel() {

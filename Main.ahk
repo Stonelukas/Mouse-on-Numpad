@@ -34,78 +34,104 @@
 ; ======================================================================================================================
 
 initialize() {
-    ; CRITICAL: Set coordinate mode to Screen for proper negative coordinate handling
-    CoordMode("Mouse", "Screen")
-    CoordMode("Pixel", "Screen")
-    CoordMode("ToolTip", "Screen")
-    CoordMode("Menu", "Screen")
-    CoordMode("Caret", "Screen")
+    try {
+        ; CRITICAL: Set coordinate mode to Screen for proper negative coordinate handling
+        CoordMode("Mouse", "Screen")
+        CoordMode("Pixel", "Screen")
+        CoordMode("ToolTip", "Screen")
+        CoordMode("Menu", "Screen")
+        CoordMode("Caret", "Screen")
 
-    ; Initialize configuration system FIRST
-    Config.Initialize() ; This will create the file if needed and load settings
+        ; Initialize configuration system FIRST
+        Config.Initialize() ; This will create the file if needed and load settings
 
-    ; Initialize state manager
-    StateManager.Initialize()
+        ; Initialize state manager
+        StateManager.Initialize()
 
-    ; Initialize color theme system BEFORE creating any GUIs
-    ColorThemeManager.Initialize()
+        ; Initialize color theme system BEFORE creating any GUIs
+        ColorThemeManager.Initialize()
 
-    ; Load configuration FIRST
-    Config.Load()
+        ; Load configuration FIRST
+        Config.Load()
 
-    ; Set up exit handler
-    OnExit(onScriptExit)
+        ; Set up exit handler
+        OnExit(onScriptExit)
 
-    ; Initialize monitor system
-    MonitorUtils.Init()
+        ; Initialize monitor system
+        MonitorUtils.Init()
 
-    ; Initialize all GUI systems (they will use the current theme)
-    TooltipSystem.Initialize()
-    StatusIndicator.Initialize()
+        ; Initialize all GUI systems (they will use the current theme)
+        TooltipSystem.Initialize()
+        StatusIndicator.Initialize()
 
-    ; Load position memory
-    PositionMemory.LoadPositions()
+        ; Load position memory
+        PositionMemory.LoadPositions()
 
-    ; Initialize HotkeyManager to register all hotkeys
-    HotkeyManager.Initialize()
+        ; Initialize HotkeyManager to register all hotkeys
+        HotkeyManager.Initialize()
 
-    ; Start periodic checks
-    SetTimer(checkFullscreenPeriodically, 500)
+        ; Start periodic checks
+        SetTimer(checkFullscreenPeriodically, 500)
 
-    ; Force initial status update to ensure colors are applied
-    StatusIndicator.Update()
+        ; Force initial status update to ensure colors are applied
+        StatusIndicator.Update()
 
-    ; Show initialization success
-    TooltipSystem.ShowStandard("Mouse on Numpad Enhanced initialized successfully!", "success", 2000)
+        ; Show initialization success
+        TooltipSystem.ShowStandard("Mouse on Numpad Enhanced initialized successfully!", "success", 2000)
+        
+    } catch Error as e {
+        ; Show error message and exit gracefully
+        errorMsg := "Failed to initialize Mouse on Numpad Enhanced:`n`n" . e.Message
+        if (HasProp(e, "Extra") && e.Extra) {
+            errorMsg .= "`n`nDetails: " . e.Extra
+        }
+        MsgBox(errorMsg, "Initialization Error", "IconX")
+        ExitApp(1)
+    }
 }
 
 onScriptExit(*) {
-    ; Save configuration
-    Config.Save()
+    try {
+        ; Save configuration
+        Config.Save()
 
-    ; Save positions
-    PositionMemory.SavePositions()
+        ; Save positions
+        PositionMemory.SavePositions()
 
-    ; Clean up tooltips
-    TooltipSystem.Cleanup()
+        ; Clean up tooltips
+        TooltipSystem.Cleanup()
 
-    ; Hide status indicator
-    StatusIndicator.Hide()
+        ; Hide status indicator
+        StatusIndicator.Hide()
+        
+        ; Clean up color theme manager
+        ColorThemeManager.Cleanup()
+        
+    } catch Error as e {
+        ; Log error but don't prevent exit
+        ; Could add logging to file here if needed
+        ; For now, just ensure clean exit
+    }
 }
 
 checkFullscreenPeriodically() {
-    ; Check if any app is fullscreen
-    wasFullscreen := StateManager.isFullscreenActive
-    StateManager.isFullscreenActive := MonitorUtils.IsFullscreen()
+    try {
+        ; Check if any app is fullscreen
+        wasFullscreen := StateManager.isFullscreenActive
+        StateManager.isFullscreenActive := MonitorUtils.IsFullscreen()
 
-    ; Handle state change
-    if (StateManager.isFullscreenActive && !wasFullscreen) {
-        TooltipSystem.HideAll()
-        StatusIndicator.Hide()
-    } else if (!StateManager.isFullscreenActive && wasFullscreen) {
-        if (StateManager.statusVisible) {
-            StatusIndicator.Show()
+        ; Handle state change
+        if (StateManager.isFullscreenActive && !wasFullscreen) {
+            TooltipSystem.HideAll()
+            StatusIndicator.Hide()
+        } else if (!StateManager.isFullscreenActive && wasFullscreen) {
+            if (StateManager.statusVisible) {
+                StatusIndicator.Show()
+            }
         }
+    } catch Error as e {
+        ; If fullscreen check fails, just continue - don't crash the app
+        ; This could happen if monitor configuration changes
     }
 }
 
@@ -136,8 +162,9 @@ Alt+Numpad 9    Toggle Secondary Monitor
 Ctrl+Alt+Numpad 9   Test Monitor Configuration
 
 ====== THEME SHORTCUTS ======
-Ctrl+Shift+1-7  Quick Theme Switch
-Ctrl+Alt+Shift+T    Theme Debug Info
+Ctrl+Shift+1-7  Quick Theme Switch (1=Default, 2=Dark Mode, etc.)
+Ctrl+Shift+8    Show Current Theme
+Ctrl+Alt+Shift+D    Theme Debug Info
 
 ====== MOUSE MOVEMENT (When Mouse Mode ON) ======
 Numpad 8        Move Up
@@ -151,6 +178,9 @@ Numpad .        Middle Click
 
 ====== POSITION MEMORY (In Save/Load Mode) ======
 Numpad 1-9      Save/Load Position Slot
+
+====== DEBUG SHORTCUTS ======
+Ctrl+Alt+D      Test Theme Colors & Tooltips
     )"
 
     MsgBox(helpText, "Keyboard Shortcuts", "Iconi")
@@ -181,7 +211,7 @@ Numpad 1-9      Save/Load Position Slot
     TooltipSystem.ShowStandard("Current theme: " . currentTheme, "success", 2000)
 }
 
-; Theme debug info (Ctrl+Alt+Shift+T) - shows current theme details
+; Theme debug info (Ctrl+Alt+Shift+D) - shows current theme details
 ^!+d:: {
     currentTheme := ColorThemeManager.GetCurrentTheme()
     savedTheme := Config.Get("Visual.ColorTheme", "Default")
