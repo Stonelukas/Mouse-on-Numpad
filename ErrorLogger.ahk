@@ -25,7 +25,8 @@ class ErrorLogger {
     
     ; Log an error message
     static LogError(message, location := "") {
-        if (!ErrorLogger.isEnabled) return
+        if (!ErrorLogger.isEnabled)
+            return
         
         fullMessage := "ERROR"
         if (location) {
@@ -35,10 +36,10 @@ class ErrorLogger {
         
         ErrorLogger.Log("ERROR", fullMessage)
     }
-    
     ; Log a warning message
     static LogWarning(message, location := "") {
-        if (!ErrorLogger.isEnabled) return
+        if (!ErrorLogger.isEnabled)
+            return
         
         fullMessage := "WARNING"
         if (location) {
@@ -48,10 +49,11 @@ class ErrorLogger {
         
         ErrorLogger.Log("WARNING", fullMessage)
     }
-    
+    ; Log an info message
     ; Log an info message
     static LogInfo(message, location := "") {
-        if (!ErrorLogger.isEnabled) return
+        if (!ErrorLogger.isEnabled)
+            return
         
         fullMessage := "INFO"
         if (location) {
@@ -61,13 +63,13 @@ class ErrorLogger {
         
         ErrorLogger.Log("INFO", fullMessage)
     }
-    
+    ; Core logging method
     ; Core logging method
     static Log(level, message) {
-        if (!ErrorLogger.isEnabled) return
+        if (!ErrorLogger.isEnabled)
+            return
         
         try {
-            ; Check log file size and rotate if needed
             if (FileExist(ErrorLogger.logFile)) {
                 fileInfo := FileGetAttrib(ErrorLogger.logFile)
                 if (FileGetSize(ErrorLogger.logFile) > ErrorLogger.maxLogSize) {
