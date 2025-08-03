@@ -252,4 +252,25 @@ class ColorThemeManager {
         
         return true
     }
+    
+    ; Cleanup method for resource management
+    static Cleanup() {
+        ; Clear all themes except defaults
+        try {
+            ; Keep only the default themes
+            defaultThemes := ["Default", "Dark Mode", "High Contrast", "Ocean", "Forest", "Sunset", "Minimal"]
+            for themeName in ColorThemeManager.themes {
+                if (!defaultThemes.Has(themeName)) {
+                    ColorThemeManager.themes.Delete(themeName)
+                }
+            }
+            
+            ; Reset to default theme
+            ColorThemeManager.currentTheme := "Default"
+            ColorThemeManager.currentColors := ColorThemeManager.themes["Default"].colors
+            
+        } catch Error as e {
+            ; Ignore cleanup errors
+        }
+    }
 }

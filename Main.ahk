@@ -7,6 +7,7 @@
 
 ; Include all modules in correct order
 #Include "Config.ahk"
+#Include "ErrorLogger.ahk"
 #Include "StateManager.ahk"
 #Include "MonitorUtils.ahk"
 #Include "ColorThemeManager.ahk"  ; MUST be before tooltip and status modules
@@ -34,78 +35,123 @@
 ; ======================================================================================================================
 
 initialize() {
-    ; CRITICAL: Set coordinate mode to Screen for proper negative coordinate handling
-    CoordMode("Mouse", "Screen")
-    CoordMode("Pixel", "Screen")
-    CoordMode("ToolTip", "Screen")
-    CoordMode("Menu", "Screen")
-    CoordMode("Caret", "Screen")
+    try {
+        ; CRITICAL: Set coordinate mode to Screen for proper negative coordinate handling
+        CoordMode("Mouse", "Screen")
+        CoordMode("Pixel", "Screen")
+        CoordMode("ToolTip", "Screen")
+        CoordMode("Menu", "Screen")
+        CoordMode("Caret", "Screen")
 
-    ; Initialize configuration system FIRST
-    Config.Initialize() ; This will create the file if needed and load settings
+        ; Initialize configuration system FIRST
+        Config.Initialize() ; This will create the file if needed and load settings
 
-    ; Initialize state manager
-    StateManager.Initialize()
+        ; Initialize error logging system
+        ErrorLogger.Initialize()
+        ErrorLogger.LogInfo("Starting Mouse on Numpad Enhanced initialization", "Main.initialize")
 
-    ; Initialize color theme system BEFORE creating any GUIs
-    ColorThemeManager.Initialize()
+        ; Initialize state manager
+        StateManager.Initialize()
 
-    ; Load configuration FIRST
-    Config.Load()
+        ; Initialize color theme system BEFORE creating any GUIs
+        ColorThemeManager.Initialize()
 
-    ; Set up exit handler
-    OnExit(onScriptExit)
+        ; Load configuration FIRST
+        Config.Load()
 
-    ; Initialize monitor system
-    MonitorUtils.Init()
+        ; Set up exit handler
+        OnExit(onScriptExit)
 
-    ; Initialize all GUI systems (they will use the current theme)
-    TooltipSystem.Initialize()
-    StatusIndicator.Initialize()
+        ; Initialize monitor system
+        MonitorUtils.Init()
 
-    ; Load position memory
-    PositionMemory.LoadPositions()
+        ; Initialize all GUI systems (they will use the current theme)
+        TooltipSystem.Initialize()
+        StatusIndicator.Initialize()
 
-    ; Initialize HotkeyManager to register all hotkeys
-    HotkeyManager.Initialize()
+        ; Load position memory
+        PositionMemory.LoadPositions()
 
-    ; Start periodic checks
-    SetTimer(checkFullscreenPeriodically, 500)
+        ; Initialize HotkeyManager to register all hotkeys
+        HotkeyManager.Initialize()
 
-    ; Force initial status update to ensure colors are applied
-    StatusIndicator.Update()
+        ; Start periodic checks
+        SetTimer(checkFullscreenPeriodically, 500)
 
-    ; Show initialization success
-    TooltipSystem.ShowStandard("Mouse on Numpad Enhanced initialized successfully!", "success", 2000)
+        ; Force initial status update to ensure colors are applied
+        StatusIndicator.Update()
+
+        ; Show initialization success
+        TooltipSystem.ShowStandard("Mouse on Numpad Enhanced initialized successfully!", "success", 2000)
+        ErrorLogger.LogInfo("Mouse on Numpad Enhanced initialized successfully", "Main.initialize")
+        
+    } catch Error as e {
+        ; Log the error first
+        ErrorLogger.LogError("Initialization failed: " . e.Message, "Main.initialize")
+        
+        ; Show error message and exit gracefully
+        errorMsg := "Failed to initialize Mouse on Numpad Enhanced:`n`n" . e.Message
+        if (HasProp(e, "Extra") && e.Extra) {
+            errorMsg .= "`n`nDetails: " . e.Extra
+            ErrorLogger.LogError("Additional error details: " . e.Extra, "Main.initialize")
+        }
+        if (HasProp(e, "Stack") && e.Stack) {
+            ErrorLogger.LogError("Stack trace: " . e.Stack, "Main.initialize")
+        }
+        
+        MsgBox(errorMsg, "Initialization Error", "IconX")
+        ExitApp(1)
+    }
 }
 
 onScriptExit(*) {
-    ; Save configuration
-    Config.Save()
+    try {
+        ErrorLogger.LogInfo("Script shutdown initiated", "Main.onScriptExit")
+        
+        ; Save configuration
+        Config.Save()
 
-    ; Save positions
-    PositionMemory.SavePositions()
+        ; Save positions
+        PositionMemory.SavePositions()
 
-    ; Clean up tooltips
-    TooltipSystem.Cleanup()
+        ; Clean up tooltips
+        TooltipSystem.Cleanup()
 
-    ; Hide status indicator
-    StatusIndicator.Hide()
+        ; Hide status indicator
+        StatusIndicator.Hide()
+        
+        ; Clean up color theme manager
+        ColorThemeManager.Cleanup()
+        
+        ErrorLogger.LogInfo("Script shutdown completed successfully", "Main.onScriptExit")
+        
+    } catch Error as e {
+        ; Log error but don't prevent exit
+        ErrorLogger.LogError("Error during shutdown: " . e.Message, "Main.onScriptExit")
+    }
 }
 
 checkFullscreenPeriodically() {
-    ; Check if any app is fullscreen
-    wasFullscreen := StateManager.isFullscreenActive
-    StateManager.isFullscreenActive := MonitorUtils.IsFullscreen()
+    try {
+        ; Check if any app is fullscreen
+        wasFullscreen := StateManager.isFullscreenActive
+        StateManager.isFullscreenActive := MonitorUtils.IsFullscreen()
 
-    ; Handle state change
-    if (StateManager.isFullscreenActive && !wasFullscreen) {
-        TooltipSystem.HideAll()
-        StatusIndicator.Hide()
-    } else if (!StateManager.isFullscreenActive && wasFullscreen) {
-        if (StateManager.statusVisible) {
-            StatusIndicator.Show()
+        ; Handle state change
+        if (StateManager.isFullscreenActive && !wasFullscreen) {
+            TooltipSystem.HideAll()
+            StatusIndicator.Hide()
+            ErrorLogger.LogInfo("Fullscreen mode detected - hiding UI elements", "Main.checkFullscreenPeriodically")
+        } else if (!StateManager.isFullscreenActive && wasFullscreen) {
+            if (StateManager.statusVisible) {
+                StatusIndicator.Show()
+            }
+            ErrorLogger.LogInfo("Fullscreen mode ended - restoring UI elements", "Main.checkFullscreenPeriodically")
         }
+    } catch Error as e {
+        ; If fullscreen check fails, just continue - don't crash the app
+        ; This could happen if monitor configuration changes
+        ErrorLogger.LogError("Fullscreen check failed: " . e.Message, "Main.checkFullscreenPeriodically")
     }
 }
 
@@ -136,8 +182,9 @@ Alt+Numpad 9    Toggle Secondary Monitor
 Ctrl+Alt+Numpad 9   Test Monitor Configuration
 
 ====== THEME SHORTCUTS ======
-Ctrl+Shift+1-7  Quick Theme Switch
-Ctrl+Alt+Shift+T    Theme Debug Info
+Ctrl+Shift+1-7  Quick Theme Switch (1=Default, 2=Dark Mode, etc.)
+Ctrl+Shift+8    Show Current Theme
+Ctrl+Alt+Shift+D    Theme Debug Info
 
 ====== MOUSE MOVEMENT (When Mouse Mode ON) ======
 Numpad 8        Move Up
@@ -151,6 +198,11 @@ Numpad .        Middle Click
 
 ====== POSITION MEMORY (In Save/Load Mode) ======
 Numpad 1-9      Save/Load Position Slot
+
+====== DEBUG SHORTCUTS ======
+Ctrl+Alt+D      Test Theme Colors & Tooltips
+Ctrl+Alt+Shift+L    View Debug Log
+Ctrl+Alt+Shift+C    Clear Debug Log
     )"
 
     MsgBox(helpText, "Keyboard Shortcuts", "Iconi")
@@ -181,7 +233,7 @@ Numpad 1-9      Save/Load Position Slot
     TooltipSystem.ShowStandard("Current theme: " . currentTheme, "success", 2000)
 }
 
-; Theme debug info (Ctrl+Alt+Shift+T) - shows current theme details
+; Theme debug info (Ctrl+Alt+Shift+D) - shows current theme details
 ^!+d:: {
     currentTheme := ColorThemeManager.GetCurrentTheme()
     savedTheme := Config.Get("Visual.ColorTheme", "Default")
@@ -210,6 +262,32 @@ Numpad 1-9      Save/Load Position Slot
 
     ; Test status messages
     SetTimer(() => StatusIndicator.ShowTemporaryMessage("Temporary Status", "info", 1000), -11500)
+    
+    ; Log debug event
+    ErrorLogger.LogInfo("Debug mode activated - testing UI elements", "Main.DebugMode")
+}
+
+; Show debug log (Ctrl+Alt+Shift+L)
+^!+l:: {
+    if (ErrorLogger.isEnabled) {
+        recentEntries := ErrorLogger.GetRecentEntries(30)
+        if (recentEntries = "") {
+            recentEntries := "No log entries found."
+        }
+        MsgBox(recentEntries, "Debug Log (Last 30 entries)", "Iconi")
+    } else {
+        MsgBox("Debug logging is disabled. Enable it in settings to view logs.", "Debug Log", "Iconi")
+    }
+}
+
+; Clear debug log (Ctrl+Alt+Shift+C)
+^!+c:: {
+    if (ErrorLogger.isEnabled) {
+        ErrorLogger.ClearLog()
+        MsgBox("Debug log cleared.", "Debug Log", "Iconi T2")
+    } else {
+        MsgBox("Debug logging is disabled.", "Debug Log", "Iconi T2")
+    }
 }
 
 ; ======================================================================================================================

@@ -56,10 +56,18 @@ class MouseActions {
         ; Ensure we're using screen coordinates
         CoordMode("Mouse", "Screen")
         
+        ; Cache config values for performance
+        baseSpeed := Config.Get("Movement.BaseSpeed")
+        accelRate := Config.Get("Movement.AccelerationRate")
+        maxSpeed := Config.Get("Movement.MaxSpeed")
+        moveDelay := Config.Get("Movement.MoveDelay")
+        enableAbsolute := Config.Get("Movement.EnableAbsoluteMovement")
+        maxSpeedMultiplier := maxSpeed / baseSpeed
+        
         while GetKeyState(key, "P") {
             ; Calculate movement with acceleration
-            moveX := Round(dirX * Config.Get("Movement.BaseSpeed") * currentSpeed)
-            moveY := Round(dirY * Config.Get("Movement.BaseSpeed") * currentSpeed)
+            moveX := Round(dirX * baseSpeed * currentSpeed)
+            moveY := Round(dirY * baseSpeed * currentSpeed)
             
             ; Apply inverted mode if active
             if (StateManager.IsInvertedMode()) {
@@ -68,7 +76,7 @@ class MouseActions {
             }
             
             ; Perform movement
-            if (Config.Get("Movement.EnableAbsoluteMovement")) {
+            if (enableAbsolute) {
                 MouseGetPos(&currentX, &currentY)
                 MouseMove(currentX + moveX, currentY + moveY, 0)
             } else {
@@ -79,12 +87,12 @@ class MouseActions {
             TooltipSystem.ShowStandard(arrow, "info")
             
             ; Update acceleration
-            currentSpeed := currentSpeed * Config.Get("Movement.AccelerationRate")
-            if (currentSpeed > Config.Get("Movement.MaxSpeed") / Config.Get("Movement.BaseSpeed")) {
-                currentSpeed := Config.Get("Movement.MaxSpeed") / Config.Get("Movement.BaseSpeed")
+            currentSpeed := currentSpeed * accelRate
+            if (currentSpeed > maxSpeedMultiplier) {
+                currentSpeed := maxSpeedMultiplier
             }
             
-            Sleep(Config.Get("Movement.MoveDelay"))
+            Sleep(moveDelay)
         }
     }
     
@@ -96,6 +104,14 @@ class MouseActions {
         CoordMode("Mouse", "Screen")
         MouseGetPos(&startX, &startY)
         MouseActions.AddToHistory(startX, startY)
+        
+        ; Cache config values for performance
+        baseSpeed := Config.Get("Movement.BaseSpeed")
+        accelRate := Config.Get("Movement.AccelerationRate")
+        maxSpeed := Config.Get("Movement.MaxSpeed")
+        moveDelay := Config.Get("Movement.MoveDelay")
+        enableAbsolute := Config.Get("Movement.EnableAbsoluteMovement")
+        maxSpeedMultiplier := maxSpeed / baseSpeed
         
         while (GetKeyState(keys[1], "P") || GetKeyState(keys[2], "P")) {
             ; Check which keys are pressed
@@ -110,32 +126,32 @@ class MouseActions {
             feedbackDirection := ""
             
             if (upPressed && leftPressed) {
-                finalDx := -Config.Get("Movement.BaseSpeed")
-                finalDy := -Config.Get("Movement.BaseSpeed")
+                finalDx := -baseSpeed
+                finalDy := -baseSpeed
                 feedbackDirection := "up-left"
             } else if (upPressed && rightPressed) {
-                finalDx := Config.Get("Movement.BaseSpeed")
-                finalDy := -Config.Get("Movement.BaseSpeed")
+                finalDx := baseSpeed
+                finalDy := -baseSpeed
                 feedbackDirection := "up-right"
             } else if (downPressed && leftPressed) {
-                finalDx := -Config.Get("Movement.BaseSpeed")
-                finalDy := Config.Get("Movement.BaseSpeed")
+                finalDx := -baseSpeed
+                finalDy := baseSpeed
                 feedbackDirection := "down-left"
             } else if (downPressed && rightPressed) {
-                finalDx := Config.Get("Movement.BaseSpeed")
-                finalDy := Config.Get("Movement.BaseSpeed")
+                finalDx := baseSpeed
+                finalDy := baseSpeed
                 feedbackDirection := "down-right"
             } else if (upPressed) {
-                finalDy := -Config.Get("Movement.BaseSpeed")
+                finalDy := -baseSpeed
                 feedbackDirection := "up"
             } else if (downPressed) {
-                finalDy := Config.Get("Movement.BaseSpeed")
+                finalDy := baseSpeed
                 feedbackDirection := "down"
             } else if (leftPressed) {
-                finalDx := -Config.Get("Movement.BaseSpeed")
+                finalDx := -baseSpeed
                 feedbackDirection := "left"
             } else if (rightPressed) {
-                finalDx := Config.Get("Movement.BaseSpeed")
+                finalDx := baseSpeed
                 feedbackDirection := "right"
             }
             
@@ -153,7 +169,7 @@ class MouseActions {
             }
             
             if (accelDx != 0 || accelDy != 0) {
-                if (Config.Get("Movement.EnableAbsoluteMovement")) {
+                if (enableAbsolute) {
                     MouseGetPos(&currentAbsX, &currentAbsY)
                     MouseMove(currentAbsX + accelDx, currentAbsY + accelDy, 0)
                 } else {
@@ -161,12 +177,12 @@ class MouseActions {
                 }
             }
             
-            currentSpeed := currentSpeed * Config.Get("Movement.AccelerationRate")
-            if (currentSpeed > Config.Get("Movement.MaxSpeed") / Config.Get("Movement.BaseSpeed")) {
-                currentSpeed := Config.Get("Movement.MaxSpeed") / Config.Get("Movement.BaseSpeed")
+            currentSpeed := currentSpeed * accelRate
+            if (currentSpeed > maxSpeedMultiplier) {
+                currentSpeed := maxSpeedMultiplier
             }
             
-            Sleep(Config.Get("Movement.MoveDelay"))
+            Sleep(moveDelay)
         }
     }
 
@@ -195,8 +211,15 @@ class MouseActions {
             actualKey := StrReplace(key, "!", "")  ; Remove Alt modifier
         }
         
+        ; Cache config values for performance
+        scrollStep := Config.Get("Movement.ScrollStep")
+        scrollAccelRate := Config.Get("Movement.ScrollAccelerationRate")
+        maxScrollSpeed := Config.Get("Movement.MaxScrollSpeed")
+        moveDelay := Config.Get("Movement.MoveDelay")
+        maxScrollMultiplier := maxScrollSpeed / scrollStep
+        
         while GetKeyState(actualKey, "P") {
-            scrollAmount := Round(Config.Get("Movement.ScrollStep") * currentScrollSpeed)
+            scrollAmount := Round(scrollStep * currentScrollSpeed)
             
             if (scrollAmount < 1) {
                 scrollAmount := 1
@@ -206,13 +229,13 @@ class MouseActions {
                 Send("{Wheel" . direction . "}")
             }
             
-            currentScrollSpeed := currentScrollSpeed * Config.Get("Movement.ScrollAccelerationRate")
+            currentScrollSpeed := currentScrollSpeed * scrollAccelRate
             
-            if (currentScrollSpeed > Config.Get("Movement.MaxScrollSpeed") / Config.Get("Movement.ScrollStep")) {
-                currentScrollSpeed := Config.Get("Movement.MaxScrollSpeed") / Config.Get("Movement.ScrollStep")
+            if (currentScrollSpeed > maxScrollMultiplier) {
+                currentScrollSpeed := maxScrollMultiplier
             }
             
-            Sleep(Config.Get("Movement.MoveDelay"))
+            Sleep(moveDelay)
         }
     }
 
@@ -251,7 +274,8 @@ class MouseActions {
     static AddToHistory(x, y) {
         ; x and y should already be in screen coordinates
         MouseActions.mousePositionHistory.Push({x: x, y: y})
-        if (MouseActions.mousePositionHistory.Length > Config.Get("Movement.MaxUndoLevels")) {
+        maxUndoLevels := Config.Get("Movement.MaxUndoLevels")
+        if (MouseActions.mousePositionHistory.Length > maxUndoLevels) {
             MouseActions.mousePositionHistory.RemoveAt(1)
         }
     }

@@ -124,55 +124,90 @@ class MovementTabModule extends BaseTabModule {
     Validate() {
         try {
             ; Validate Move Step
-            moveStep := Integer(this.controls["MoveStep"].Text)
+            moveStepText := Trim(this.controls["MoveStep"].Text)
+            if (moveStepText = "") {
+                MsgBox("Move Step cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            moveStep := Integer(moveStepText)
             if (moveStep < 1 || moveStep > 50) {
                 MsgBox("Move Step must be between 1 and 50", "Validation Error", "IconX")
                 return false
             }
 
             ; Validate Move Delay
-            moveDelay := Integer(this.controls["MoveDelay"].Text)
+            moveDelayText := Trim(this.controls["MoveDelay"].Text)
+            if (moveDelayText = "") {
+                MsgBox("Move Delay cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            moveDelay := Integer(moveDelayText)
             if (moveDelay < 5 || moveDelay > 100) {
                 MsgBox("Move Delay must be between 5 and 100 milliseconds", "Validation Error", "IconX")
                 return false
             }
 
             ; Validate Acceleration Rate
-            accelRate := Float(this.controls["AccelerationRate"].Text)
+            accelRateText := Trim(this.controls["AccelerationRate"].Text)
+            if (accelRateText = "") {
+                MsgBox("Acceleration Rate cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            accelRate := Float(accelRateText)
             if (accelRate < 1.0 || accelRate > 3.0) {
                 MsgBox("Acceleration Rate must be between 1.0 and 3.0", "Validation Error", "IconX")
                 return false
             }
 
             ; Validate Max Speed
-            maxSpeed := Integer(this.controls["MaxSpeed"].Text)
+            maxSpeedText := Trim(this.controls["MaxSpeed"].Text)
+            if (maxSpeedText = "") {
+                MsgBox("Max Speed cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            maxSpeed := Integer(maxSpeedText)
             if (maxSpeed < 5 || maxSpeed > 100) {
                 MsgBox("Max Speed must be between 5 and 100", "Validation Error", "IconX")
                 return false
             }
 
             ; Validate Scroll Settings
-            scrollStep := Integer(this.controls["ScrollStep"].Text)
+            scrollStepText := Trim(this.controls["ScrollStep"].Text)
+            if (scrollStepText = "") {
+                MsgBox("Scroll Step cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            scrollStep := Integer(scrollStepText)
             if (scrollStep < 1 || scrollStep > 10) {
                 MsgBox("Scroll Step must be between 1 and 10", "Validation Error", "IconX")
                 return false
             }
 
-            scrollAccel := Float(this.controls["ScrollAccelerationRate"].Text)
+            scrollAccelText := Trim(this.controls["ScrollAccelerationRate"].Text)
+            if (scrollAccelText = "") {
+                MsgBox("Scroll Acceleration Rate cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            scrollAccel := Float(scrollAccelText)
             if (scrollAccel < 1.0 || scrollAccel > 3.0) {
                 MsgBox("Scroll Acceleration must be between 1.0 and 3.0", "Validation Error", "IconX")
                 return false
             }
 
-            maxScroll := Integer(this.controls["MaxScrollSpeed"].Text)
+            maxScrollText := Trim(this.controls["MaxScrollSpeed"].Text)
+            if (maxScrollText = "") {
+                MsgBox("Max Scroll Speed cannot be empty", "Validation Error", "IconX")
+                return false
+            }
+            maxScroll := Integer(maxScrollText)
             if (maxScroll < 1 || maxScroll > 50) {
                 MsgBox("Max Scroll Speed must be between 1 and 50", "Validation Error", "IconX")
                 return false
             }
 
             return true
-        } catch {
-            MsgBox("Please enter valid numeric values in all fields", "Validation Error", "IconX")
+        } catch Error as e {
+            MsgBox("Please enter valid numeric values in all fields`n`nError: " . e.Message, "Validation Error", "IconX")
             return false
         }
     }
