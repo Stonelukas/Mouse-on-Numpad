@@ -1,0 +1,13 @@
+[Unit]
+Description=Mouse on Numpad Enhanced
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mouse-on-numpad --daemon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

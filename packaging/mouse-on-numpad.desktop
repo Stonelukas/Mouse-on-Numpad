@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Mouse on Numpad
+Comment=Control mouse with numpad keys
+Exec=mouse-on-numpad --settings
+Icon=mouse-on-numpad
+Categories=Utility;Accessibility;
+Keywords=mouse;numpad;accessibility;keyboard;
+StartupNotify=false
+Terminal=false
