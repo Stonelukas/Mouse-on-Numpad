@@ -2,3 +2,26 @@
 *.ini
 *.log
 Test*.txt
+
+# Python
+*.pyc
+.coverage
+htmlcov/
+
+# Virtual environment
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Claude cache
+.claude/tsc-cache/
+
+# Repomix output
+repomix-output.xml

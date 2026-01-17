@@ -771,6 +771,45 @@ Preserved for reference - all features to be implemented:
 
 ---
 
-*Document Version: 1.0*
+## Validation Summary
+
+**Validated:** 2026-01-17
+**Questions asked:** 10
+
+### Confirmed Decisions
+
+| Decision | Choice | Notes |
+|----------|--------|-------|
+| Language | Python 3.10+ | Recommended, faster development |
+| GUI Framework | GTK 4 with PyGObject | Native look, Wayland support |
+| Wayland Strategy | XWayland fallback | Require `GDK_BACKEND=x11` on Wayland |
+| Target Distro | Current distro (Arch) | Test on daily driver first |
+| Repository | Move Windows to branch | Linux becomes main when finished |
+| GUI Scope | MVP first | Start minimal, add tabs incrementally |
+| Config Migration | No migration | Fresh JSON, document manual steps |
+| Testing | Unit tests only for MVP | Add integration tests later |
+| System Tray | AppIndicator3 | Works across most DEs |
+| Packaging | uv + Arch PKGBUILD | Use modern Python tooling |
+
+### Action Items
+
+- [ ] Update pyproject.toml to use `uv` as package manager (not pip)
+- [ ] Prioritize PKGBUILD for AUR over other package formats
+- [ ] Create git branch `windows-legacy` before starting Linux development
+- [ ] Focus on Arch Linux testing environment
+- [ ] Defer full 7-tab GUI to post-MVP release
+- [ ] Skip Flatpak/AppImage for initial release
+
+### Plan Revisions Needed
+
+1. **Section 6.1**: Change from pip/requirements.txt to uv + pyproject.toml
+2. **Section 6.4**: Prioritize AUR package, defer Flatpak/AppImage
+3. **Phase 4**: Reduce scope to MVP GUI (2-3 tabs max)
+4. **Phase 5**: XWayland fallback only, no compositor plugins for v1
+
+---
+
+*Document Version: 1.1*
 *Created: January 2026*
 *Last Updated: January 2026*
+*Validated: January 17, 2026*
