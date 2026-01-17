@@ -79,9 +79,14 @@ def main() -> int:
         return 0
 
     if args.settings:
-        # GUI will be implemented in Phase 4
-        print("Settings GUI not yet implemented (Phase 4)")
-        return 0
+        # Launch GTK GUI
+        import gi
+
+        gi.require_version("Gtk", "4.0")
+        from .app import Application
+
+        app = Application()
+        return app.run(None)
 
     if args.daemon:
         # Daemon mode will be implemented in Phase 3
