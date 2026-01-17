@@ -1,4 +1,8 @@
-"""GTK Application for Mouse on Numpad Enhanced."""
+"""GTK 4 Application for Mouse on Numpad Settings GUI.
+
+Note: TrayIcon uses pystray (GTK 3) and runs in daemon.py separately.
+This module is GTK 4 only - do not import pystray/TrayIcon here.
+"""
 
 import gi  # type: ignore[import-untyped]
 
@@ -8,17 +12,13 @@ from gi.repository import Gio, Gtk  # type: ignore[import-untyped]
 from .core.config import ConfigManager
 from .core.state_manager import StateManager
 from .ui.main_window import MainWindow
-from .ui.status_indicator import StatusIndicator
-from .ui.tray_icon import TrayIcon
 
 
 class Application(Gtk.Application):  # type: ignore[misc]
-    """GTK Application integrating all GUI components.
+    """GTK 4 Application for settings window only.
 
-    Manages lifecycle of:
-    - Settings window (MainWindow)
-    - System tray icon (TrayIcon)
-    - Status indicator (StatusIndicator)
+    Note: TrayIcon and StatusIndicator are managed by daemon.py
+    to avoid GTK 3/4 version conflicts.
     """
 
     def __init__(self) -> None:
@@ -32,24 +32,12 @@ class Application(Gtk.Application):  # type: ignore[misc]
         self._config = ConfigManager()
         self._state = StateManager()
 
-        # UI components (initialized in do_startup)
+        # UI components (initialized in do_activate)
         self._main_window: MainWindow | None = None
-        self._tray_icon: TrayIcon | None = None
-        self._status_indicator: StatusIndicator | None = None
 
     def do_startup(self) -> None:
-        """Called once when application starts.
-
-        Initialize UI components that persist for app lifetime.
-        """
+        """Called once when application starts."""
         Gtk.Application.do_startup(self)
-
-        # Create status indicator (always present but auto-hides)
-        self._status_indicator = StatusIndicator(self._state)
-
-        # Create system tray icon
-        self._tray_icon = TrayIcon(self, self._state)
-        self._tray_icon.show()
 
     def do_activate(self) -> None:
         """Called when application is activated (e.g., settings requested).
