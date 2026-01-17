@@ -8,6 +8,7 @@ import evdev
 
 from .core import ConfigManager, StateManager, ErrorLogger
 from .input import MonitorManager, PositionMemory, AudioFeedback
+from .input.movement_controller import MovementController
 
 
 class YdotoolMouse:
@@ -72,18 +73,23 @@ class Daemon:
     KEY_KPASTERISK = 55  # Save position mode
     KEY_KPMINUS = 74     # Load position mode
 
-    NUMPAD_ACTIONS = {
-        76: "click",       # KEY_KP5 - left click
-        82: "right",       # KEY_KP0 - right click
-        96: "middle",      # KEY_KPENTER - middle click
-        72: "up",          # KEY_KP8 - move up
-        80: "down",        # KEY_KP2 - move down
-        75: "left",        # KEY_KP4 - move left
-        77: "right_dir",   # KEY_KP6 - move right
-        71: "up_left",     # KEY_KP7 - diagonal
-        73: "up_right",    # KEY_KP9 - diagonal
-        79: "down_left",   # KEY_KP1 - diagonal
-        81: "down_right",  # KEY_KP3 - diagonal
+    # Click actions
+    CLICK_ACTIONS = {
+        76: "left",    # KEY_KP5 - left click
+        82: "right",   # KEY_KP0 - right click
+        96: "middle",  # KEY_KPENTER - middle click
+    }
+
+    # Movement keys (direction strings)
+    MOVEMENT_KEYS = {
+        72: ("up",),           # KEY_KP8
+        80: ("down",),         # KEY_KP2
+        75: ("left",),         # KEY_KP4
+        77: ("right",),        # KEY_KP6
+        71: ("up", "left"),    # KEY_KP7 - diagonal
+        73: ("up", "right"),   # KEY_KP9 - diagonal
+        79: ("down", "left"),  # KEY_KP1 - diagonal
+        81: ("down", "right"), # KEY_KP3 - diagonal
     }
 
     def __init__(
@@ -99,6 +105,7 @@ class Daemon:
         self.monitors = MonitorManager()
         self.positions = PositionMemory(self.config, self.monitors)
         self.audio = AudioFeedback(self.config)
+        self.movement = MovementController(self.config, self.mouse)
         self._running = False
         self._devices: list[evdev.InputDevice] = []
         self._threads: list[threading.Thread] = []
@@ -127,6 +134,9 @@ class Daemon:
         # Toggle mouse mode with Numpad+ (like Windows version)
         if keycode == self.KEY_KPPLUS and pressed:
             enabled = self.state.toggle()
+            if not enabled:
+                # Stop all movement when disabling
+                self.movement.stop_all()
             self.logger.info("Mouse mode: %s", "enabled" if enabled else "disabled")
             print(f"Mouse mode: {'ENABLED' if enabled else 'DISABLED'}")
             return True  # Suppress this key
@@ -135,47 +145,27 @@ class Daemon:
         if not self.state.is_enabled:
             return False  # Let key pass through
 
-        # Check if this is a numpad key we handle
-        if keycode not in self.NUMPAD_ACTIONS:
-            return False
+        # Handle click actions
+        if keycode in self.CLICK_ACTIONS:
+            if pressed:
+                button = self.CLICK_ACTIONS[keycode]
+                self.mouse.click(button)
+            return True  # Suppress click keys
 
-        if pressed:
-            self._held_keys.add(keycode)
-            # Process movement on press AND repeat
-        else:
-            self._held_keys.discard(keycode)
-            return True  # Suppress release too
+        # Handle movement keys
+        if keycode in self.MOVEMENT_KEYS:
+            directions = self.MOVEMENT_KEYS[keycode]
+            if pressed:
+                # Start moving in direction(s)
+                for direction in directions:
+                    self.movement.start_direction(direction)
+            else:
+                # Stop moving in direction(s)
+                for direction in directions:
+                    self.movement.stop_direction(direction)
+            return True  # Suppress movement keys
 
-        action = self.NUMPAD_ACTIONS.get(keycode)
-        if action is None:
-            return False
-
-        speed = self.config.get("movement.base_speed", 10)
-
-        if action == "click":
-            self.mouse.click("left")
-        elif action == "right":
-            self.mouse.click("right")
-        elif action == "middle":
-            self.mouse.click("middle")
-        elif action == "up":
-            self.mouse.move(0, -speed)
-        elif action == "down":
-            self.mouse.move(0, speed)
-        elif action == "left":
-            self.mouse.move(-speed, 0)
-        elif action == "right_dir":
-            self.mouse.move(speed, 0)
-        elif action == "up_left":
-            self.mouse.move(-speed, -speed)
-        elif action == "up_right":
-            self.mouse.move(speed, -speed)
-        elif action == "down_left":
-            self.mouse.move(-speed, speed)
-        elif action == "down_right":
-            self.mouse.move(speed, speed)
-
-        return True  # Suppress numpad keys when mouse mode enabled
+        return False  # Don't suppress other keys
 
     def _read_device(self, device: evdev.InputDevice) -> None:
         """Read events from a device in a thread."""

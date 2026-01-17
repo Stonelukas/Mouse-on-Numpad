@@ -24,7 +24,7 @@ class TestConfigManager:
         """Config file created with defaults on first run."""
         config = ConfigManager(config_dir=temp_config_dir)
         assert config.config_file.exists()
-        assert config.get("movement.base_speed") == 10
+        assert config.get("movement.base_speed") == 15
 
     def test_loads_existing_config(self, temp_config_dir: Path):
         """Loads values from existing config file."""
@@ -53,7 +53,7 @@ class TestConfigManager:
     def test_nested_get(self, temp_config_dir: Path):
         """Dot-notation get works for nested keys."""
         config = ConfigManager(config_dir=temp_config_dir)
-        assert config.get("movement.acceleration") == 1.5
+        assert config.get("movement.acceleration_rate") == 1.15
         assert config.get("audio.volume") == 50
 
     def test_get_default_for_missing(self, temp_config_dir: Path):
@@ -96,7 +96,7 @@ class TestConfigManager:
         assert config.get("movement.base_speed") == 99
 
         config.reset()
-        assert config.get("movement.base_speed") == 10
+        assert config.get("movement.base_speed") == 15
 
     def test_get_all_returns_copy(self, temp_config_dir: Path):
         """get_all returns a copy, not the original."""
@@ -105,7 +105,7 @@ class TestConfigManager:
         all_config["movement"]["base_speed"] = 999
 
         # Original unchanged
-        assert config.get("movement.base_speed") == 10
+        assert config.get("movement.base_speed") == 15
 
     def test_secure_permissions(self, temp_config_dir: Path):
         """Config file has secure permissions (0600)."""
@@ -125,7 +125,7 @@ class TestConfigManager:
 
         config = ConfigManager(config_dir=temp_config_dir)
         # Falls back to defaults
-        assert config.get("movement.base_speed") == 10
+        assert config.get("movement.base_speed") == 15
 
     def test_reload_from_disk(self, temp_config_dir: Path):
         """Reload picks up external changes."""
@@ -139,7 +139,7 @@ class TestConfigManager:
             json.dump(data, f)
 
         # Before reload
-        assert config.get("movement.base_speed") == 10
+        assert config.get("movement.base_speed") == 15
 
         # After reload
         config.reload()

@@ -1,6 +1,6 @@
 ---
 title: "Phase 2: Improve Diagonal & Acceleration"
-status: pending
+status: completed
 effort: 3h
 ---
 
@@ -127,12 +127,12 @@ For diagonal keys, add both directions to `_active_dirs`.
 
 ## Success Criteria
 
-- [ ] Hold key = continuous accelerating movement
-- [ ] Multi-key diagonals (e.g., hold 8+4 = up-left)
-- [ ] Dedicated diagonal keys (7,9,1,3) work
-- [ ] Speed caps at max_speed
-- [ ] Acceleration resets on key release
-- [ ] Config values respected
+- [x] Hold key = continuous accelerating movement
+- [x] Multi-key diagonals (e.g., hold 8+4 = up-left)
+- [x] Dedicated diagonal keys (7,9,1,3) work
+- [x] Speed caps at max_speed
+- [x] Acceleration resets on key release
+- [x] Config values respected
 
 ## Acceleration Curves
 

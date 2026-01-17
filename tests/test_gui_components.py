@@ -88,8 +88,8 @@ def test_main_window_config_updates(gtk_app, config, state):
     window = MainWindow(gtk_app, config, state)
 
     # Verify initial values
-    assert config.get("movement.base_speed") == 10
-    assert config.get("movement.acceleration") == 1.5
+    assert config.get("movement.base_speed") == 15
+    assert config.get("movement.acceleration_rate") == 1.15
 
     # Simulate slider changes would update config
     # (actual slider interaction requires GTK main loop)

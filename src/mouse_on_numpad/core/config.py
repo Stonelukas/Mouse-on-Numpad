@@ -21,8 +21,10 @@ class ConfigManager:
     # Default configuration schema
     DEFAULT_CONFIG: dict[str, Any] = {
         "movement": {
-            "base_speed": 10,
-            "acceleration": 1.5,
+            "base_speed": 15,  # Matches Windows BaseSpeed=15
+            "acceleration_rate": 1.15,  # Matches Windows AccelerationRate=1.15
+            "max_speed": 150,  # Matches Windows MaxSpeed=150
+            "move_delay": 20,  # Matches Windows MoveDelay=20ms
             "curve": "exponential",  # linear, exponential, s-curve
         },
         "audio": {
