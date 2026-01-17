@@ -72,6 +72,8 @@ class ConfigManager:
             "slot_3": 77,           # KEY_KP6
             "slot_4": 72,           # KEY_KP8
             "slot_5": 82,           # KEY_KP0
+            # Modifier combos (Alt + key)
+            "secondary_monitor": 73,  # KEY_KP9 (with Alt held)
         },
     }
 

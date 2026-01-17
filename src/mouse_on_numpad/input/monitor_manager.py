@@ -166,6 +166,46 @@ class MonitorManager:
                 return monitor
         return None
 
+    def get_next_monitor_center(self, x: int, y: int) -> tuple[int, int] | None:
+        """Get center coordinates of next monitor (cycling).
+
+        Args:
+            x: Current X coordinate
+            y: Current Y coordinate
+
+        Returns:
+            (center_x, center_y) of next monitor, or None if only one monitor
+        """
+        self._refresh_monitors()
+        if len(self._monitors) < 2:
+            return None
+
+        # Find current monitor
+        current = self.get_monitor_at(x, y)
+        if current is None:
+            # Not on any monitor, go to primary
+            primary = self.get_primary()
+            return (
+                primary["x"] + primary["width"] // 2,
+                primary["y"] + primary["height"] // 2,
+            )
+
+        # Find index of current monitor
+        current_idx = -1
+        for i, m in enumerate(self._monitors):
+            if m["index"] == current["index"]:
+                current_idx = i
+                break
+
+        # Get next monitor (cycling)
+        next_idx = (current_idx + 1) % len(self._monitors)
+        next_mon = self._monitors[next_idx]
+
+        return (
+            next_mon["x"] + next_mon["width"] // 2,
+            next_mon["y"] + next_mon["height"] // 2,
+        )
+
     def clamp_to_screens(self, x: int, y: int) -> tuple[int, int]:
         """Clamp coordinates to visible screen area.
 

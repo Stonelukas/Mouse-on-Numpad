@@ -19,7 +19,7 @@ Bring Linux port to full feature parity with Windows AHK version.
 | Phase | Description | Effort | Status |
 |-------|-------------|--------|--------|
 | 1 | [Hotkey Customization](phase-01-hotkey-customization.md) | 1.5h | ✅ Complete |
-| 2 | [Secondary Monitor](phase-02-secondary-monitor.md) | 45m | Pending |
+| 2 | [Secondary Monitor](phase-02-secondary-monitor.md) | 45m | ✅ Complete |
 | 3 | [Status Indicator Config](phase-03-status-config.md) | 1h | Pending |
 | 4 | [Color Themes](phase-04-color-themes.md) | 1h | Pending |
 | 5 | [Profiles System](phase-05-profiles.md) | 1.5h | Pending |

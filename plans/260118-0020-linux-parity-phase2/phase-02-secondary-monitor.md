@@ -2,7 +2,7 @@
 
 ## Overview
 - Priority: Medium
-- Status: Pending
+- Status: Complete
 - Effort: 45m
 
 ## Goal
@@ -26,10 +26,10 @@ KEY_SECONDARY_MONITOR = (56, 73)  # Alt + Numpad9
 - xdotool for position query/move (same as position memory)
 
 ## Todo
-- [ ] Add secondary_monitor hotkey config
-- [ ] Implement monitor cycling in daemon
-- [ ] Add modifier key (Alt) detection
-- [ ] Test with multi-monitor setup
+- [x] Add secondary_monitor hotkey config
+- [x] Implement monitor cycling in daemon
+- [x] Add modifier key (Alt) detection
+- [x] Test with multi-monitor setup
 
 ## Success Criteria
 - Alt+Numpad9 moves cursor to next monitor center

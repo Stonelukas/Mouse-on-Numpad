@@ -153,6 +153,9 @@ class Daemon:
             self.config.get("hotkeys.slot_5", 82): 5,
         }
 
+        # Modifier combo keys (require Alt held)
+        self._key_secondary_monitor = self.config.get("hotkeys.secondary_monitor", 73)
+
     def reload_hotkeys(self) -> None:
         """Reload hotkeys from config (called after settings change).
 
@@ -208,8 +211,24 @@ class Daemon:
                 continue
         return keyboards
 
+    # Modifier keycodes
+    KEY_LEFTALT = 56
+    KEY_RIGHTALT = 100
+
+    def _is_alt_held(self) -> bool:
+        """Check if Alt modifier is currently held."""
+        return self.KEY_LEFTALT in self._held_keys or self.KEY_RIGHTALT in self._held_keys
+
     def _handle_key(self, keycode: int, pressed: bool) -> bool:
         """Handle a key event. Returns True if key should be suppressed."""
+        # Track modifier keys (Alt)
+        if keycode in (self.KEY_LEFTALT, self.KEY_RIGHTALT):
+            if pressed:
+                self._held_keys.add(keycode)
+            else:
+                self._held_keys.discard(keycode)
+            return False  # Don't suppress modifier keys
+
         # Toggle mouse mode with configured key (default: Numpad+)
         if keycode == self._key_toggle and pressed:
             enabled = self.state.toggle()
@@ -273,8 +292,16 @@ class Daemon:
                     self.movement.stop_direction(direction)
             return True  # Suppress movement keys
 
-        # Handle scroll keys
+        # Handle Alt+secondary_monitor to cycle monitors (before scroll check)
+        if keycode == self._key_secondary_monitor and pressed and self._is_alt_held():
+            self._cycle_monitor()
+            return True  # Suppress this key
+
+        # Handle scroll keys (only if Alt not held for secondary_monitor key)
         if keycode in self._scroll_keys:
+            # Skip if this is secondary_monitor key with Alt (handled above)
+            if keycode == self._key_secondary_monitor and self._is_alt_held():
+                return True
             directions = self._scroll_keys[keycode]
             if pressed:
                 for direction in directions:
@@ -348,6 +375,20 @@ class Daemon:
             print(f"Moved to slot {slot}: {pos}")
         else:
             print(f"No position saved in slot {slot}")
+
+    def _cycle_monitor(self) -> None:
+        """Move cursor to center of next monitor (cycling)."""
+        pos = self._get_mouse_position()
+        if not pos:
+            print("Cannot get mouse position (xdotool required)")
+            return
+
+        next_center = self.monitors.get_next_monitor_center(pos[0], pos[1])
+        if next_center:
+            self._move_to_position(next_center[0], next_center[1])
+            print(f"Moved to next monitor: {next_center}")
+        else:
+            print("Only one monitor detected")
 
     def _read_device(self, device: evdev.InputDevice) -> None:
         """Read events from a device in a thread."""

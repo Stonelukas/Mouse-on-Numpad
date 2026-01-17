@@ -63,6 +63,7 @@ HOTKEY_LABELS: dict[str, str] = {
     "scroll_down": "Scroll Down",
     "scroll_right": "Scroll Right",
     "scroll_left": "Scroll Left",
+    "secondary_monitor": "Cycle Monitor (Alt+Key)",
 }
 
 # Slot key labels (separate from regular hotkeys for conflict detection)
