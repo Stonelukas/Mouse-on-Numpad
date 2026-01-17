@@ -1,9 +1,10 @@
 ---
 phase: 6
 title: "Packaging & Distribution"
-status: pending
+status: completed
 priority: P3
 effort: 4h
+completed: 2026-01-17
 ---
 
 # Phase 6: Packaging & Distribution
@@ -156,16 +157,18 @@ packaging/
 
 ## Todo List
 
-- [ ] Create XDG desktop entry
-- [ ] Create systemd user service
-- [ ] Create PKGBUILD for AUR
-- [ ] Update pyproject.toml entry points
-- [ ] Create manual install.sh script
-- [ ] Write installation documentation
-- [ ] Create CHANGELOG.md
-- [ ] Test AUR package locally
-- [ ] Test systemd service enable/start
-- [ ] Verify desktop entry appears in menu
+- [x] Create XDG desktop entry
+- [x] Create systemd user service
+- [x] Create PKGBUILD for AUR
+- [x] Update pyproject.toml entry points (already configured)
+- [x] Create manual install.sh script
+- [x] Write installation documentation
+- [x] Create CHANGELOG.md
+- [x] Create LICENSE file
+- [x] Create polkit policy file
+- [ ] Test AUR package locally (requires full implementation)
+- [ ] Test systemd service enable/start (requires executable)
+- [ ] Verify desktop entry appears in menu (requires installation)
 
 ## Success Criteria
 

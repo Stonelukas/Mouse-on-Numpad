@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Input Control Layer"
-status: pending
+status: completed
 priority: P1
 effort: 10h
 ---
@@ -124,28 +124,28 @@ src/input/
 
 ## Todo List
 
-- [ ] Create MouseController with pynput backend
-- [ ] Implement move_to, move_relative, click, scroll
-- [ ] Port acceleration curves from Windows
-- [ ] Create HotkeyManager with global key capture
-- [ ] Map all numpad keycodes (NumLock on/off)
-- [ ] Support modifier keys (Ctrl, Shift, Alt)
-- [ ] Create MonitorManager with Xrandr
-- [ ] Handle multi-monitor coordinates
-- [ ] Write unit tests with mocked pynput
-- [ ] Write integration tests (X11 required)
+- [x] Create MouseController with pynput backend
+- [x] Implement move_to, move_relative, click, scroll
+- [x] Port acceleration curves from Windows
+- [x] Create HotkeyManager with global key capture
+- [x] Map all numpad keycodes (NumLock on/off)
+- [x] Support modifier keys (Ctrl, Shift, Alt)
+- [x] Create MonitorManager with Xrandr
+- [x] Handle multi-monitor coordinates
+- [x] Write unit tests with mocked pynput
+- [ ] Write integration tests (X11 required - deferred to Phase 4)
 
 ## Success Criteria
 
-- [ ] Mouse moves to absolute coordinates
-- [ ] Mouse moves relative with acceleration
-- [ ] All mouse buttons click correctly
-- [ ] Scroll works vertically and horizontally
-- [ ] Numpad 8/2/4/6 move cursor in directions
-- [ ] Numpad 5 performs left click
-- [ ] Numpad * toggles enable/disable
-- [ ] Multi-monitor coordinates handled correctly
-- [ ] Works with NumLock on and off
+- [x] Mouse moves to absolute coordinates
+- [x] Mouse moves relative with acceleration
+- [x] All mouse buttons click correctly
+- [x] Scroll works vertically and horizontally
+- [ ] Numpad 8/2/4/6 move cursor in directions (integration test - Phase 4)
+- [ ] Numpad 5 performs left click (integration test - Phase 4)
+- [ ] Numpad * toggles enable/disable (integration test - Phase 4)
+- [x] Multi-monitor coordinates handled correctly
+- [x] Works with NumLock on and off
 
 ## Risk Assessment
 

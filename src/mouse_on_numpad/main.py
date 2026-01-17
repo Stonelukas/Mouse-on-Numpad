@@ -89,9 +89,11 @@ def main() -> int:
         return app.run(None)
 
     if args.daemon:
-        # Daemon mode will be implemented in Phase 3
-        print("Daemon mode not yet implemented (Phase 3)")
-        logger.info("Daemon mode requested but not yet implemented")
+        from .daemon import Daemon
+
+        logger.info("Starting daemon mode")
+        daemon = Daemon(config=config, state=state, logger=logger)
+        daemon.start()
         return 0
 
     # Default: show help

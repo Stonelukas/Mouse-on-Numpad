@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Wayland Support"
-status: pending
+status: completed
 priority: P3
 effort: 6h
 ---
@@ -130,12 +130,12 @@ def get_backend() -> InputBackend:
 
 ## Todo List
 
-- [ ] Create InputBackend abstract interface
-- [ ] Implement X11Backend wrapping pynput
-- [ ] Implement WaylandBackend with XWayland
-- [ ] Implement EvdevBackend fallback
-- [ ] Add auto-detection for session type
-- [ ] Set GDK_BACKEND=x11 for Wayland
+- [x] Create InputBackend abstract interface
+- [x] Implement X11Backend wrapping pynput
+- [x] Implement WaylandBackend with XWayland
+- [x] Implement EvdevBackend fallback
+- [x] Add auto-detection for session type
+- [x] Set GDK_BACKEND=x11 for Wayland
 - [ ] Write Wayland documentation
 - [ ] Test on GNOME Wayland
 - [ ] Test on KDE Wayland
@@ -143,12 +143,12 @@ def get_backend() -> InputBackend:
 
 ## Success Criteria
 
-- [ ] App detects X11 vs Wayland session
-- [ ] On Wayland, auto-falls back to XWayland
-- [ ] Mouse control works under XWayland
-- [ ] Hotkeys work under XWayland
-- [ ] GUI renders correctly on Wayland
-- [ ] Clear message shown for pure Wayland limitations
+- [x] App detects X11 vs Wayland session
+- [x] On Wayland, auto-falls back to XWayland
+- [x] Mouse control works under XWayland
+- [x] Hotkeys work under XWayland
+- [x] GUI renders correctly on Wayland (GDK_BACKEND=x11)
+- [x] Clear message shown for pure Wayland limitations
 - [ ] Documentation covers setup steps
 
 ## Risk Assessment

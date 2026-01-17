@@ -220,6 +220,7 @@ name = "mouse-on-numpad"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "evdev" },
     { name = "pulsectl" },
     { name = "pygobject" },
     { name = "pynput" },
@@ -241,6 +242,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "evdev", specifier = ">=1.6.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "pulsectl", specifier = ">=23.5.0" },
     { name = "pygobject", specifier = ">=3.44.0" },
