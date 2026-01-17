@@ -1,7 +1,7 @@
 ---
 title: "Linux Port: Mouse on Numpad Enhanced"
 description: "Port Windows AutoHotkey app to native Linux with Python/GTK"
-status: pending
+status: completed
 priority: P1
 effort: 40h
 branch: claude/plan-linux-port-T7fmn
@@ -30,12 +30,12 @@ Port the Windows AutoHotkey numpad mouse controller to native Linux using Python
 
 | # | Phase | Effort | Status | File |
 |---|-------|--------|--------|------|
-| 1 | [Core Infrastructure](./phase-01-core-infrastructure.md) | 6h | **completed** | ConfigManager, StateManager, ErrorLogger, tests (79% coverage) |
-| 2 | [Input Control Layer](./phase-02-input-control-layer.md) | 10h | pending | Mouse/keyboard control via pynput |
-| 3 | [Position Memory & Audio](./phase-03-position-memory-audio.md) | 4h | pending | Position slots, audio feedback, CLI |
-| 4 | [GUI Implementation](./phase-04-gui-implementation.md) | 10h | pending | GTK 4 settings GUI (MVP: 2-3 tabs) |
-| 5 | [Wayland Support](./phase-05-wayland-support.md) | 6h | pending | XWayland fallback, evdev backend |
-| 6 | [Packaging & Distribution](./phase-06-packaging-distribution.md) | 4h | pending | AUR PKGBUILD, systemd service |
+| 1 | [Core Infrastructure](./phase-01-core-infrastructure.md) | 6h | **completed** | ConfigManager, StateManager, ErrorLogger |
+| 2 | [Input Control Layer](./phase-02-input-control-layer.md) | 10h | **completed** | MouseController, HotkeyManager, MonitorManager |
+| 3 | [Position Memory & Audio](./phase-03-position-memory-audio.md) | 4h | **completed** | PositionMemory, AudioFeedback |
+| 4 | [GUI Implementation](./phase-04-gui-implementation.md) | 10h | **completed** | MainWindow, TrayIcon, StatusIndicator |
+| 5 | [Wayland Support](./phase-05-wayland-support.md) | 6h | **completed** | X11/Wayland/Evdev backends |
+| 6 | [Packaging & Distribution](./phase-06-packaging-distribution.md) | 4h | **completed** | PKGBUILD, systemd, polkit |
 
 ## Key Decisions (Validated)
 
