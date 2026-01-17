@@ -75,7 +75,14 @@ class MovementController:
 
     def _movement_loop(self) -> None:
         """Continuous movement loop (runs in separate thread)."""
+        reload_counter = 0
         while self._running:
+            # Reload config every ~1s to pick up GUI changes
+            reload_counter += 1
+            if reload_counter >= 50:
+                self._config.reload()
+                reload_counter = 0
+
             with self._lock:
                 if not self._active_dirs:
                     self._running = False

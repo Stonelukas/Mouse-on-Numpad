@@ -111,6 +111,10 @@ class ConfigManager:
             json.dump(self._config, f, indent=2)
         os.chmod(self._config_file, 0o600)
 
+    def reload(self) -> None:
+        """Reload config from file (picks up external changes)."""
+        self._load()
+
     def get(self, key: str, default: Any = None) -> Any:
         """Get config value by dot-notation key.
 
