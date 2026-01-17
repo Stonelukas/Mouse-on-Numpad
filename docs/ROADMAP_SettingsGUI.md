@@ -32,51 +32,52 @@
 
 ---
 
-## ⌨️ Tab 4: Hotkeys Tab ✅
+## ⌨️ Tab 4: Hotkeys Tab (Phase 1 ✅)
 
-### ListView Display
+### Interactive Key Capture (Phase 1 Complete)
 
-- [x] ListView shows all hotkeys with 3 columns (Action, Current, Default), **Feature Request** - Auto update List based on Hotkeys
-- [x] All essential hotkeys are listed:
-  - [x] Toggle Mouse Mode
-  - [x] Save Mode
-  - [x] Load Mode
-  - [x] Undo Movement
-  - [x] Toggle Status
-  - [x] Reload Script
-  - [x] Settings
-  - [x] Secondary Monitor
-  - [x] Monitor Test
+- [x] Grid layout displays all hotkeys with action labels
+- [x] Each hotkey has an interactive capture button
+- [x] Button shows current keycode assignment
+- [x] Button shows human-readable key name (e.g., "KEY_KP8")
+- [x] Click button to enter capture mode
+- [x] Visual feedback during capture (border highlight)
+- [x] Press any key to assign (captures keycode)
+- [x] Escape key cancels without saving
+- [x] Displays confirmation of new assignment
+
+### Hotkey Sections
+
+- [x] Main hotkeys section (toggle, save/load mode, clicks, movement)
+- [x] Scroll control hotkeys (up, down, left, right)
+- [x] Position memory slots (slots 1-5)
+- [x] Section separators for clarity
+- [x] All essential hotkeys listed:
+  - [x] Toggle Mode (Numpad +)
+  - [x] Save Mode (Numpad *)
+  - [x] Load Mode (Numpad -)
+  - [x] Left Click (Numpad 5)
+  - [x] Right Click (Numpad 0)
+  - [x] Middle Click (Numpad Enter)
+  - [x] Movement keys (8, 2, 4, 6)
+  - [x] Scroll keys (7, 1, 9, 3)
+  - [x] Undo (Numpad /)
   - [x] and more
-- [x] Columns are properly sized and readable
-- [x] ListView allows single selection
-- [x] Selected item is visually highlighted
 
-### Button Functionality
-
-- [ ] **Edit** button: ***Feature not implemented yet***
-  - [ ] Shows MsgBox when clicked with selection
-  - [ ] Shows "No Selection" error when clicked without selection
-- [ ] **Reset** button: ***Feature not implemented yet***
-  - [ ] Shows MsgBox when clicked with selection
-  - [ ] Shows "No Selection" error when clicked without selection
-- [ ] **Test** button: ***Feature not implemented yet***
-  - [ ] Shows test dialog when clicked with selection
-  - [ ] Shows "No Selection" error when clicked without selection
-
-### Conflict Detection
+### Conflict Detection (Phase 1 Complete)
 
 - [x] **Scan for Conflicts** button is clickable
-- [x] Shows "Scanning..." status temporarily
-- [x] Displays "No conflicts detected" message
-- [ ] ConflictStatus text updates appropriately - not sure if this works (Don't know how to test it)
+- [x] Detects duplicate key assignments
+- [x] Prevents multiple actions from same key
+- [x] Shows conflict status message
+- [x] Returns to defaults if conflicts detected
 
-### Reset All
+### Reset Functionality (Phase 1 Complete)
 
 - [x] **Reset All** button shows confirmation dialog
-- [x] Confirmation requires double confirmation
+- [x] Resets all hotkeys to factory defaults
+- [x] Changes persist in config.json
 - [x] Success message shown after reset
-- [ ] ***not fully implemented***
 
 ---
 

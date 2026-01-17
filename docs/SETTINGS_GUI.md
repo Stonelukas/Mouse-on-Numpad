@@ -6,7 +6,7 @@ Open the Settings GUI with Ctrl+Alt+S or programmatically via `SettingsGUI.Show(
 - Movement: Configure speed, acceleration, max speed, scroll behavior, absolute/relative movement.
 - Positions: Manage saved positions, preview/go to, import/export, monitor testing, backup/restore saved positions.
 - Visuals: Theme selection, audio feedback, status visibility, monitor selection, UI positions (with testers).
-- Hotkeys: View and change key bindings, detect conflicts, test, reset individual/all.
+- Hotkeys (Phase 1 ✓): Customize key bindings with interactive capture buttons, detect conflicts, reset to defaults.
 - Advanced: Performance toggles, logging, experimental features, resets, and system info.
 - Profiles: Manage named configurations (load/save/update/delete/import/export; future enhancements noted in UI).
 - About: Version info, system diagnostics, links to documentation and issue reporting.

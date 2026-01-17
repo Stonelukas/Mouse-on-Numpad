@@ -2,8 +2,9 @@
 
 ## Overview
 - Priority: High
-- Status: Pending
+- Status: ✅ Complete
 - Effort: 1.5h
+- Review: [code-reviewer-260118-0029](../reports/code-reviewer-260118-0029-hotkey-customization.md)
 
 ## Goal
 Let users customize numpad key mappings via Settings GUI.
@@ -34,11 +35,18 @@ Let users customize numpad key mappings via Settings GUI.
 - Reload hotkeys on config change
 
 ## Todo
-- [ ] Add hotkeys config section
-- [ ] Create HotkeysTab GUI widget
-- [ ] Implement key capture dialog
-- [ ] Update daemon to use config keycodes
-- [ ] Add hotkey reset function
+- [x] Add hotkeys config section (config.py)
+- [x] Create HotkeysTab GUI widget (hotkeys_tab.py)
+- [x] Implement key capture dialog (KeyCaptureButton)
+- [x] Update daemon to use config keycodes (daemon.py)
+- [x] Add hotkey reset function (reset button)
+
+## Post-Review Actions
+- [x] Fix import organization in daemon.py (ruff --fix)
+- [x] Install mypy for type checking
+- [x] Add reload_hotkeys() state clearing
+- [x] Fix conflict detection to include slot keys
+- [x] Modularize hotkeys_tab.py (271 lines → 3 files)
 
 ## Success Criteria
 - Users can remap any numpad function

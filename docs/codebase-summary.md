@@ -1,8 +1,8 @@
 # Mouse on Numpad - Codebase Summary
 
 **Project:** Control mouse cursor with numpad keys on Linux (Python + GTK port of Windows AutoHotkey version)
-**Version:** 1.0.0 (Linux Port - Phase 1 Complete)
-**Updated:** 2026-01-17
+**Version:** 1.0.0 (Linux Port - Phase 1 Complete + Hotkey Customization)
+**Updated:** 2026-01-18
 **Repository:** https://github.com/Stonelukas/mouse-on-numpad
 
 ---
@@ -21,10 +21,16 @@ Mouse on Numpad is a keyboard accessibility tool that maps numpad keys to mouse 
 mouse-on-numpad/
 ├── src/mouse_on_numpad/          # Main Python package
 │   ├── core/                      # Core utilities
-│   │   ├── config.py             # JSON config persistence
+│   │   ├── config.py             # JSON config persistence (hotkeys support)
 │   │   ├── state_manager.py      # Observable state with thread safety
 │   │   ├── error_logger.py       # Rotating file logger
 │   │   └── __init__.py
+│   ├── ui/                        # GTK 4 UI components (Phase 1+)
+│   │   ├── hotkeys_tab.py        # Hotkey customization UI tab
+│   │   ├── key_capture_button.py # Interactive key capture widget
+│   │   ├── keycode_mappings.py   # Keycode constants & display names
+│   │   └── ...
+│   ├── daemon.py                  # Background daemon (loads hotkeys from config)
 │   ├── main.py                    # CLI entry point with --status, --toggle, --version
 │   ├── __main__.py                # python -m entry point
 │   └── __init__.py
@@ -35,7 +41,7 @@ mouse-on-numpad/
 ├── docs/                          # Documentation
 │   ├── API.md                     # Windows version API reference
 │   ├── USAGE.md                   # Usage guide
-│   ├── HOTKEYS.md                # Default hotkeys
+│   ├── HOTKEYS.md                # Hotkeys & customization (Phase 1)
 │   └── ...
 ├── pyproject.toml                 # uv package configuration
 ├── LINUX_PORT_PLAN.md            # Detailed port plan (6 phases)
@@ -62,8 +68,10 @@ mouse-on-numpad/
 ```python
 {
     "movement": {
-        "base_speed": 10,          # Pixels per step
-        "acceleration": 1.5,       # Speed curve multiplier
+        "base_speed": 5,           # Pixels per step (default 5)
+        "acceleration_rate": 1.08, # Speed curve multiplier
+        "max_speed": 40,           # Maximum speed cap
+        "move_delay": 20,          # ms between movement ticks
         "curve": "exponential"     # linear | exponential | s-curve
     },
     "audio": {
@@ -77,6 +85,38 @@ mouse-on-numpad/
     },
     "positions": {
         "per_monitor": True       # Store positions per monitor
+    },
+    "scroll": {
+        "step": 3,                # Base scroll amount per tick
+        "acceleration_rate": 1.1,
+        "max_speed": 10,
+        "delay": 30               # ms between scroll ticks
+    },
+    "undo": {
+        "max_levels": 10          # Max undo history entries
+    },
+    "hotkeys": {                  # Phase 1: Customizable keybindings
+        "toggle_mode": 78,        # KEY_KPPLUS
+        "save_mode": 55,          # KEY_KPASTERISK
+        "load_mode": 74,          # KEY_KPMINUS
+        "undo": 98,               # KEY_KPSLASH
+        "left_click": 76,         # KEY_KP5
+        "right_click": 82,        # KEY_KP0
+        "middle_click": 96,       # KEY_KPENTER
+        "hold_left": 83,          # KEY_KPDOT
+        "move_up": 72,            # KEY_KP8
+        "move_down": 80,          # KEY_KP2
+        "move_left": 75,          # KEY_KP4
+        "move_right": 77,         # KEY_KP6
+        "scroll_up": 71,          # KEY_KP7
+        "scroll_down": 79,        # KEY_KP1
+        "scroll_right": 73,       # KEY_KP9
+        "scroll_left": 81,        # KEY_KP3
+        "slot_1": 75,             # Position slot 1
+        "slot_2": 76,             # Position slot 2
+        "slot_3": 77,             # Position slot 3
+        "slot_4": 72,             # Position slot 4
+        "slot_5": 82              # Position slot 5
     }
 }
 ```
@@ -154,6 +194,61 @@ state_mgr.toggle()  # Calls on_mode_change("mouse_mode", ENABLED)
 - `warning(message: str, *args)` - Warning level
 - `error(message: str, *args)` - Error level (flushes immediately)
 - `exception(message: str, *args)` - Exception with traceback (flushes immediately)
+
+---
+
+## UI Components (Phase 1 - Hotkey Customization)
+
+### HotkeysTab (hotkeys_tab.py)
+
+**Purpose:** GTK 4 settings tab for interactive hotkey customization
+
+**Key Features:**
+- Interactive grid layout with key capture buttons
+- Real-time keycode display with human-readable names
+- Conflict detection via "Scan for Conflicts" button
+- "Reset All" button to restore defaults
+- Separate sections for main hotkeys and position slots
+- Escape key support to cancel capture mode
+
+**Architecture:**
+```python
+class HotkeysTab(Gtk.Box):
+    def __init__(self, config: ConfigManager) -> None:
+        # Initialize with config access for read/write
+
+    def _add_hotkey_row(grid, row, action, label) -> int:
+        # Creates label + capture button row
+
+    def _detect_conflicts() -> list[tuple[str, str]]:
+        # Returns list of duplicate keycode assignments
+```
+
+### KeyCaptureButton (key_capture_button.py)
+
+**Purpose:** Reusable GTK widget for capturing numpad key presses
+
+**Key Features:**
+- Toggle between display and capture modes on click
+- Visual feedback during capture (border highlight)
+- Displays keycode and human-readable key name
+- Conflict detection on key release
+- Escape key support to cancel without saving
+- Thread-safe event handling
+
+**Events:**
+- `key-captured`: Emitted when user presses a key
+- `capture-cancelled`: Emitted when Escape pressed
+
+### Keycode Mappings (keycode_mappings.py)
+
+**Purpose:** Central registry of numpad keycodes and display names
+
+**Contents:**
+- `HOTKEY_LABELS`: Maps action names to UI labels
+- `SLOT_KEY_LABELS`: Maps position slots to labels
+- `get_key_name(keycode: int) -> str`: Returns human-readable key name
+- `KEY_DISPLAY_NAMES`: Dictionary of keycode → display name mappings
 
 ---
 
@@ -296,10 +391,13 @@ Observer pattern enables:
 | Medium | Aggressive logging flush | Performance impact in input loop | Acceptable for Phase 1 |
 | Medium | ThemeManager not implemented | Deferred to Phase 4 | Design decision pending |
 
+### Completed Features
+- **Hotkey Customization** - Phase 1: Interactive key capture, conflict detection, persistent config ✓
+
 ### Deferred Features (Future Phases)
 - **ThemeManager** - 7 color themes (Phase 4)
 - **Input Control Layer** - Numpad input handlers (Phase 2)
-- **GUI Implementation** - Settings dialog (Phase 4)
+- **Full GUI Implementation** - Additional settings tabs (Phase 4)
 - **Position Memory** - Save/restore cursor positions (Phase 3)
 - **Audio System** - Click sounds and feedback (Phase 3)
 - **Wayland Support** - Modern display server compatibility (Phase 5)

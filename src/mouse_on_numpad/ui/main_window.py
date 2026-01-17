@@ -7,6 +7,7 @@ from gi.repository import Gtk  # type: ignore[import-untyped]
 
 from ..core.config import ConfigManager
 from ..core.state_manager import StateManager
+from .hotkeys_tab import HotkeysTab
 
 
 class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
@@ -196,68 +197,10 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         self._notebook.append_page(box, label)
 
     def _create_hotkeys_tab(self) -> None:
-        """Create hotkeys tab with key mapping display (read-only for now)."""
-        # Container for hotkeys
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        box.set_margin_top(20)
-        box.set_margin_bottom(20)
-        box.set_margin_start(20)
-        box.set_margin_end(20)
-
-        # Title label
-        title = Gtk.Label(label="Hotkey Configuration")
-        title.add_css_class("title-2")
-        box.append(title)
-
-        # Info label
-        info = Gtk.Label(
-            label="Default numpad hotkeys (customization coming soon)"
-        )
-        info.set_wrap(True)
-        box.append(info)
-
-        # Scrolled window for hotkeys grid
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_vexpand(True)
-        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-
-        # Grid for hotkey mappings
-        grid = Gtk.Grid()
-        grid.set_row_spacing(8)
-        grid.set_column_spacing(20)
-        grid.set_margin_top(10)
-
-        # Default hotkey mappings (display only)
-        hotkeys = [
-            ("Toggle Mode", "Numpad +"),
-            ("Move Up", "Numpad 8"),
-            ("Move Down", "Numpad 2"),
-            ("Move Left", "Numpad 4"),
-            ("Move Right", "Numpad 6"),
-            ("Move Up-Left", "Numpad 7"),
-            ("Move Up-Right", "Numpad 9"),
-            ("Move Down-Left", "Numpad 1"),
-            ("Move Down-Right", "Numpad 3"),
-            ("Left Click", "Numpad 5"),
-            ("Right Click", "Numpad 0"),
-        ]
-
-        for idx, (action, key) in enumerate(hotkeys):
-            action_label = Gtk.Label(label=action)
-            action_label.set_halign(Gtk.Align.START)
-            grid.attach(action_label, 0, idx, 1, 1)
-
-            key_label = Gtk.Label(label=key)
-            key_label.set_halign(Gtk.Align.START)
-            key_label.add_css_class("monospace")
-            grid.attach(key_label, 1, idx, 1, 1)
-
-        scrolled.set_child(grid)
-        box.append(scrolled)
-
-        # Add tab to notebook
+        """Create hotkeys tab with customizable key mappings."""
+        hotkeys_tab = HotkeysTab(self._config)
         label = Gtk.Label(label="Hotkeys")
-        self._notebook.append_page(box, label)
+        self._notebook.append_page(hotkeys_tab, label)
 
     def _create_advanced_tab(self) -> None:
         """Create advanced settings tab with scroll and reset options."""

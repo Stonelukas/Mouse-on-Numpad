@@ -48,6 +48,31 @@ class ConfigManager:
         "undo": {
             "max_levels": 10,  # Max undo history entries
         },
+        "hotkeys": {
+            # Evdev keycodes for numpad keys
+            "toggle_mode": 78,      # KEY_KPPLUS
+            "save_mode": 55,        # KEY_KPASTERISK
+            "load_mode": 74,        # KEY_KPMINUS
+            "undo": 98,             # KEY_KPSLASH
+            "left_click": 76,       # KEY_KP5
+            "right_click": 82,      # KEY_KP0
+            "middle_click": 96,     # KEY_KPENTER
+            "hold_left": 83,        # KEY_KPDOT
+            "move_up": 72,          # KEY_KP8
+            "move_down": 80,        # KEY_KP2
+            "move_left": 75,        # KEY_KP4
+            "move_right": 77,       # KEY_KP6
+            "scroll_up": 71,        # KEY_KP7
+            "scroll_down": 79,      # KEY_KP1
+            "scroll_right": 73,     # KEY_KP9
+            "scroll_left": 81,      # KEY_KP3
+            # Position memory slots (in save/load mode)
+            "slot_1": 75,           # KEY_KP4
+            "slot_2": 76,           # KEY_KP5
+            "slot_3": 77,           # KEY_KP6
+            "slot_4": 72,           # KEY_KP8
+            "slot_5": 82,           # KEY_KP0
+        },
     }
 
     def __init__(self, config_dir: Path | None = None) -> None:

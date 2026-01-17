@@ -5,17 +5,18 @@ import subprocess
 import time
 import threading
 from pathlib import Path
+
 import evdev
 
 from .core import ConfigManager, StateManager, ErrorLogger
 from .input import MonitorManager, PositionMemory, AudioFeedback, ScrollController
+from .input.movement_controller import MovementController
+from .tray_icon import TrayIcon
 
 # Status file for IPC with GUI indicator
 STATUS_FILE = Path("/tmp/mouse-on-numpad-status")
 # ydotool scroll multiplier - ydotool uses larger values than UInput for visible scrolling
 YDOTOOL_SCROLL_MULTIPLIER = 15
-from .input.movement_controller import MovementController
-from .tray_icon import TrayIcon
 
 
 class YdotoolMouse:
@@ -76,50 +77,8 @@ class Daemon:
     """Main daemon connecting numpad keys to mouse control.
 
     Uses evdev for keyboard capture (works on Wayland) and pynput for mouse.
+    Hotkeys are configurable via config.json.
     """
-
-    # Evdev keycodes for numpad
-    KEY_KPPLUS = 78      # Toggle mouse mode (like Windows version)
-    KEY_KPASTERISK = 55  # Save position mode
-    KEY_KPMINUS = 74     # Load position mode
-    KEY_KPSLASH = 98     # Undo last movement
-
-    # Click actions
-    CLICK_ACTIONS = {
-        76: "left",    # KEY_KP5 - left click
-        82: "right",   # KEY_KP0 - right click
-        96: "middle",  # KEY_KPENTER - middle click
-    }
-
-    # Movement keys (cardinal directions only - diagonals via multi-key)
-    MOVEMENT_KEYS = {
-        72: ("up",),           # KEY_KP8
-        80: ("down",),         # KEY_KP2
-        75: ("left",),         # KEY_KP4
-        77: ("right",),        # KEY_KP6
-    }
-
-    # Scroll keys (corner numpad keys)
-    SCROLL_KEYS = {
-        71: ("up",),      # KEY_KP7 - scroll up
-        79: ("down",),    # KEY_KP1 - scroll down
-        73: ("right",),   # KEY_KP9 - scroll right (horizontal)
-        81: ("left",),    # KEY_KP3 - scroll left (horizontal)
-    }
-
-    # Hold keys - toggle hold/release for drag operations
-    HOLD_KEYS = {
-        83: "left",   # KEY_KPDOT - toggle left click hold
-    }
-
-    # Position memory slot keys (when in save/load mode)
-    SLOT_KEYS = {
-        75: 1,  # KEY_KP4 -> slot 1
-        76: 2,  # KEY_KP5 -> slot 2
-        77: 3,  # KEY_KP6 -> slot 3
-        72: 4,  # KEY_KP8 -> slot 4
-        82: 5,  # KEY_KP0 -> slot 5
-    }
 
     def __init__(
         self,
@@ -145,6 +104,72 @@ class Daemon:
         self._save_mode = False  # Position save mode active
         self._load_mode = False  # Position load mode active
         self._indicator_proc: subprocess.Popen[bytes] | None = None
+
+        # Build key mappings from config (allows customization)
+        self._load_hotkeys()
+
+    def _load_hotkeys(self) -> None:
+        """Load hotkey mappings from config."""
+        # Mode toggle keys
+        self._key_toggle = self.config.get("hotkeys.toggle_mode", 78)
+        self._key_save_mode = self.config.get("hotkeys.save_mode", 55)
+        self._key_load_mode = self.config.get("hotkeys.load_mode", 74)
+        self._key_undo = self.config.get("hotkeys.undo", 98)
+
+        # Click actions - build reverse map from keycode to action
+        self._click_actions: dict[int, str] = {
+            self.config.get("hotkeys.left_click", 76): "left",
+            self.config.get("hotkeys.right_click", 82): "right",
+            self.config.get("hotkeys.middle_click", 96): "middle",
+        }
+
+        # Movement keys - map keycode to direction tuple
+        self._movement_keys: dict[int, tuple[str, ...]] = {
+            self.config.get("hotkeys.move_up", 72): ("up",),
+            self.config.get("hotkeys.move_down", 80): ("down",),
+            self.config.get("hotkeys.move_left", 75): ("left",),
+            self.config.get("hotkeys.move_right", 77): ("right",),
+        }
+
+        # Scroll keys
+        self._scroll_keys: dict[int, tuple[str, ...]] = {
+            self.config.get("hotkeys.scroll_up", 71): ("up",),
+            self.config.get("hotkeys.scroll_down", 79): ("down",),
+            self.config.get("hotkeys.scroll_right", 73): ("right",),
+            self.config.get("hotkeys.scroll_left", 81): ("left",),
+        }
+
+        # Hold keys
+        self._hold_keys: dict[int, str] = {
+            self.config.get("hotkeys.hold_left", 83): "left",
+        }
+
+        # Position slots
+        self._slot_keys: dict[int, int] = {
+            self.config.get("hotkeys.slot_1", 75): 1,
+            self.config.get("hotkeys.slot_2", 76): 2,
+            self.config.get("hotkeys.slot_3", 77): 3,
+            self.config.get("hotkeys.slot_4", 72): 4,
+            self.config.get("hotkeys.slot_5", 82): 5,
+        }
+
+    def reload_hotkeys(self) -> None:
+        """Reload hotkeys from config (called after settings change).
+
+        Safely stops any active movement/scroll before updating key mappings
+        to prevent orphaned movement threads.
+        """
+        # Stop active movement/scroll to prevent orphaned state
+        self.movement.stop_all()
+        self.scroll.stop_all()
+        self._release_all_held_buttons()
+        self._save_mode = False
+        self._load_mode = False
+
+        # Reload config and update key mappings
+        self.config.reload()
+        self._load_hotkeys()
+        self.logger.info("Hotkeys reloaded from config")
 
     def _toggle_mode(self) -> None:
         """Toggle mouse mode (called from tray menu)."""
@@ -185,8 +210,8 @@ class Daemon:
 
     def _handle_key(self, keycode: int, pressed: bool) -> bool:
         """Handle a key event. Returns True if key should be suppressed."""
-        # Toggle mouse mode with Numpad+ (like Windows version)
-        if keycode == self.KEY_KPPLUS and pressed:
+        # Toggle mouse mode with configured key (default: Numpad+)
+        if keycode == self._key_toggle and pressed:
             enabled = self.state.toggle()
             if not enabled:
                 # Stop all movement, scroll, and release held buttons when disabling
@@ -205,39 +230,39 @@ class Daemon:
             return False  # Let key pass through
 
         # Handle position memory modes
-        if keycode == self.KEY_KPASTERISK and pressed:
+        if keycode == self._key_save_mode and pressed:
             self._save_mode = not self._save_mode
             self._load_mode = False  # Mutual exclusion
             print(f"Save mode: {'ON' if self._save_mode else 'OFF'}")
             return True
 
-        if keycode == self.KEY_KPMINUS and pressed:
+        if keycode == self._key_load_mode and pressed:
             self._load_mode = not self._load_mode
             self._save_mode = False  # Mutual exclusion
             print(f"Load mode: {'ON' if self._load_mode else 'OFF'}")
             return True
 
         # Handle slot keys when in save/load mode
-        if keycode in self.SLOT_KEYS and pressed:
+        if keycode in self._slot_keys and pressed:
             if self._save_mode:
-                self._save_position_to_slot(self.SLOT_KEYS[keycode])
+                self._save_position_to_slot(self._slot_keys[keycode])
                 self._save_mode = False
                 return True
             elif self._load_mode:
-                self._load_position_from_slot(self.SLOT_KEYS[keycode])
+                self._load_position_from_slot(self._slot_keys[keycode])
                 self._load_mode = False
                 return True
 
         # Handle click actions
-        if keycode in self.CLICK_ACTIONS:
+        if keycode in self._click_actions:
             if pressed:
-                button = self.CLICK_ACTIONS[keycode]
+                button = self._click_actions[keycode]
                 self.mouse.click(button)
             return True  # Suppress click keys
 
         # Handle movement keys
-        if keycode in self.MOVEMENT_KEYS:
-            directions = self.MOVEMENT_KEYS[keycode]
+        if keycode in self._movement_keys:
+            directions = self._movement_keys[keycode]
             if pressed:
                 # Start moving in direction(s)
                 for direction in directions:
@@ -249,8 +274,8 @@ class Daemon:
             return True  # Suppress movement keys
 
         # Handle scroll keys
-        if keycode in self.SCROLL_KEYS:
-            directions = self.SCROLL_KEYS[keycode]
+        if keycode in self._scroll_keys:
+            directions = self._scroll_keys[keycode]
             if pressed:
                 for direction in directions:
                     self.scroll.start_direction(direction)
@@ -260,8 +285,8 @@ class Daemon:
             return True  # Suppress scroll keys
 
         # Handle hold keys (toggle mouse button hold for drag operations)
-        if keycode in self.HOLD_KEYS and pressed:
-            button = self.HOLD_KEYS[keycode]
+        if keycode in self._hold_keys and pressed:
+            button = self._hold_keys[keycode]
             if button in self._held_buttons:
                 # Release the button
                 self.mouse.release(button)
@@ -272,8 +297,8 @@ class Daemon:
                 self._held_buttons.add(button)
             return True  # Suppress hold keys
 
-        # Handle undo (NumpadSlash)
-        if keycode == self.KEY_KPSLASH and pressed:
+        # Handle undo with configured key (default: NumpadSlash)
+        if keycode == self._key_undo and pressed:
             self.movement.undo()
             return True  # Suppress undo key
 

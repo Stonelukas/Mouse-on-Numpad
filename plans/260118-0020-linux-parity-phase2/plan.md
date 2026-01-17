@@ -1,7 +1,7 @@
 ---
 title: "Linux Parity Phase 2 - Advanced Features"
 description: "Add remaining Windows features to Linux port"
-status: pending
+status: in-progress
 priority: P2
 effort: 6h
 branch: claude/plan-linux-port-T7fmn
@@ -18,7 +18,7 @@ Bring Linux port to full feature parity with Windows AHK version.
 
 | Phase | Description | Effort | Status |
 |-------|-------------|--------|--------|
-| 1 | [Hotkey Customization](phase-01-hotkey-customization.md) | 1.5h | Pending |
+| 1 | [Hotkey Customization](phase-01-hotkey-customization.md) | 1.5h | ✅ Complete |
 | 2 | [Secondary Monitor](phase-02-secondary-monitor.md) | 45m | Pending |
 | 3 | [Status Indicator Config](phase-03-status-config.md) | 1h | Pending |
 | 4 | [Color Themes](phase-04-color-themes.md) | 1h | Pending |
