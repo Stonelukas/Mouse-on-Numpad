@@ -112,6 +112,15 @@ class Daemon:
         83: "left",   # KEY_KPDOT - toggle left click hold
     }
 
+    # Position memory slot keys (when in save/load mode)
+    SLOT_KEYS = {
+        75: 1,  # KEY_KP4 -> slot 1
+        76: 2,  # KEY_KP5 -> slot 2
+        77: 3,  # KEY_KP6 -> slot 3
+        72: 4,  # KEY_KP8 -> slot 4
+        82: 5,  # KEY_KP0 -> slot 5
+    }
+
     def __init__(
         self,
         config: ConfigManager | None = None,
@@ -133,6 +142,8 @@ class Daemon:
         self._threads: list[threading.Thread] = []
         self._held_keys: set[int] = set()
         self._held_buttons: set[str] = set()  # Mouse buttons held via toggle (left, middle)
+        self._save_mode = False  # Position save mode active
+        self._load_mode = False  # Position load mode active
         self._indicator_proc: subprocess.Popen[bytes] | None = None
 
     def _toggle_mode(self) -> None:
@@ -193,6 +204,30 @@ class Daemon:
         if not self.state.is_enabled:
             return False  # Let key pass through
 
+        # Handle position memory modes
+        if keycode == self.KEY_KPASTERISK and pressed:
+            self._save_mode = not self._save_mode
+            self._load_mode = False  # Mutual exclusion
+            print(f"Save mode: {'ON' if self._save_mode else 'OFF'}")
+            return True
+
+        if keycode == self.KEY_KPMINUS and pressed:
+            self._load_mode = not self._load_mode
+            self._save_mode = False  # Mutual exclusion
+            print(f"Load mode: {'ON' if self._load_mode else 'OFF'}")
+            return True
+
+        # Handle slot keys when in save/load mode
+        if keycode in self.SLOT_KEYS and pressed:
+            if self._save_mode:
+                self._save_position_to_slot(self.SLOT_KEYS[keycode])
+                self._save_mode = False
+                return True
+            elif self._load_mode:
+                self._load_position_from_slot(self.SLOT_KEYS[keycode])
+                self._load_mode = False
+                return True
+
         # Handle click actions
         if keycode in self.CLICK_ACTIONS:
             if pressed:
@@ -249,6 +284,45 @@ class Daemon:
         for button in list(self._held_buttons):
             self.mouse.release(button)
         self._held_buttons.clear()
+
+    def _get_mouse_position(self) -> tuple[int, int] | None:
+        """Get current mouse position using xdotool (X11/XWayland)."""
+        try:
+            result = subprocess.run(
+                ["xdotool", "getmouselocation", "--shell"],
+                capture_output=True, text=True, check=True
+            )
+            # Parse "X=123\nY=456\n..."
+            pos = {}
+            for line in result.stdout.strip().split("\n"):
+                if "=" in line:
+                    k, v = line.split("=", 1)
+                    pos[k] = int(v)
+            return (pos.get("X", 0), pos.get("Y", 0))
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+            return None
+
+    def _move_to_position(self, x: int, y: int) -> None:
+        """Move mouse to absolute position using xdotool."""
+        subprocess.run(["xdotool", "mousemove", str(x), str(y)], check=False)
+
+    def _save_position_to_slot(self, slot: int) -> None:
+        """Save current mouse position to slot."""
+        pos = self._get_mouse_position()
+        if pos:
+            self.positions.save_position(slot, pos[0], pos[1])
+            print(f"Saved position {pos} to slot {slot}")
+        else:
+            print("Cannot get mouse position (xdotool required)")
+
+    def _load_position_from_slot(self, slot: int) -> None:
+        """Load and move to position from slot."""
+        pos = self.positions.load_position(slot)
+        if pos:
+            self._move_to_position(pos[0], pos[1])
+            print(f"Moved to slot {slot}: {pos}")
+        else:
+            print(f"No position saved in slot {slot}")
 
     def _read_device(self, device: evdev.InputDevice) -> None:
         """Read events from a device in a thread."""

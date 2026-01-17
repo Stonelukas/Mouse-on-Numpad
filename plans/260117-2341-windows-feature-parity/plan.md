@@ -1,7 +1,7 @@
 ---
 title: "Windows Feature Parity"
 description: "Add missing features from Windows AHK version to Linux port"
-status: pending
+status: complete
 priority: P2
 effort: 3h
 branch: claude/plan-linux-port-T7fmn
@@ -21,7 +21,7 @@ Bring Linux port to feature parity with Windows AHK version.
 | 1 | [Scroll Support](phase-01-scroll-support.md) | 30m | Complete |
 | 2 | [Click Hold](phase-02-click-hold.md) | 30m | Complete |
 | 3 | [Undo Movement](phase-03-undo-movement.md) | 45m | Complete |
-| 4 | [Position Memory Integration](phase-04-position-memory.md) | 45m | Pending |
+| 4 | [Position Memory Integration](phase-04-position-memory.md) | 45m | Complete |
 
 ## Key Files
 - `src/mouse_on_numpad/daemon.py` - Main hotkey handling
@@ -35,5 +35,5 @@ Bring Linux port to feature parity with Windows AHK version.
 | Numpad 9/3 | Scroll left/right | ✅ |
 | NumpadDot | Hold left click | ✅ |
 | NumpadDiv | Undo last move | ✅ |
-| NumpadMult | Save position mode | ❌ |
-| NumpadSub | Load position mode | ❌ |
+| NumpadMult | Save position mode | ✅ |
+| NumpadSub | Load position mode | ✅ |

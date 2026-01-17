@@ -7,7 +7,7 @@
 
 ## Overview
 - Priority: Medium
-- Status: Pending
+- Status: Done (2026-01-18 00:13)
 - Effort: 45m
 
 ## Implementation
@@ -45,11 +45,11 @@ self._load_mode = False
 - Already instantiated in daemon: `self.positions`
 
 ## Todo
-- [ ] Add save_mode/load_mode state
-- [ ] Add mode toggle handlers
-- [ ] Add slot key handlers
-- [ ] Get current position for save
-- [ ] Move to position for load
+- [x] Add save_mode/load_mode state
+- [x] Add mode toggle handlers
+- [x] Add slot key handlers
+- [x] Get current position for save
+- [x] Move to position for load
 
 ## Success Criteria
 - NumpadMult enters save mode
