@@ -37,6 +37,7 @@ class MovementController:
         self._active_dirs: set[str] = set()  # {"up", "left"} = diagonal up-left
         self._running = False
         self._lock = threading.Lock()
+        self._move_history: list[tuple[int, int]] = []  # Undo history of (dx, dy)
 
     def start_direction(self, direction: str) -> None:
         """Start moving in a direction (or add to multi-key diagonal).
@@ -93,6 +94,7 @@ class MovementController:
             # Move mouse (outside lock to avoid blocking input)
             if dx != 0 or dy != 0:
                 self._mouse.move(dx, dy)
+                self._record_move(dx, dy)
 
             # Accelerate for next iteration
             self._accelerate()
@@ -141,3 +143,24 @@ class MovementController:
             t = self._current_speed / max_mult
             increment = rate * (1 - abs(2 * t - 1))
             self._current_speed = min(self._current_speed + increment, max_mult)
+
+    def _record_move(self, dx: int, dy: int) -> None:
+        """Record a move for undo history."""
+        max_levels = self._config.get("undo.max_levels", 10)
+        self._move_history.append((dx, dy))
+        # Trim history to max levels
+        if len(self._move_history) > max_levels:
+            self._move_history = self._move_history[-max_levels:]
+
+    def undo(self) -> bool:
+        """Undo last movement by reversing the delta.
+
+        Returns:
+            True if undo performed, False if history empty.
+        """
+        if not self._move_history:
+            return False
+        dx, dy = self._move_history.pop()
+        # Move in opposite direction
+        self._mouse.move(-dx, -dy)
+        return True

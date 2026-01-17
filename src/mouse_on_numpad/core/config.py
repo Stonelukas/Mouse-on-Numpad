@@ -45,6 +45,9 @@ class ConfigManager:
             "max_speed": 10,
             "delay": 30,  # ms between scroll ticks
         },
+        "undo": {
+            "max_levels": 10,  # Max undo history entries
+        },
     }
 
     def __init__(self, config_dir: Path | None = None) -> None:

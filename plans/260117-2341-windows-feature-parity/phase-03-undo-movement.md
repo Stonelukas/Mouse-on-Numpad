@@ -6,7 +6,7 @@
 
 ## Overview
 - Priority: Medium
-- Status: Pending
+- Status: Done (2026-01-18 00:10)
 - Effort: 45m
 
 ## Implementation
@@ -38,11 +38,11 @@ Need to query current mouse position. Options:
 Simplest: Track in MovementController, store absolute coords.
 
 ## Todo
-- [ ] Add undo config
-- [ ] Add position history tracking
-- [ ] Record position before moves
-- [ ] Add KEY_KPSLASH handler
-- [ ] Implement undo (move to last position)
+- [x] Add undo config
+- [x] Add position history tracking
+- [x] Record position before moves
+- [x] Add KEY_KPSLASH handler
+- [x] Implement undo (move to last position)
 
 ## Success Criteria
 - NumpadDiv undoes last movement

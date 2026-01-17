@@ -82,6 +82,7 @@ class Daemon:
     KEY_KPPLUS = 78      # Toggle mouse mode (like Windows version)
     KEY_KPASTERISK = 55  # Save position mode
     KEY_KPMINUS = 74     # Load position mode
+    KEY_KPSLASH = 98     # Undo last movement
 
     # Click actions
     CLICK_ACTIONS = {
@@ -235,6 +236,11 @@ class Daemon:
                 self.mouse.press(button)
                 self._held_buttons.add(button)
             return True  # Suppress hold keys
+
+        # Handle undo (NumpadSlash)
+        if keycode == self.KEY_KPSLASH and pressed:
+            self.movement.undo()
+            return True  # Suppress undo key
 
         return False  # Don't suppress other keys
 
