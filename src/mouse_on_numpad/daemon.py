@@ -4,11 +4,18 @@ import signal
 import subprocess
 import time
 import threading
+from pathlib import Path
 import evdev
 
 from .core import ConfigManager, StateManager, ErrorLogger
-from .input import MonitorManager, PositionMemory, AudioFeedback
+from .input import MonitorManager, PositionMemory, AudioFeedback, ScrollController
+
+# Status file for IPC with GUI indicator
+STATUS_FILE = Path("/tmp/mouse-on-numpad-status")
+# ydotool scroll multiplier - ydotool uses larger values than UInput for visible scrolling
+YDOTOOL_SCROLL_MULTIPLIER = 15
 from .input.movement_controller import MovementController
+from .tray_icon import TrayIcon
 
 
 class YdotoolMouse:
@@ -27,7 +34,10 @@ class YdotoolMouse:
     def scroll(self, dx: int, dy: int) -> None:
         """Scroll mouse wheel."""
         if dy != 0:
-            subprocess.run(["ydotool", "mousemove", "--wheel", "-y", str(dy * 15)], check=False)
+            subprocess.run(
+                ["ydotool", "mousemove", "--wheel", "-y", str(dy * YDOTOOL_SCROLL_MULTIPLIER)],
+                check=False,
+            )
 
     def close(self) -> None:
         """No cleanup needed for ydotool."""
@@ -80,16 +90,20 @@ class Daemon:
         96: "middle",  # KEY_KPENTER - middle click
     }
 
-    # Movement keys (direction strings)
+    # Movement keys (cardinal directions only - diagonals via multi-key)
     MOVEMENT_KEYS = {
         72: ("up",),           # KEY_KP8
         80: ("down",),         # KEY_KP2
         75: ("left",),         # KEY_KP4
         77: ("right",),        # KEY_KP6
-        71: ("up", "left"),    # KEY_KP7 - diagonal
-        73: ("up", "right"),   # KEY_KP9 - diagonal
-        79: ("down", "left"),  # KEY_KP1 - diagonal
-        81: ("down", "right"), # KEY_KP3 - diagonal
+    }
+
+    # Scroll keys (corner numpad keys)
+    SCROLL_KEYS = {
+        71: ("up",),      # KEY_KP7 - scroll up
+        79: ("down",),    # KEY_KP1 - scroll down
+        73: ("right",),   # KEY_KP9 - scroll right (horizontal)
+        81: ("left",),    # KEY_KP3 - scroll left (horizontal)
     }
 
     def __init__(
@@ -106,10 +120,31 @@ class Daemon:
         self.positions = PositionMemory(self.config, self.monitors)
         self.audio = AudioFeedback(self.config)
         self.movement = MovementController(self.config, self.mouse)
+        self.scroll = ScrollController(self.config, self.mouse)
+        self.tray = TrayIcon(on_toggle=self._toggle_mode, on_quit=self.stop)
         self._running = False
         self._devices: list[evdev.InputDevice] = []
         self._threads: list[threading.Thread] = []
         self._held_keys: set[int] = set()
+        self._indicator_proc: subprocess.Popen[bytes] | None = None
+
+    def _toggle_mode(self) -> None:
+        """Toggle mouse mode (called from tray menu)."""
+        enabled = self.state.toggle()
+        if not enabled:
+            self.movement.stop_all()
+            self.scroll.stop_all()
+        self.tray.update(enabled)
+        self._write_status(enabled)
+        self.logger.info("Mouse mode: %s", "enabled" if enabled else "disabled")
+        print(f"Mouse mode: {'ENABLED' if enabled else 'DISABLED'}")
+
+    def _write_status(self, enabled: bool) -> None:
+        """Write status to file for GUI indicator IPC."""
+        try:
+            STATUS_FILE.write_text("enabled" if enabled else "disabled")
+        except OSError:
+            pass  # Ignore file write errors
 
     def _find_keyboards(self) -> list[evdev.InputDevice]:
         """Find all keyboard devices."""
@@ -135,8 +170,12 @@ class Daemon:
         if keycode == self.KEY_KPPLUS and pressed:
             enabled = self.state.toggle()
             if not enabled:
-                # Stop all movement when disabling
+                # Stop all movement and scroll when disabling
                 self.movement.stop_all()
+                self.scroll.stop_all()
+            # Update tray icon and status file
+            self.tray.update(enabled)
+            self._write_status(enabled)
             self.logger.info("Mouse mode: %s", "enabled" if enabled else "disabled")
             print(f"Mouse mode: {'ENABLED' if enabled else 'DISABLED'}")
             return True  # Suppress this key
@@ -164,6 +203,17 @@ class Daemon:
                 for direction in directions:
                     self.movement.stop_direction(direction)
             return True  # Suppress movement keys
+
+        # Handle scroll keys
+        if keycode in self.SCROLL_KEYS:
+            directions = self.SCROLL_KEYS[keycode]
+            if pressed:
+                for direction in directions:
+                    self.scroll.start_direction(direction)
+            else:
+                for direction in directions:
+                    self.scroll.stop_direction(direction)
+            return True  # Suppress scroll keys
 
         return False  # Don't suppress other keys
 
@@ -220,10 +270,30 @@ class Daemon:
         signal.signal(signal.SIGINT, lambda *_: self.stop())
         signal.signal(signal.SIGTERM, lambda *_: self.stop())
 
+        # Start system tray icon
+        self.tray.start()
+
+        # Write initial status (disabled)
+        self._write_status(False)
+
+        # Start indicator as subprocess (GTK 4 layer shell, separate from GTK 3 tray)
+        import sys
+        import os
+        env = os.environ.copy()
+        # gtk4-layer-shell must be preloaded before libwayland-client
+        env["LD_PRELOAD"] = "/usr/lib/libgtk4-layer-shell.so"
+        self._indicator_proc = subprocess.Popen(
+            [sys.executable, "-m", "mouse_on_numpad", "--indicator"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+        )
+
         self.logger.info("Daemon started. Mouse mode: DISABLED")
         print("Mouse on Numpad daemon started (evdev backend).")
         print("Press Numpad+ to toggle mouse mode ON/OFF")
         print(f"Monitoring {len(self._devices)} keyboard(s)")
+        print("System tray + overlay indicator active.")
         print("Press Ctrl+C to stop.")
 
         # Start reader threads for each device
@@ -239,6 +309,19 @@ class Daemon:
     def stop(self) -> None:
         """Stop the daemon."""
         self._running = False
+        # Stop movement and scroll threads
+        self.movement.stop_all()
+        self.scroll.stop_all()
+        time.sleep(0.1)  # Allow threads to exit gracefully
+        self.tray.stop()
+        # Stop indicator subprocess
+        if hasattr(self, "_indicator_proc") and self._indicator_proc:
+            self._indicator_proc.terminate()
+        # Clean up status file
+        try:
+            STATUS_FILE.unlink(missing_ok=True)
+        except OSError:
+            pass
         for dev in self._devices:
             try:
                 dev.close()

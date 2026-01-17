@@ -6,6 +6,7 @@ from mouse_on_numpad.input.monitor_manager import MonitorManager
 from mouse_on_numpad.input.mouse_controller import MouseController
 from mouse_on_numpad.input.movement_controller import MovementController
 from mouse_on_numpad.input.position_memory import PositionMemory
+from mouse_on_numpad.input.scroll_controller import ScrollController
 
 __all__ = [
     "AudioFeedback",
@@ -14,4 +15,5 @@ __all__ = [
     "MouseController",
     "MovementController",
     "PositionMemory",
+    "ScrollController",
 ]

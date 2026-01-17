@@ -1,8 +1,8 @@
 # System Architecture - Mouse on Numpad
 
-**Document Version:** 1.0
-**Updated:** 2026-01-17
-**Phase:** 1 (Core Infrastructure Complete)
+**Document Version:** 1.1
+**Updated:** 2026-01-18
+**Phase:** 1 (Core Infrastructure + Scroll Support)
 
 ---
 
@@ -39,13 +39,13 @@ Mouse on Numpad is a multi-phase Linux port of a Windows AutoHotkey accessibilit
 
 ---
 
-## Phase 1: Core Infrastructure
+## Phase 1: Core Infrastructure + Scroll Support
 
 ### Component Diagram
 
 ```
-                          main.py
-                        (CLI entry)
+                          main.py / Daemon
+                        (CLI entry / Daemon)
                              │
                 ┌────────────┼────────────┐
                 │            │            │
@@ -53,25 +53,46 @@ Mouse on Numpad is a multi-phase Linux port of a Windows AutoHotkey accessibilit
                 │            │            │
                 └────────────┼────────────┘
                              │
-                     StateManager
-                    (Observable)
-                    ┌──────────┐
-                    │ Position │
-                    │ Mode     │◄────────┐
-                    │ Audio    │         │
-                    └──────────┘         │
-                         │              │
-                    callbacks            │
-                         │              │
-                    ┌────────────────────┘
-                    │
-            ┌───────┴──────┬──────────┬─────────┐
-            │              │          │         │
-       ConfigManager  ErrorLogger  (Phase 2+  Input Layer,
-       (JSON file)   (Log file)   Audio, GUI)
-            │              │
-            ▼              ▼
-    ~/.config/...  ~/.local/share/...
+                ┌────────────────────────┐
+                │   Input Processing    │
+                │  (evdev key capture)  │
+                └────────────────────────┘
+                  │          │          │
+         Movement/Scroll  Clicks     Modes
+                │          │          │
+                ▼          ▼          ▼
+        ┌──────────────┐ ┌──────┐ ┌─────────┐
+        │Movement      │ │Mouse │ │State    │
+        │ScrollControl│ │Click │ │Manager  │
+        │(Threads)    │ └──────┘ │(Observer)
+        └──────────────┘         └─────────┘
+                │                      │
+                └──────────┬───────────┘
+                           │
+                    ConfigManager
+                    (JSON config)
+                           │
+                    ErrorLogger
+                    (Rotating logs)
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+       ~/.config    ~/.local/share    /tmp
+```
+
+### Architecture Changes (Phase 1 Update)
+
+Added **ScrollController** (new daemon thread):
+- Handles numpad 7,9,1,3 (scroll up/right/down/left)
+- Exponential acceleration support
+- Configurable scroll parameters
+- Multi-direction simultaneous scrolling
+- Thread-safe direction queue
+
+Integrated into **Daemon._handle_key():**
+- Routes scroll keys to ScrollController
+- Manages start_direction/stop_direction calls
+- Stops all scroll on mode disable
 ```
 
 ### Core Module Interactions
@@ -260,6 +281,66 @@ External Trigger
 **Failure Modes:**
 - Callback raises exception → Logged, other callbacks still run
 - Callback modifies state → New change triggers new notification
+
+---
+
+### 2.1 ScrollController (NEW - Phase 1 Update)
+
+**Responsibility:** Continuous scrolling with acceleration support
+
+**Key Design Decisions:**
+
+1. **Separate Thread Model**
+   ```
+   Main thread (evdev input)
+       │
+       ├─→ start_direction("up")
+       │   (adds to active_dirs, ensures thread running)
+       │
+       ├─→ Scroll thread (daemon)
+       │   ├─→ Calculate delta (step * speed)
+       │   ├─→ Call mouse.scroll(dx, dy)
+       │   ├─→ Accelerate speed
+       │   └─→ Sleep(delay)
+       │
+       └─→ stop_direction("up")
+           (removes from active_dirs)
+   ```
+
+2. **Direction Queuing**
+   ```python
+   # Multi-direction support
+   scroll.start_direction("up")
+   scroll.start_direction("right")  # Can scroll diagonally
+   # Active set: {"up", "right"}
+
+   scroll.stop_direction("up")      # Still scrolling right
+   # Active set: {"right"}
+   ```
+
+3. **Acceleration Calculation**
+   ```python
+   speed = int(step * current_speed)
+   current_speed = min(current_speed * rate, max_mult)
+
+   # Example: step=3, rate=1.1, max_speed=10
+   # Tick 1: 3*1.0 = 3
+   # Tick 2: 3*1.1 = 3.3 → 3
+   # Tick 3: 3*1.21 = 3.63 → 3
+   # ...continues until max_mult (10/3 ≈ 3.3)
+   ```
+
+4. **Configuration**
+   ```python
+   DEFAULT_CONFIG["scroll"] = {
+       "step": 3,              # Base amount per scroll event
+       "acceleration_rate": 1.1,  # Exponential multiplier
+       "max_speed": 10,        # Maximum speed multiplier
+       "delay": 30,            # Milliseconds between ticks
+   }
+   ```
+
+**Thread-Safety:** RLock protects active_dirs set and speed value.
 
 ---
 

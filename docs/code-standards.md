@@ -520,6 +520,89 @@ Before submitting PR, verify:
 
 ## Common Patterns
 
+### Continuous Direction Control (Scroll/Movement)
+
+```python
+class ContinuousController:
+    """Pattern for handling continuous multi-direction actions."""
+
+    def __init__(self, config, mouse):
+        self._config = config
+        self._mouse = mouse
+        self._current_speed = 1.0
+        self._thread: threading.Thread | None = None
+        self._active_dirs: set[str] = set()
+        self._running = False
+        self._lock = threading.Lock()
+
+    def start_direction(self, direction: str) -> None:
+        """Start action in a direction."""
+        with self._lock:
+            self._active_dirs.add(direction)
+            self._ensure_running()
+
+    def stop_direction(self, direction: str) -> None:
+        """Stop action in a direction."""
+        with self._lock:
+            self._active_dirs.discard(direction)
+            if not self._active_dirs:
+                self._current_speed = 1.0  # Reset acceleration
+
+    def stop_all(self) -> None:
+        """Stop immediately."""
+        with self._lock:
+            self._active_dirs.clear()
+            self._current_speed = 1.0
+            self._running = False
+
+    def _ensure_running(self) -> None:
+        """Start thread if not already running."""
+        if self._thread is None or not self._thread.is_alive():
+            self._running = True
+            self._thread = threading.Thread(target=self._loop, daemon=True)
+            self._thread.start()
+
+    def _loop(self) -> None:
+        """Continuous action loop (runs in separate thread)."""
+        while self._running:
+            with self._lock:
+                if not self._active_dirs:
+                    self._running = False
+                    break
+                delta = self._calc_delta()
+
+            # Act outside lock (prevents blocking input)
+            self._perform_action(delta)
+            self._accelerate()
+
+            # Sleep (configurable)
+            delay = self._config.get("delay", 30) / 1000.0
+            time.sleep(delay)
+
+    def _calc_delta(self) -> int:
+        """Calculate delta based on active directions and speed."""
+        # Subclass implements: combine active_dirs, multiply by current_speed
+        pass
+
+    def _perform_action(self, delta: int) -> None:
+        """Subclass implements: perform the action."""
+        pass
+
+    def _accelerate(self) -> None:
+        """Subclass implements: update current_speed."""
+        pass
+```
+
+**Used by:** ScrollController, MovementController
+
+**Key Principles:**
+1. Lock only for state access (short critical section)
+2. Actions happen outside lock (prevent input blocking)
+3. Single daemon thread per controller
+4. Support multi-direction by tracking active set
+
+---
+
 ### Observer Pattern (State Changes)
 
 ```python

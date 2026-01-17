@@ -39,6 +39,12 @@ class ConfigManager:
         "positions": {
             "per_monitor": True,  # Store positions per monitor config
         },
+        "scroll": {
+            "step": 3,  # Base scroll amount per tick
+            "acceleration_rate": 1.1,
+            "max_speed": 10,
+            "delay": 30,  # ms between scroll ticks
+        },
     }
 
     def __init__(self, config_dir: Path | None = None) -> None:
@@ -158,7 +164,3 @@ class ConfigManager:
         """Reset configuration to defaults."""
         self._config = copy.deepcopy(self.DEFAULT_CONFIG)
         self._save()
-
-    def reload(self) -> None:
-        """Reload configuration from disk."""
-        self._load()
