@@ -24,6 +24,7 @@ dependencies = [
     "PyGObject>=3.44.0",
     "pulsectl>=23.5.0",
     "python-xlib>=0.33",
+    "evdev>=1.6.0",
 ]
 
 [project.optional-dependencies]
