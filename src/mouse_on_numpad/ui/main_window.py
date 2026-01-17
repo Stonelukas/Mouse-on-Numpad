@@ -34,16 +34,18 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         self._state = state
 
         # Window properties
-        self.set_default_size(600, 400)
+        self.set_default_size(700, 500)
         self.set_resizable(True)
 
         # Create notebook with tabs
         self._notebook = Gtk.Notebook()
         self._notebook.set_tab_pos(Gtk.PositionType.TOP)
 
-        # Add tabs
+        # Add 4 tabs matching Windows version
         self._create_movement_tab()
-        self._create_positions_tab()
+        self._create_audio_tab()
+        self._create_hotkeys_tab()
+        self._create_advanced_tab()
 
         # Set notebook as window content
         self.set_child(self._notebook)
@@ -71,31 +73,61 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         speed_scale = Gtk.Scale.new_with_range(
             orientation=Gtk.Orientation.HORIZONTAL, min=1, max=100, step=1
         )
-        speed_scale.set_value(self._config.get("movement.base_speed", 10))
+        speed_scale.set_value(self._config.get("movement.base_speed", 15))
         speed_scale.set_draw_value(True)
         speed_scale.set_value_pos(Gtk.PositionType.RIGHT)
         speed_scale.connect("value-changed", self._on_speed_changed)
         speed_box.append(speed_scale)
-
         box.append(speed_box)
 
-        # Acceleration setting
+        # Max Speed setting
+        max_speed_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        max_speed_label = Gtk.Label(label="Max Speed")
+        max_speed_label.set_halign(Gtk.Align.START)
+        max_speed_box.append(max_speed_label)
+
+        max_speed_scale = Gtk.Scale.new_with_range(
+            orientation=Gtk.Orientation.HORIZONTAL, min=10, max=200, step=5
+        )
+        max_speed_scale.set_value(self._config.get("movement.max_speed", 150))
+        max_speed_scale.set_draw_value(True)
+        max_speed_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        max_speed_scale.connect("value-changed", self._on_max_speed_changed)
+        max_speed_box.append(max_speed_scale)
+        box.append(max_speed_box)
+
+        # Acceleration Rate setting
         accel_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        accel_label = Gtk.Label(label="Acceleration Factor")
+        accel_label = Gtk.Label(label="Acceleration Rate")
         accel_label.set_halign(Gtk.Align.START)
         accel_box.append(accel_label)
 
         accel_scale = Gtk.Scale.new_with_range(
-            orientation=Gtk.Orientation.HORIZONTAL, min=1.0, max=3.0, step=0.1
+            orientation=Gtk.Orientation.HORIZONTAL, min=1.0, max=3.0, step=0.05
         )
-        accel_scale.set_value(self._config.get("movement.acceleration", 1.5))
+        accel_scale.set_value(self._config.get("movement.acceleration_rate", 1.15))
         accel_scale.set_draw_value(True)
         accel_scale.set_value_pos(Gtk.PositionType.RIGHT)
-        accel_scale.set_digits(1)
+        accel_scale.set_digits(2)
         accel_scale.connect("value-changed", self._on_acceleration_changed)
         accel_box.append(accel_scale)
-
         box.append(accel_box)
+
+        # Move Delay setting
+        delay_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        delay_label = Gtk.Label(label="Move Delay (ms)")
+        delay_label.set_halign(Gtk.Align.START)
+        delay_box.append(delay_label)
+
+        delay_scale = Gtk.Scale.new_with_range(
+            orientation=Gtk.Orientation.HORIZONTAL, min=5, max=50, step=1
+        )
+        delay_scale.set_value(self._config.get("movement.move_delay", 20))
+        delay_scale.set_draw_value(True)
+        delay_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        delay_scale.connect("value-changed", self._on_move_delay_changed)
+        delay_box.append(delay_scale)
+        box.append(delay_box)
 
         # Curve selection
         curve_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -112,25 +144,15 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
             curve_dropdown.set_selected(curve_options.index(current_curve))
         curve_dropdown.connect("notify::selected", self._on_curve_changed)
         curve_box.append(curve_dropdown)
-
         box.append(curve_box)
-
-        # Audio toggle
-        audio_switch = Gtk.Switch()
-        audio_switch.set_active(self._config.get("audio.enabled", True))
-        audio_switch.connect("state-set", self._on_audio_toggled)
-        audio_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        audio_box.append(Gtk.Label(label="Audio Feedback"))
-        audio_box.append(audio_switch)
-        box.append(audio_box)
 
         # Add tab to notebook
         label = Gtk.Label(label="Movement")
         self._notebook.append_page(box, label)
 
-    def _create_positions_tab(self) -> None:
-        """Create position memory tab with 3x3 grid display."""
-        # Container for positions
+    def _create_audio_tab(self) -> None:
+        """Create audio settings tab with volume and sound controls."""
+        # Container for audio settings
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         box.set_margin_top(20)
         box.set_margin_bottom(20)
@@ -138,41 +160,159 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         box.set_margin_end(20)
 
         # Title label
-        title = Gtk.Label(label="Position Memory")
+        title = Gtk.Label(label="Audio Settings")
         title.add_css_class("title-2")
         box.append(title)
 
-        # Instructions
-        instructions = Gtk.Label(
-            label="9 position slots available (implementation pending Phase 3)"
+        # Audio toggle
+        audio_switch = Gtk.Switch()
+        audio_switch.set_active(self._config.get("audio.enabled", True))
+        audio_switch.connect("state-set", self._on_audio_toggled)
+        audio_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        audio_label = Gtk.Label(label="Enable Audio Feedback")
+        audio_label.set_halign(Gtk.Align.START)
+        audio_box.append(audio_label)
+        audio_box.append(audio_switch)
+        box.append(audio_box)
+
+        # Volume setting
+        volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        volume_label = Gtk.Label(label="Volume")
+        volume_label.set_halign(Gtk.Align.START)
+        volume_box.append(volume_label)
+
+        volume_scale = Gtk.Scale.new_with_range(
+            orientation=Gtk.Orientation.HORIZONTAL, min=0, max=100, step=5
         )
-        instructions.set_wrap(True)
-        box.append(instructions)
-
-        # 3x3 Grid for position slots
-        grid = Gtk.Grid()
-        grid.set_row_spacing(10)
-        grid.set_column_spacing(10)
-        grid.set_halign(Gtk.Align.CENTER)
-
-        # Create 3x3 grid of position buttons
-        for row in range(3):
-            for col in range(3):
-                slot_num = row * 3 + col + 1
-                button = Gtk.Button(label=f"Slot {slot_num}\n(Empty)")
-                button.set_size_request(120, 80)
-                grid.attach(button, col, row, 1, 1)
-
-        box.append(grid)
-
-        # Clear all button
-        clear_button = Gtk.Button(label="Clear All Positions")
-        clear_button.set_halign(Gtk.Align.CENTER)
-        clear_button.connect("clicked", self._on_clear_positions)
-        box.append(clear_button)
+        volume_scale.set_value(self._config.get("audio.volume", 50))
+        volume_scale.set_draw_value(True)
+        volume_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        volume_scale.connect("value-changed", self._on_volume_changed)
+        volume_box.append(volume_scale)
+        box.append(volume_box)
 
         # Add tab to notebook
-        label = Gtk.Label(label="Positions")
+        label = Gtk.Label(label="Audio")
+        self._notebook.append_page(box, label)
+
+    def _create_hotkeys_tab(self) -> None:
+        """Create hotkeys tab with key mapping display (read-only for now)."""
+        # Container for hotkeys
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(20)
+        box.set_margin_bottom(20)
+        box.set_margin_start(20)
+        box.set_margin_end(20)
+
+        # Title label
+        title = Gtk.Label(label="Hotkey Configuration")
+        title.add_css_class("title-2")
+        box.append(title)
+
+        # Info label
+        info = Gtk.Label(
+            label="Default numpad hotkeys (customization coming soon)"
+        )
+        info.set_wrap(True)
+        box.append(info)
+
+        # Scrolled window for hotkeys grid
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        # Grid for hotkey mappings
+        grid = Gtk.Grid()
+        grid.set_row_spacing(8)
+        grid.set_column_spacing(20)
+        grid.set_margin_top(10)
+
+        # Default hotkey mappings (display only)
+        hotkeys = [
+            ("Toggle Mode", "Numpad +"),
+            ("Move Up", "Numpad 8"),
+            ("Move Down", "Numpad 2"),
+            ("Move Left", "Numpad 4"),
+            ("Move Right", "Numpad 6"),
+            ("Move Up-Left", "Numpad 7"),
+            ("Move Up-Right", "Numpad 9"),
+            ("Move Down-Left", "Numpad 1"),
+            ("Move Down-Right", "Numpad 3"),
+            ("Left Click", "Numpad 5"),
+            ("Right Click", "Numpad 0"),
+        ]
+
+        for idx, (action, key) in enumerate(hotkeys):
+            action_label = Gtk.Label(label=action)
+            action_label.set_halign(Gtk.Align.START)
+            grid.attach(action_label, 0, idx, 1, 1)
+
+            key_label = Gtk.Label(label=key)
+            key_label.set_halign(Gtk.Align.START)
+            key_label.add_css_class("monospace")
+            grid.attach(key_label, 1, idx, 1, 1)
+
+        scrolled.set_child(grid)
+        box.append(scrolled)
+
+        # Add tab to notebook
+        label = Gtk.Label(label="Hotkeys")
+        self._notebook.append_page(box, label)
+
+    def _create_advanced_tab(self) -> None:
+        """Create advanced settings tab with scroll and reset options."""
+        # Container for advanced settings
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(20)
+        box.set_margin_bottom(20)
+        box.set_margin_start(20)
+        box.set_margin_end(20)
+
+        # Title label
+        title = Gtk.Label(label="Advanced Settings")
+        title.add_css_class("title-2")
+        box.append(title)
+
+        # Scroll step setting
+        scroll_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        scroll_label = Gtk.Label(label="Scroll Step")
+        scroll_label.set_halign(Gtk.Align.START)
+        scroll_box.append(scroll_label)
+
+        scroll_scale = Gtk.Scale.new_with_range(
+            orientation=Gtk.Orientation.HORIZONTAL, min=1, max=10, step=1
+        )
+        scroll_scale.set_value(3)  # Default scroll step
+        scroll_scale.set_draw_value(True)
+        scroll_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        scroll_box.append(scroll_scale)
+        box.append(scroll_box)
+
+        # Scroll acceleration setting
+        scroll_accel_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        scroll_accel_label = Gtk.Label(label="Scroll Acceleration Rate")
+        scroll_accel_label.set_halign(Gtk.Align.START)
+        scroll_accel_box.append(scroll_accel_label)
+
+        scroll_accel_scale = Gtk.Scale.new_with_range(
+            orientation=Gtk.Orientation.HORIZONTAL, min=1.0, max=2.0, step=0.1
+        )
+        scroll_accel_scale.set_value(1.5)  # Default scroll acceleration
+        scroll_accel_scale.set_draw_value(True)
+        scroll_accel_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        scroll_accel_scale.set_digits(1)
+        scroll_accel_box.append(scroll_accel_scale)
+        box.append(scroll_accel_box)
+
+        # Reset to defaults button
+        reset_button = Gtk.Button(label="Reset All Settings to Defaults")
+        reset_button.set_halign(Gtk.Align.CENTER)
+        reset_button.set_margin_top(20)
+        reset_button.connect("clicked", self._on_reset_defaults)
+        box.append(reset_button)
+
+        # Add tab to notebook
+        label = Gtk.Label(label="Advanced")
         self._notebook.append_page(box, label)
 
     def _on_speed_changed(self, scale: Gtk.Scale) -> None:
@@ -180,10 +320,20 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         value = int(scale.get_value())
         self._config.set("movement.base_speed", value)
 
+    def _on_max_speed_changed(self, scale: Gtk.Scale) -> None:
+        """Handle max speed slider changes."""
+        value = int(scale.get_value())
+        self._config.set("movement.max_speed", value)
+
     def _on_acceleration_changed(self, scale: Gtk.Scale) -> None:
-        """Handle acceleration factor slider changes."""
-        value = round(scale.get_value(), 1)
-        self._config.set("movement.acceleration", value)
+        """Handle acceleration rate slider changes."""
+        value = round(scale.get_value(), 2)
+        self._config.set("movement.acceleration_rate", value)
+
+    def _on_move_delay_changed(self, scale: Gtk.Scale) -> None:
+        """Handle move delay slider changes."""
+        value = int(scale.get_value())
+        self._config.set("movement.move_delay", value)
 
     def _on_curve_changed(self, dropdown: Gtk.DropDown, _param: object) -> None:
         """Handle acceleration curve dropdown changes."""
@@ -197,8 +347,13 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         self._config.set("audio.enabled", state)
         return False
 
-    def _on_clear_positions(self, _button: Gtk.Button) -> None:
-        """Handle clear all positions button click."""
-        # Position memory will be implemented in Phase 3
-        dialog = Gtk.AlertDialog(message="Position memory not yet implemented")
+    def _on_volume_changed(self, scale: Gtk.Scale) -> None:
+        """Handle volume slider changes."""
+        value = int(scale.get_value())
+        self._config.set("audio.volume", value)
+
+    def _on_reset_defaults(self, _button: Gtk.Button) -> None:
+        """Handle reset to defaults button click."""
+        self._config.reset()
+        dialog = Gtk.AlertDialog(message="Settings reset to defaults")
         dialog.show(self)
