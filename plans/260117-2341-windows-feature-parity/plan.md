@@ -19,7 +19,7 @@ Bring Linux port to feature parity with Windows AHK version.
 | Phase | Description | Effort | Status |
 |-------|-------------|--------|--------|
 | 1 | [Scroll Support](phase-01-scroll-support.md) | 30m | Complete |
-| 2 | [Click Hold](phase-02-click-hold.md) | 30m | Pending |
+| 2 | [Click Hold](phase-02-click-hold.md) | 30m | Complete |
 | 3 | [Undo Movement](phase-03-undo-movement.md) | 45m | Pending |
 | 4 | [Position Memory Integration](phase-04-position-memory.md) | 45m | Pending |
 
@@ -33,7 +33,7 @@ Bring Linux port to feature parity with Windows AHK version.
 |-----|-----------------|--------------|
 | Numpad 7/1 | Scroll up/down | ✅ |
 | Numpad 9/3 | Scroll left/right | ✅ |
-| NumpadDot | Hold left click | ❌ |
+| NumpadDot | Hold left click | ✅ |
 | NumpadDiv | Undo last move | ❌ |
 | NumpadMult | Save position mode | ❌ |
 | NumpadSub | Load position mode | ❌ |

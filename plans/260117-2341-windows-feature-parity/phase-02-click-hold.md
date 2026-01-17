@@ -6,7 +6,7 @@
 
 ## Overview
 - Priority: Medium
-- Status: Pending
+- Status: Done (2026-01-18 00:05)
 - Effort: 30m
 
 ## Implementation
@@ -35,10 +35,10 @@ self._held_buttons: set[str] = set()  # {"left", "middle"}
 - Use existing `UinputMouse.press()` and `release()` methods
 
 ## Todo
-- [ ] Add _held_buttons state
-- [ ] Add HOLD_KEYS mapping
-- [ ] Implement toggle logic
-- [ ] Release all held buttons on mode disable
+- [x] Add _held_buttons state
+- [x] Add HOLD_KEYS mapping
+- [x] Implement toggle logic
+- [x] Release all held buttons on mode disable
 
 ## Success Criteria
 - NumpadDot holds/releases left click

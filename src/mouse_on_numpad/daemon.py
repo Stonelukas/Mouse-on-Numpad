@@ -106,6 +106,11 @@ class Daemon:
         81: ("left",),    # KEY_KP3 - scroll left (horizontal)
     }
 
+    # Hold keys - toggle hold/release for drag operations
+    HOLD_KEYS = {
+        83: "left",   # KEY_KPDOT - toggle left click hold
+    }
+
     def __init__(
         self,
         config: ConfigManager | None = None,
@@ -126,6 +131,7 @@ class Daemon:
         self._devices: list[evdev.InputDevice] = []
         self._threads: list[threading.Thread] = []
         self._held_keys: set[int] = set()
+        self._held_buttons: set[str] = set()  # Mouse buttons held via toggle (left, middle)
         self._indicator_proc: subprocess.Popen[bytes] | None = None
 
     def _toggle_mode(self) -> None:
@@ -134,6 +140,7 @@ class Daemon:
         if not enabled:
             self.movement.stop_all()
             self.scroll.stop_all()
+            self._release_all_held_buttons()
         self.tray.update(enabled)
         self._write_status(enabled)
         self.logger.info("Mouse mode: %s", "enabled" if enabled else "disabled")
@@ -170,9 +177,10 @@ class Daemon:
         if keycode == self.KEY_KPPLUS and pressed:
             enabled = self.state.toggle()
             if not enabled:
-                # Stop all movement and scroll when disabling
+                # Stop all movement, scroll, and release held buttons when disabling
                 self.movement.stop_all()
                 self.scroll.stop_all()
+                self._release_all_held_buttons()
             # Update tray icon and status file
             self.tray.update(enabled)
             self._write_status(enabled)
@@ -215,7 +223,26 @@ class Daemon:
                     self.scroll.stop_direction(direction)
             return True  # Suppress scroll keys
 
+        # Handle hold keys (toggle mouse button hold for drag operations)
+        if keycode in self.HOLD_KEYS and pressed:
+            button = self.HOLD_KEYS[keycode]
+            if button in self._held_buttons:
+                # Release the button
+                self.mouse.release(button)
+                self._held_buttons.discard(button)
+            else:
+                # Press and hold the button
+                self.mouse.press(button)
+                self._held_buttons.add(button)
+            return True  # Suppress hold keys
+
         return False  # Don't suppress other keys
+
+    def _release_all_held_buttons(self) -> None:
+        """Release all held mouse buttons."""
+        for button in list(self._held_buttons):
+            self.mouse.release(button)
+        self._held_buttons.clear()
 
     def _read_device(self, device: evdev.InputDevice) -> None:
         """Read events from a device in a thread."""
