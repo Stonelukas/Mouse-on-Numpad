@@ -42,10 +42,11 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         self._notebook = Gtk.Notebook()
         self._notebook.set_tab_pos(Gtk.PositionType.TOP)
 
-        # Add 4 tabs matching Windows version
+        # Add 5 tabs
         self._create_movement_tab()
         self._create_audio_tab()
         self._create_hotkeys_tab()
+        self._create_appearance_tab()
         self._create_advanced_tab()
 
         # Set notebook as window content
@@ -201,6 +202,87 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         hotkeys_tab = HotkeysTab(self._config)
         label = Gtk.Label(label="Hotkeys")
         self._notebook.append_page(hotkeys_tab, label)
+
+    def _create_appearance_tab(self) -> None:
+        """Create appearance tab for status indicator settings."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(20)
+        box.set_margin_bottom(20)
+        box.set_margin_start(20)
+        box.set_margin_end(20)
+
+        title = Gtk.Label(label="Status Indicator")
+        title.add_css_class("title-2")
+        box.append(title)
+
+        # Position dropdown
+        pos_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        pos_label = Gtk.Label(label="Position")
+        pos_label.set_halign(Gtk.Align.START)
+        pos_box.append(pos_label)
+        positions = ["top-right", "top-left", "bottom-right", "bottom-left"]
+        pos_dropdown = Gtk.DropDown.new_from_strings(positions)
+        current_pos = self._config.get("status_bar.position", "top-right")
+        if current_pos in positions:
+            pos_dropdown.set_selected(positions.index(current_pos))
+        pos_dropdown.connect("notify::selected", self._on_position_changed)
+        pos_box.append(pos_dropdown)
+        box.append(pos_box)
+
+        # Size dropdown
+        size_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        size_label = Gtk.Label(label="Size")
+        size_label.set_halign(Gtk.Align.START)
+        size_box.append(size_label)
+        sizes = ["small", "medium", "large"]
+        size_dropdown = Gtk.DropDown.new_from_strings(sizes)
+        current_size = self._config.get("status_bar.size", "medium")
+        if current_size in sizes:
+            size_dropdown.set_selected(sizes.index(current_size))
+        size_dropdown.connect("notify::selected", self._on_size_changed)
+        size_box.append(size_dropdown)
+        box.append(size_box)
+
+        # Opacity slider
+        opacity_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        opacity_label = Gtk.Label(label="Opacity")
+        opacity_label.set_halign(Gtk.Align.START)
+        opacity_box.append(opacity_label)
+        opacity_scale = Gtk.Scale.new_with_range(
+            orientation=Gtk.Orientation.HORIZONTAL, min=20, max=100, step=5
+        )
+        opacity_scale.set_value(self._config.get("status_bar.opacity", 80))
+        opacity_scale.set_draw_value(True)
+        opacity_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        opacity_scale.connect("value-changed", self._on_opacity_changed)
+        opacity_box.append(opacity_scale)
+        box.append(opacity_box)
+
+        info = Gtk.Label(label="Note: Restart indicator for changes to apply")
+        info.add_css_class("dim-label")
+        info.set_margin_top(10)
+        box.append(info)
+
+        label = Gtk.Label(label="Appearance")
+        self._notebook.append_page(box, label)
+
+    def _on_position_changed(self, dropdown: Gtk.DropDown, _param: object) -> None:
+        """Handle position dropdown change."""
+        positions = ["top-right", "top-left", "bottom-right", "bottom-left"]
+        selected = dropdown.get_selected()
+        if 0 <= selected < len(positions):
+            self._config.set("status_bar.position", positions[selected])
+
+    def _on_size_changed(self, dropdown: Gtk.DropDown, _param: object) -> None:
+        """Handle size dropdown change."""
+        sizes = ["small", "medium", "large"]
+        selected = dropdown.get_selected()
+        if 0 <= selected < len(sizes):
+            self._config.set("status_bar.size", sizes[selected])
+
+    def _on_opacity_changed(self, scale: Gtk.Scale) -> None:
+        """Handle opacity slider change."""
+        self._config.set("status_bar.opacity", int(scale.get_value()))
 
     def _create_advanced_tab(self) -> None:
         """Create advanced settings tab with scroll and reset options."""

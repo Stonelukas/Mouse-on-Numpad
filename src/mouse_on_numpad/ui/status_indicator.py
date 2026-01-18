@@ -1,79 +1,115 @@
-"""Floating status indicator window showing mouse mode state."""
+"""Floating status indicator using Wayland layer shell."""
+
+from pathlib import Path
 
 import gi  # type: ignore[import-untyped]
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk  # type: ignore[import-untyped]
+gi.require_version("Gtk4LayerShell", "1.0")
+from gi.repository import Gtk, GLib, Gdk, Gtk4LayerShell  # type: ignore[import-untyped]
 
-from ..core.state_manager import MouseMode, StateManager
+from ..core.config import ConfigManager
+
+STATUS_FILE = Path("/tmp/mouse-on-numpad-status")
+
+# Size presets: font-size in px
+SIZE_PRESETS = {"small": 11, "medium": 14, "large": 20}
 
 
 class StatusIndicator(Gtk.Window):  # type: ignore[misc]
-    """Floating status indicator showing current mouse mode.
+    """Layer shell overlay indicator for mouse mode status."""
 
-    Auto-hides when mouse mode is disabled per validation requirements.
-    Uses GTK system theme only (no custom styling).
-    """
-
-    def __init__(self, state: StateManager) -> None:
-        """Initialize status indicator window.
-
-        Args:
-            state: State manager for tracking mouse mode
-        """
+    def __init__(self) -> None:
         super().__init__()
-        self._state = state
+        self._enabled = False
+        self._config = ConfigManager()
 
-        # Window properties - floating, no decorations
-        self.set_decorated(False)
-        self.set_default_size(200, 50)
-        self.set_resizable(False)
+        # Layer shell setup - MUST be before window is realized
+        Gtk4LayerShell.init_for_window(self)
+        Gtk4LayerShell.set_namespace(self, "mouse-on-numpad")
+        Gtk4LayerShell.set_layer(self, Gtk4LayerShell.Layer.OVERLAY)
+        Gtk4LayerShell.set_exclusive_zone(self, -1)
+        Gtk4LayerShell.set_keyboard_mode(self, Gtk4LayerShell.KeyboardMode.NONE)
 
-        # Create status label
-        self._label = Gtk.Label()
-        self._label.set_margin_top(10)
-        self._label.set_margin_bottom(10)
-        self._label.set_margin_start(15)
-        self._label.set_margin_end(15)
-        self._label.add_css_class("title-4")
+        # Apply position from config
+        self._apply_position()
 
+        # UI
+        self._label = Gtk.Label(label="Mouse: ON")
+        self._label.set_margin_top(8)
+        self._label.set_margin_bottom(8)
+        self._label.set_margin_start(14)
+        self._label.set_margin_end(14)
         self.set_child(self._label)
 
-        # Subscribe to state changes
-        self._state.subscribe(self._on_state_changed)
+        self._apply_styles()
 
-        # Update initial state
-        self._update_status()
+        # Start polling
+        GLib.timeout_add(100, self._poll_status)
 
-    def _update_status(self) -> None:
-        """Update status label based on current mouse mode."""
-        mode = self._state.mouse_mode
-        if mode == MouseMode.ENABLED:
-            self._label.set_label("Mouse Mode: ON")
+    def _apply_position(self) -> None:
+        """Apply position from config."""
+        pos = self._config.get("status_bar.position", "top-right")
+        margin = 10
+
+        # Reset anchors
+        for edge in [Gtk4LayerShell.Edge.TOP, Gtk4LayerShell.Edge.BOTTOM,
+                     Gtk4LayerShell.Edge.LEFT, Gtk4LayerShell.Edge.RIGHT]:
+            Gtk4LayerShell.set_anchor(self, edge, False)
+
+        # Set position anchors
+        if "top" in pos:
+            Gtk4LayerShell.set_anchor(self, Gtk4LayerShell.Edge.TOP, True)
+            Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.TOP, margin)
         else:
-            self._label.set_label("Mouse Mode: OFF")
+            Gtk4LayerShell.set_anchor(self, Gtk4LayerShell.Edge.BOTTOM, True)
+            Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.BOTTOM, margin)
 
-        # Auto-hide when disabled per validation
-        if mode == MouseMode.DISABLED:
-            self.set_visible(False)
+        if "right" in pos:
+            Gtk4LayerShell.set_anchor(self, Gtk4LayerShell.Edge.RIGHT, True)
+            Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.RIGHT, margin)
         else:
-            self.set_visible(True)
+            Gtk4LayerShell.set_anchor(self, Gtk4LayerShell.Edge.LEFT, True)
+            Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.LEFT, margin)
 
-    def _on_state_changed(self, key: str, _value: object) -> None:
-        """Handle state changes to update status display.
+    def _apply_styles(self) -> None:
+        """Apply size and opacity from config."""
+        size = self._config.get("status_bar.size", "medium")
+        opacity = self._config.get("status_bar.opacity", 80) / 100.0
+        font_size = SIZE_PRESETS.get(size, 14)
 
-        Args:
-            key: State property that changed
-            _value: New value (unused)
-        """
-        if key == "mouse_mode":
-            self._update_status()
+        css = Gtk.CssProvider()
+        css.load_from_data(f"""
+            window {{
+                background-color: rgba(34, 197, 94, {opacity});
+                border-radius: 8px;
+            }}
+            label {{
+                color: white;
+                font-weight: bold;
+                font-size: {font_size}px;
+            }}
+        """.encode())
+        display = Gdk.Display.get_default()
+        if display:
+            Gtk.StyleContext.add_provider_for_display(
+                display, css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
 
-    def show(self) -> None:
-        """Show the status indicator if mouse mode is enabled."""
-        if self._state.mouse_mode == MouseMode.ENABLED:
-            self.set_visible(True)
+    def _poll_status(self) -> bool:
+        try:
+            if STATUS_FILE.exists():
+                enabled = STATUS_FILE.read_text().strip() == "enabled"
+            else:
+                enabled = False
+            self._update(enabled)
+        except OSError:
+            pass
+        return True
 
-    def hide(self) -> None:
-        """Hide the status indicator."""
-        self.set_visible(False)
+    def _update(self, enabled: bool) -> None:
+        if enabled == self._enabled:
+            return
+        self._enabled = enabled
+        self._label.set_label("Mouse: ON" if enabled else "Mouse: OFF")
+        self.set_visible(enabled)

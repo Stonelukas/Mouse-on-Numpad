@@ -33,8 +33,10 @@ class ConfigManager:
         },
         "status_bar": {
             "enabled": True,
-            "position": "top-right",
-            "auto_hide": True,  # Hide when mouse mode disabled
+            "position": "top-right",  # top-left, top-right, bottom-left, bottom-right
+            "size": "medium",         # small, medium, large
+            "opacity": 80,            # 0-100
+            "auto_hide": True,        # Hide when mouse mode disabled
         },
         "positions": {
             "per_monitor": True,  # Store positions per monitor config

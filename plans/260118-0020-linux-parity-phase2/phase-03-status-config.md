@@ -2,7 +2,7 @@
 
 ## Overview
 - Priority: Medium
-- Status: Pending
+- Status: Complete
 - Effort: 1h
 
 ## Goal
@@ -31,10 +31,10 @@ Add size, opacity, position options for status overlay.
 - Apply opacity via CSS
 
 ## Todo
-- [ ] Add size/opacity config keys
-- [ ] Update status_indicator.py to use config
-- [ ] Add controls to Appearance tab
-- [ ] Implement position presets
+- [x] Add size/opacity config keys
+- [x] Update status_indicator.py to use config
+- [x] Add controls to Appearance tab
+- [x] Implement position presets
 
 ## Success Criteria
 - Users can resize, reposition, adjust opacity
