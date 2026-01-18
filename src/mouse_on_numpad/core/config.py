@@ -197,3 +197,84 @@ class ConfigManager:
         """Reset configuration to defaults."""
         self._config = copy.deepcopy(self.DEFAULT_CONFIG)
         self._save()
+
+    # Profile management methods
+
+    @property
+    def profiles_dir(self) -> Path:
+        """Return the profiles directory path."""
+        return self._config_dir / "profiles"
+
+    def list_profiles(self) -> list[str]:
+        """List available profile names.
+
+        Returns:
+            List of profile names (without .json extension)
+        """
+        if not self.profiles_dir.exists():
+            return []
+        profiles = []
+        for f in self.profiles_dir.glob("*.json"):
+            profiles.append(f.stem)
+        return sorted(profiles)
+
+    def save_profile(self, name: str) -> None:
+        """Save current configuration as a named profile.
+
+        Args:
+            name: Profile name (will be sanitized)
+        """
+        # Sanitize name: only allow alphanumeric, dash, underscore
+        safe_name = "".join(c for c in name if c.isalnum() or c in "-_")
+        if not safe_name:
+            safe_name = "profile"
+
+        self.profiles_dir.mkdir(parents=True, exist_ok=True)
+        os.chmod(self.profiles_dir, 0o700)
+
+        profile_path = self.profiles_dir / f"{safe_name}.json"
+        with open(profile_path, "w", encoding="utf-8") as f:
+            json.dump(self._config, f, indent=2)
+        os.chmod(profile_path, 0o600)
+
+    def load_profile(self, name: str) -> bool:
+        """Load a named profile as current configuration.
+
+        Args:
+            name: Profile name to load
+
+        Returns:
+            True if profile loaded successfully, False otherwise
+        """
+        profile_path = self.profiles_dir / f"{name}.json"
+        if not profile_path.exists():
+            return False
+
+        try:
+            with open(profile_path, encoding="utf-8") as f:
+                loaded = json.load(f)
+            # Merge with defaults to handle any missing keys
+            self._config = self._merge_defaults(loaded, self.DEFAULT_CONFIG)
+            self._save()
+            return True
+        except (json.JSONDecodeError, OSError):
+            return False
+
+    def delete_profile(self, name: str) -> bool:
+        """Delete a named profile.
+
+        Args:
+            name: Profile name to delete
+
+        Returns:
+            True if profile deleted, False if not found
+        """
+        profile_path = self.profiles_dir / f"{name}.json"
+        if not profile_path.exists():
+            return False
+
+        try:
+            profile_path.unlink()
+            return True
+        except OSError:
+            return False

@@ -22,7 +22,7 @@ Bring Linux port to full feature parity with Windows AHK version.
 | 2 | [Secondary Monitor](phase-02-secondary-monitor.md) | 45m | ✅ Complete |
 | 3 | [Status Indicator Config](phase-03-status-config.md) | 1h | ✅ Complete |
 | 4 | [Color Themes](phase-04-color-themes.md) | 1h | ✅ Complete |
-| 5 | [Profiles System](phase-05-profiles.md) | 1.5h | Pending |
+| 5 | [Profiles System](phase-05-profiles.md) | 1.5h | ✅ Complete |
 
 ## Gap Analysis (Windows vs Linux)
 

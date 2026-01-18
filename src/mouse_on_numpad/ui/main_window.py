@@ -8,6 +8,7 @@ from gi.repository import Gtk  # type: ignore[import-untyped]
 from ..core.config import ConfigManager
 from ..core.state_manager import StateManager
 from .hotkeys_tab import HotkeysTab
+from .profiles_tab import ProfilesTab
 
 
 class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
@@ -42,11 +43,12 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         self._notebook = Gtk.Notebook()
         self._notebook.set_tab_pos(Gtk.PositionType.TOP)
 
-        # Add 5 tabs
+        # Add 6 tabs
         self._create_movement_tab()
         self._create_audio_tab()
         self._create_hotkeys_tab()
         self._create_appearance_tab()
+        self._create_profiles_tab()
         self._create_advanced_tab()
 
         # Set notebook as window content
@@ -304,6 +306,12 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         selected = dropdown.get_selected()
         if 0 <= selected < len(themes):
             self._config.set("status_bar.theme", themes[selected])
+
+    def _create_profiles_tab(self) -> None:
+        """Create profiles tab for saving/loading configuration profiles."""
+        profiles_tab = ProfilesTab(self._config)
+        label = Gtk.Label(label="Profiles")
+        self._notebook.append_page(profiles_tab, label)
 
     def _create_advanced_tab(self) -> None:
         """Create advanced settings tab with scroll and reset options."""

@@ -2,7 +2,7 @@
 
 ## Overview
 - Priority: Low
-- Status: Pending
+- Status: Complete
 - Effort: 1.5h
 
 ## Goal
@@ -34,10 +34,10 @@ Save/load config profiles for different use cases.
 - Import/Export option
 
 ## Todo
-- [ ] Create profiles directory structure
-- [ ] Add profile save/load functions
-- [ ] Add Profiles tab or section in GUI
-- [ ] Implement profile switching
+- [x] Create profiles directory structure
+- [x] Add profile save/load functions
+- [x] Add Profiles tab or section in GUI
+- [x] Implement profile switching
 
 ## Success Criteria
 - Create/save/load/delete profiles
