@@ -2,7 +2,7 @@
 
 ## Overview
 - Priority: Low
-- Status: Pending
+- Status: Complete
 - Effort: 1h
 
 ## Goal
@@ -37,10 +37,10 @@ Store in `themes.json` or hardcoded dict.
 - Settings GUI uses system theme (GTK)
 
 ## Todo
-- [ ] Define theme presets
-- [ ] Add theme config section
-- [ ] Update status indicator CSS
-- [ ] Add theme selector in GUI
+- [x] Define theme presets
+- [x] Add theme config section
+- [x] Update status indicator CSS
+- [x] Add theme selector in GUI
 
 ## Success Criteria
 - 4+ theme options available

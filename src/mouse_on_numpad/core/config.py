@@ -37,6 +37,7 @@ class ConfigManager:
             "size": "medium",         # small, medium, large
             "opacity": 80,            # 0-100
             "auto_hide": True,        # Hide when mouse mode disabled
+            "theme": "default",       # default, dark, light, high-contrast
         },
         "positions": {
             "per_monitor": True,  # Store positions per monitor config

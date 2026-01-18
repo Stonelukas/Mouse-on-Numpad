@@ -15,6 +15,14 @@ STATUS_FILE = Path("/tmp/mouse-on-numpad-status")
 # Size presets: font-size in px
 SIZE_PRESETS = {"small": 11, "medium": 14, "large": 20}
 
+# Theme color presets: (bg_color, text_color)
+THEME_PRESETS = {
+    "default": ("#22c55e", "#ffffff"),      # Green/white
+    "dark": ("#374151", "#f3f4f6"),         # Dark gray/light
+    "light": ("#e5e7eb", "#1f2937"),        # Light gray/dark
+    "high-contrast": ("#000000", "#ffff00"), # Black/yellow
+}
+
 
 class StatusIndicator(Gtk.Window):  # type: ignore[misc]
     """Layer shell overlay indicator for mouse mode status."""
@@ -73,19 +81,24 @@ class StatusIndicator(Gtk.Window):  # type: ignore[misc]
             Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.LEFT, margin)
 
     def _apply_styles(self) -> None:
-        """Apply size and opacity from config."""
+        """Apply size, opacity and theme from config."""
         size = self._config.get("status_bar.size", "medium")
         opacity = self._config.get("status_bar.opacity", 80) / 100.0
+        theme = self._config.get("status_bar.theme", "default")
         font_size = SIZE_PRESETS.get(size, 14)
+        bg_color, text_color = THEME_PRESETS.get(theme, THEME_PRESETS["default"])
+
+        # Convert hex to rgba
+        r, g, b = int(bg_color[1:3], 16), int(bg_color[3:5], 16), int(bg_color[5:7], 16)
 
         css = Gtk.CssProvider()
         css.load_from_data(f"""
             window {{
-                background-color: rgba(34, 197, 94, {opacity});
+                background-color: rgba({r}, {g}, {b}, {opacity});
                 border-radius: 8px;
             }}
             label {{
-                color: white;
+                color: {text_color};
                 font-weight: bold;
                 font-size: {font_size}px;
             }}

@@ -258,6 +258,20 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
         opacity_box.append(opacity_scale)
         box.append(opacity_box)
 
+        # Theme dropdown
+        theme_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        theme_label = Gtk.Label(label="Theme")
+        theme_label.set_halign(Gtk.Align.START)
+        theme_box.append(theme_label)
+        themes = ["default", "dark", "light", "high-contrast"]
+        theme_dropdown = Gtk.DropDown.new_from_strings(themes)
+        current_theme = self._config.get("status_bar.theme", "default")
+        if current_theme in themes:
+            theme_dropdown.set_selected(themes.index(current_theme))
+        theme_dropdown.connect("notify::selected", self._on_theme_changed)
+        theme_box.append(theme_dropdown)
+        box.append(theme_box)
+
         info = Gtk.Label(label="Note: Restart indicator for changes to apply")
         info.add_css_class("dim-label")
         info.set_margin_top(10)
@@ -283,6 +297,13 @@ class MainWindow(Gtk.ApplicationWindow):  # type: ignore[misc]
     def _on_opacity_changed(self, scale: Gtk.Scale) -> None:
         """Handle opacity slider change."""
         self._config.set("status_bar.opacity", int(scale.get_value()))
+
+    def _on_theme_changed(self, dropdown: Gtk.DropDown, _param: object) -> None:
+        """Handle theme dropdown change."""
+        themes = ["default", "dark", "light", "high-contrast"]
+        selected = dropdown.get_selected()
+        if 0 <= selected < len(themes):
+            self._config.set("status_bar.theme", themes[selected])
 
     def _create_advanced_tab(self) -> None:
         """Create advanced settings tab with scroll and reset options."""
