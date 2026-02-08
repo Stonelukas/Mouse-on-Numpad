@@ -27,6 +27,12 @@ dependencies = [
     "evdev>=1.6.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/mouse-on-numpad/mouse-on-numpad"
+Documentation = "https://github.com/mouse-on-numpad/mouse-on-numpad/tree/main/docs"
+Issues = "https://github.com/mouse-on-numpad/mouse-on-numpad/issues"
+Source = "https://github.com/mouse-on-numpad/mouse-on-numpad"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
@@ -69,5 +75,8 @@ warn_unused_configs = true
 
 [dependency-groups]
 dev = [
-    "pytest-cov>=7.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
 ]
