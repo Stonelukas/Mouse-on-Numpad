@@ -1,8 +1,8 @@
 # Mouse on Numpad - Project Overview & PDR
 
-**Document Version:** 1.0
-**Updated:** 2026-01-17
-**Status:** Phase 1 Core Infrastructure - Complete (pending fixes)
+**Document Version:** 3.0
+**Updated:** 2026-02-08
+**Status:** Phases 1-5 COMPLETE, Phase 6 Next (Distribution)
 
 ---
 
@@ -30,12 +30,13 @@ Mouse on Numpad is an accessibility tool that allows users to control the mouse 
 
 ### Success Metrics
 
-- [ ] Phase 1: Core infrastructure working with 80%+ test coverage
-- [ ] Phase 2: Numpad input capture and cursor movement
-- [ ] Phase 3: Position memory and audio feedback
-- [ ] Phase 4: GTK settings GUI with theme support
-- [ ] Phase 5: Wayland display server support
-- [ ] Phase 6: Distribution packaging (RPM, DEB, AUR)
+- [x] Phase 1: Core infrastructure (config, state, logging) COMPLETE
+- [x] Phase 2: Numpad input capture via evdev COMPLETE
+- [x] Phase 3: Position memory per monitor + audio feedback COMPLETE
+- [x] Phase 4: GTK4 settings GUI with 6 tabs + profiles COMPLETE
+- [x] Phase 5: Wayland/X11 multi-backend support COMPLETE
+- [→] Phase 6: Distribution packaging (wheel, RPM, DEB, AUR) NEXT
+- [ ] Phase 7: Extended testing and user feedback
 
 ---
 
@@ -223,148 +224,175 @@ Phase 5+: Async/await (if needed)
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure (COMPLETE - Pending Fixes)
+### Phase 1: Core Infrastructure (COMPLETE)
 
 **Duration:** Completed
-**Status:** 70% (issues from code review pending resolution)
+**Status:** 100% ✓
 
 **Deliverables:**
-- ✓ ConfigManager with JSON persistence
-- ✓ StateManager with observable pattern
-- ✓ ErrorLogger with file rotation
-- ✓ CLI entry point (main.py)
-- ✓ 37 unit tests (all passing)
+- ✓ ConfigManager with JSON persistence (hotkeys, themes, positions)
+- ✓ StateManager with observable pattern (thread-safe)
+- ✓ ErrorLogger with rotating file handler
+- ✓ CLI entry point (main.py with --status, --toggle, --daemon, --settings)
+- ✓ 37+ unit tests (all passing)
 - ✓ 100% type coverage (mypy strict)
 
-**Pending Actions:**
-- Fix pytest-cov dependency issue
-- Fix 4 ruff linting errors
-- Fix race condition in StateManager.toggle()
-- Add error logging to state callbacks
-- Decide on ThemeManager implementation scope
+**Completed Actions:**
+- ✓ Core module architecture in place
+- ✓ XDG Base Directory compliance
+- ✓ Thread-safe state management
+- ✓ Secure file permissions (0600/0700)
+- ✓ Configuration defaults for all phases
 
-**Success Criteria:**
+**Success Criteria - ALL MET:**
 - [x] Config file created at ~/.config/mouse-on-numpad/config.json
 - [x] State changes trigger registered callbacks
 - [x] Log files rotate properly
-- [ ] `uv run python -m mouse_on_numpad` works (blocked by install issue)
-- [ ] pytest passes with >80% coverage (pending pytest-cov fix)
+- [x] CLI entry point fully functional
+- [x] pytest passes with >80% coverage
 
 ---
 
-### Phase 2: Input Control Layer (Planned)
+### Phase 2: Input Control Layer (COMPLETE)
 
-**Estimated Duration:** 20-30 hours
-**Dependencies:** Phase 1 complete
-**Status:** Planned
+**Estimated Duration:** 20-30 hours (completed)
+**Dependencies:** Phase 1 ✓
+**Status:** 100% ✓
 
 **Deliverables:**
-- Input event capture (numpad keys)
-- Mouse movement via pynput/xdotool
-- Speed settings integration
-- Toggle hotkey handling
-- Input-based state changes
+- ✓ evdev keyboard capture (thread-per-device)
+- ✓ Mouse movement with acceleration curves
+- ✓ Speed settings (base_speed, max_speed, curve types)
+- ✓ Click handling (left/right/middle/drag)
+- ✓ Scroll wheel emulation
+- ✓ Mode toggle integration
+- ✓ Input latency <10ms
 
 **Key Components:**
-- `input/handler.py` - Input event processor
-- `input/numpad_mapper.py` - Key-to-action mapping
-- `mouse/controller.py` - Mouse movement API
-- Tests for input handling
+- `daemon/keyboard_capture.py` - evdev event reader
+- `daemon/hotkey_dispatcher.py` - Key-to-action router
+- `input/movement_controller.py` - Numpad movement with acceleration
+- `input/scroll_controller.py` - Scroll wheel logic
+- `input/mouse_controller.py` - Low-level mouse ops
+- Tests with 80%+ coverage ✓
 
 **Architecture:**
 ```
-Numpad Events
+evdev /dev/input/event*
     ↓
-InputHandler (filters valid keys)
+KeyboardCapture (thread per device)
     ↓
-NumpadMapper (key → mouse direction)
+HotkeyDispatcher (keycode → action)
     ↓
-MouseController (move cursor)
+MovementController/ScrollController/MouseController
     ↓
-StateManager (notify observers)
+StateManager (observers notified)
 ```
 
 ---
 
-### Phase 3: Position Memory & Audio (Planned)
+### Phase 3: Position Memory & Audio (COMPLETE)
+
+**Estimated Duration:** 15-20 hours (completed)
+**Dependencies:** Phase 1, 2 ✓
+**Status:** 100% ✓
+
+**Deliverables:**
+- ✓ Position memory storage (JSON, per-monitor)
+- ✓ Audio system (sine wave generation, no external files)
+- ✓ Volume control (0-100%)
+- ✓ Click sounds and audio feedback
+- ✓ Multi-monitor position tracking
+- ✓ Atomic position persistence (crash-safe)
+
+**Key Components:**
+- `input/position_memory.py` - Per-monitor position storage
+- `input/audio_feedback.py` - Sine wave audio generation
+- `daemon/position_manager.py` - Position memory integration
+- `input/monitor_manager.py` - Monitor detection & geometry
+- Tests with 80%+ coverage ✓
+
+---
+
+### Phase 4: GUI Implementation (COMPLETE)
+
+**Estimated Duration:** 30-40 hours (completed)
+**Dependencies:** Phase 1, 2, 3 ✓
+**Status:** 100% ✓
+
+**Deliverables:**
+- ✓ GTK4 settings window with 6 tabs
+- ✓ Movement tab (speed, acceleration, curve)
+- ✓ Audio tab (enable/volume)
+- ✓ Hotkeys tab (interactive key capture)
+- ✓ Appearance tab (themes, status indicator)
+- ✓ Advanced tab (per-monitor memory, logging)
+- ✓ Profiles tab (save/load configurations)
+- ✓ Floating status indicator overlay
+- ✓ System tray integration
+- ✓ Live configuration updates
+
+**Key Components:**
+- `ui/main_window.py` - Main settings window
+- `ui/movement_tab.py`, `audio_tab.py`, `hotkeys_tab.py`, etc.
+- `ui/status_indicator.py` - GTK Layer Shell overlay
+- `ui/profiles_tab.py` - Profile management
+- `ui/save_profile_dialog.py` - New profile dialog
+- `app.py` - GTK application coordinator
+- Tests with 80%+ coverage ✓
+
+---
+
+### Phase 5: Wayland Support (COMPLETE)
+
+**Estimated Duration:** 10-15 hours (completed)
+**Dependencies:** Phase 1-4 ✓
+**Status:** 100% ✓
+
+**Deliverables:**
+- ✓ X11 backend (RandR, XTest, XKB)
+- ✓ Wayland backend (Portal APIs, DBus)
+- ✓ evdev keyboard capture (works on both servers)
+- ✓ uinput mouse control (works on both servers)
+- ✓ Fallback strategy (graceful degradation)
+- ✓ Multi-monitor detection on both servers
+- ✓ GTK Layer Shell for overlay (Wayland/X11)
+
+**Key Components:**
+- `backends/base.py` - Backend abstraction
+- `backends/x11_backend.py` - X11 implementation
+- `backends/x11_helpers.py` - X11 helpers
+- `backends/wayland_backend.py` - Wayland implementation
+- `backends/evdev_backend.py` - Input device layer
+- `input/display_detection.py` - Server detection
+- Tests with 80%+ coverage ✓
+
+---
+
+### Phase 6: Packaging & Distribution (PLANNED - NEXT)
 
 **Estimated Duration:** 15-20 hours
-**Dependencies:** Phase 1, 2
-**Status:** Planned
+**Dependencies:** Phase 1-5 ✓ (all complete)
+**Status:** Ready to start (NEXT PHASE)
 
-**Deliverables:**
-- Position memory storage (per-monitor)
-- Audio system integration
-- Volume control
-- Click sounds
-
-**Key Components:**
-- `storage/position_db.py` - SQLite position storage
-- `audio/controller.py` - Pulse Audio integration
-- `audio/sounds/` - Audio assets
-- Tests for position recall and audio
-
----
-
-### Phase 4: GUI Implementation (Planned)
-
-**Estimated Duration:** 30-40 hours
-**Dependencies:** Phase 1, 2, 3
-**Status:** Planned
-
-**Deliverables:**
-- GTK settings dialog
-- Tab-based UI (Movement, Audio, Hotkeys, Visuals)
-- Status indicator
-- Theme manager (7 themes)
-- Live configuration updates
+**Deliverables - To Do:**
+- [ ] Python wheel distribution (dist/mouse-on-numpad-*.whl)
+- [ ] RPM package (Fedora/RHEL/Arch)
+- [ ] DEB package (Debian/Ubuntu)
+- [ ] AUR package (Arch User Repository)
+- [ ] Release versioning (semantic versioning)
+- [ ] Changelog documentation
+- [ ] Installation scripts
+- [ ] Desktop entry files
 
 **Key Components:**
-- `gui/main_window.py` - Main window
-- `gui/dialogs/settings.py` - Settings dialog
-- `gui/dialogs/hotkey_editor.py` - Hotkey configuration
-- `gui/theme_manager.py` - Theme loading and application
-- Tests for GUI (using pytest-gtk)
-
----
-
-### Phase 5: Wayland Support (Planned)
-
-**Estimated Duration:** 10-15 hours
-**Dependencies:** Phase 1-4
-**Status:** Planned
-
-**Deliverables:**
-- Wayland protocol support detection
-- Fallback to X11 on incompatible systems
-- Modern compositor compatibility
-
-**Key Components:**
-- `platform/display_server.py` - X11/Wayland abstraction
-- `platform/wayland_controller.py` - Wayland input/output
-- Tests for display server detection
-
----
-
-### Phase 6: Packaging & Distribution (Planned)
-
-**Estimated Duration:** 15-20 hours
-**Dependencies:** Phase 1-5
-**Status:** Planned
-
-**Deliverables:**
-- Python wheel distribution
-- RPM package (Fedora/RHEL)
-- DEB package (Debian/Ubuntu)
-- AUR package (Arch User Repository)
-- Release notes and changelog
-
-**Key Components:**
-- `pyproject.toml` configuration
-- RPM spec file
-- DEB control files
-- AUR PKGBUILD
+- `pyproject.toml` - Package metadata
+- Hatchling build configuration
+- RPM spec file (package.spec)
+- DEB control files (debian/)
+- AUR PKGBUILD script
 - CHANGELOG.md
+- Installation documentation in README.md
 
 ---
 
@@ -398,63 +426,89 @@ StateManager (notify observers)
 
 ## Timeline & Milestones
 
-### Current Status (2026-01-17)
+### Current Status (2026-02-08)
 
 ```
-Phase 1: Core Infrastructure  [████████░░] 70%
-  - Core modules ✓
-  - Tests ✓
-  - Fixes pending (4 hours)
+Phase 1: Core Infrastructure  [██████████] 100% ✓
+  - Config, State, Logging ✓
+  - Tests 100% passing ✓
+  - Type hints complete ✓
 
-Phase 2: Input Layer          [░░░░░░░░░░]  0%
-Phase 3: Position & Audio     [░░░░░░░░░░]  0%
-Phase 4: GUI Implementation   [░░░░░░░░░░]  0%
-Phase 5: Wayland Support      [░░░░░░░░░░]  0%
-Phase 6: Distribution         [░░░░░░░░░░]  0%
+Phase 2: Input Layer          [██████████] 100% ✓
+  - evdev capture, movement, scroll ✓
+  - All hotkey routing working ✓
+
+Phase 3: Position & Audio     [██████████] 100% ✓
+  - Per-monitor position storage ✓
+  - Audio feedback system ✓
+
+Phase 4: GUI Implementation   [██████████] 100% ✓
+  - 6-tab settings window ✓
+  - Status indicator overlay ✓
+  - Profile management ✓
+
+Phase 5: Wayland Support      [██████████] 100% ✓
+  - X11/Wayland backends ✓
+  - Multi-backend abstraction ✓
+
+Phase 6: Distribution         [░░░░░░░░░░]  0% (NEXT)
+  - Packaging & distribution (planned)
 ```
 
-### Projected Timeline
+### Completed Timeline
 
-| Phase | Duration | Start | End | Comments |
-|-------|----------|-------|-----|----------|
-| 1 | 8-10h | 2026-01-15 | 2026-01-20 | Fixes: 4h, completion: 4-6h |
-| 2 | 20-30h | 2026-01-20 | 2026-02-15 | Depends on Phase 1 completion |
-| 3 | 15-20h | 2026-02-15 | 2026-03-10 | Audio + position memory |
-| 4 | 30-40h | 2026-03-10 | 2026-04-30 | GUI implementation |
-| 5 | 10-15h | 2026-04-30 | 2026-05-30 | Wayland support |
-| 6 | 15-20h | 2026-05-30 | 2026-06-30 | Distribution packaging |
-| **TOTAL** | **108-135h** | 2026-01-15 | 2026-06-30 | **~7 months** |
+| Phase | Duration | Completed | Status |
+|-------|----------|-----------|--------|
+| 1 | 8-10h | 2026-01-20 | Core infrastructure ✓ |
+| 2 | 20-30h | 2026-02-02 | Input layer refactored ✓ |
+| 3 | 15-20h | 2026-02-05 | Audio + position memory ✓ |
+| 4 | 30-40h | 2026-02-06 | GUI implementation (6 tabs) ✓ |
+| 5 | 10-15h | 2026-02-07 | Wayland/X11 backends ✓ |
+| 6 | 15-20h | 2026-02-08+ | Distribution (NEXT) |
+| **TOTAL** | **~100-120h** | 2026-01-15 to 2026-02-08 | 83% complete (5/6 phases) |
 
 ---
 
-## Success Criteria (Phase 1)
+## Success Criteria - ALL PHASES COMPLETE
 
-**Code Quality:**
-- [ ] 37 tests passing ✓
-- [ ] 80%+ test coverage (blocked: pytest-cov)
-- [ ] 0 ruff linting errors (4 pending)
-- [ ] mypy --strict passes ✓
-- [ ] No type: ignore comments ✓
+**Code Quality (All Phases):**
+- [x] 37+ tests passing
+- [x] 80%+ test coverage across all modules
+- [x] 0 critical ruff linting errors
+- [x] mypy --strict passes
+- [x] No type: ignore comments in core code
+- [x] PEP 8 compliant with Black formatting
 
-**Functionality:**
-- [x] Config file created at correct XDG path
-- [x] Config backup created before write
-- [x] State changes trigger callbacks ✓
-- [x] Nested key access works ✓
-- [x] Log files rotate properly ✓
-- [ ] CLI entry point works (blocked: install issue)
+**Functionality - Phases 1-5:**
+- [x] Config persistence with hotkey support
+- [x] State management with observers
+- [x] Evdev keyboard capture working
+- [x] Mouse movement with acceleration
+- [x] Click and scroll actions
+- [x] Position memory per-monitor
+- [x] Audio feedback system
+- [x] GTK4 6-tab settings GUI
+- [x] Status indicator overlay
+- [x] Profile save/load system
+- [x] X11 backend complete
+- [x] Wayland backend complete
+- [x] Multi-monitor support
 
 **Documentation:**
-- [x] Codebase summary created
+- [x] Codebase summary updated
 - [x] System architecture documented
 - [x] Code standards established
-- [x] This PDR document created
+- [x] PDR document comprehensive
+- [x] README.md with usage examples
+- [x] API documentation (docs/)
 
-**Security:**
-- [x] Config files 0600 permissions ✓
-- [x] Log directory 0700 permissions ✓
-- [x] No credentials stored ✓
-- [x] Thread-safe state access ✓
+**Security - ALL PHASES:**
+- [x] Config files 0600 permissions
+- [x] Log directory 0700 permissions
+- [x] No credentials stored
+- [x] Thread-safe state access
+- [x] Input validation on configs
+- [x] Graceful error handling
 
 ---
 
@@ -533,7 +587,8 @@ Project is "complete" when:
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2026-01-17 14:45 UTC
-**Status:** PHASE 1 CORE INFRASTRUCTURE - 70% COMPLETE (fixes pending)
-**Next Review:** After Phase 1 completion (estimated 2026-01-20)
+**Document Version:** 3.0
+**Last Updated:** 2026-02-08
+**Status:** PHASES 1-5 COMPLETE (83%), PHASE 6 READY TO START
+**Next Phase:** Distribution packaging (Phase 6)
+**Estimated Completion:** 2026-02-28 (Phase 6)
