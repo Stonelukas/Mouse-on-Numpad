@@ -43,6 +43,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable debug logging",
     )
+    parser.add_argument(
+        "--indicator",
+        action="store_true",
+        help="Show floating status indicator",
+    )
     return parser.parse_args()
 
 
@@ -77,6 +82,28 @@ def main() -> int:
         print(f"Mouse control {status}")
         logger.info("Mouse control toggled: %s", status)
         return 0
+
+    if args.indicator:
+        # Show floating status indicator (layer shell)
+        import gi
+
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk
+
+        from .ui.status_indicator import StatusIndicator
+
+        indicator = None
+
+        def on_activate(app: Gtk.Application) -> None:
+            nonlocal indicator
+            indicator = StatusIndicator()
+            indicator.set_application(app)
+            # Don't use present() - layer shell handles visibility
+            app.hold()  # Keep app running
+
+        app = Gtk.Application(application_id="org.mouse-on-numpad.indicator")
+        app.connect("activate", on_activate)
+        return app.run(None)
 
     if args.settings:
         # Launch GTK GUI

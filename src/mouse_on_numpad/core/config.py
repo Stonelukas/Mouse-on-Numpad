@@ -7,85 +7,13 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from .config_defaults import DEFAULT_CONFIG
+
 
 class ConfigManager:
-    """Manage application configuration with JSON persistence.
-
-    Features:
-    - XDG Base Directory compliance (~/.config/mouse-on-numpad/)
-    - Automatic backup before write
-    - Nested key access (e.g., "movement.base_speed")
-    - Default values with schema validation
-    """
-
-    # Default configuration schema
-    DEFAULT_CONFIG: dict[str, Any] = {
-        "movement": {
-            "base_speed": 5,   # Lower default for smoother control
-            "acceleration_rate": 1.08,  # Gentler acceleration
-            "max_speed": 40,  # Lower cap for precision
-            "move_delay": 20,  # Matches Windows MoveDelay=20ms
-            "curve": "exponential",  # linear, exponential, s-curve
-        },
-        "audio": {
-            "enabled": True,
-            "volume": 50,
-        },
-        "status_bar": {
-            "enabled": True,
-            "position": "top-right",  # top-left, top-right, bottom-left, bottom-right
-            "size": "medium",         # small, medium, large
-            "opacity": 80,            # 0-100
-            "auto_hide": True,        # Hide when mouse mode disabled
-            "theme": "default",       # default, dark, light, high-contrast
-        },
-        "positions": {
-            "per_monitor": True,  # Store positions per monitor config
-        },
-        "scroll": {
-            "step": 3,  # Base scroll amount per tick
-            "acceleration_rate": 1.1,
-            "max_speed": 10,
-            "delay": 30,  # ms between scroll ticks
-        },
-        "undo": {
-            "max_levels": 10,  # Max undo history entries
-        },
-        "hotkeys": {
-            # Evdev keycodes for numpad keys
-            "toggle_mode": 78,      # KEY_KPPLUS
-            "save_mode": 55,        # KEY_KPASTERISK
-            "load_mode": 74,        # KEY_KPMINUS
-            "undo": 98,             # KEY_KPSLASH
-            "left_click": 76,       # KEY_KP5
-            "right_click": 82,      # KEY_KP0
-            "middle_click": 96,     # KEY_KPENTER
-            "hold_left": 83,        # KEY_KPDOT
-            "move_up": 72,          # KEY_KP8
-            "move_down": 80,        # KEY_KP2
-            "move_left": 75,        # KEY_KP4
-            "move_right": 77,       # KEY_KP6
-            "scroll_up": 71,        # KEY_KP7
-            "scroll_down": 79,      # KEY_KP1
-            "scroll_right": 73,     # KEY_KP9
-            "scroll_left": 81,      # KEY_KP3
-            # Position memory slots (in save/load mode)
-            "slot_1": 75,           # KEY_KP4
-            "slot_2": 76,           # KEY_KP5
-            "slot_3": 77,           # KEY_KP6
-            "slot_4": 72,           # KEY_KP8
-            "slot_5": 82,           # KEY_KP0
-            # Modifier combos (Alt + key)
-            "secondary_monitor": 73,  # KEY_KP9 (with Alt held)
-        },
-    }
+    """Manage application configuration with JSON persistence (XDG-compliant)."""
 
     def __init__(self, config_dir: Path | None = None) -> None:
-        """Initialize ConfigManager.
-
-        Args:
-            config_dir: Custom config directory. Defaults to XDG_CONFIG_HOME.
-        """
         if config_dir is None:
             xdg_config = os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
             self._config_dir = Path(xdg_config) / "mouse-on-numpad"
@@ -113,13 +41,13 @@ class ConfigManager:
                 with open(self._config_file, encoding="utf-8") as f:
                     self._config = json.load(f)
                 # Merge with defaults to handle new keys
-                self._config = self._merge_defaults(self._config, self.DEFAULT_CONFIG)
+                self._config = self._merge_defaults(self._config, DEFAULT_CONFIG)
             except (json.JSONDecodeError, OSError):
                 # Corrupted file, use defaults
-                self._config = copy.deepcopy(self.DEFAULT_CONFIG)
+                self._config = copy.deepcopy(DEFAULT_CONFIG)
                 self._save()
         else:
-            self._config = copy.deepcopy(self.DEFAULT_CONFIG)
+            self._config = copy.deepcopy(DEFAULT_CONFIG)
             self._save()
 
     def _merge_defaults(
@@ -155,15 +83,7 @@ class ConfigManager:
         self._load()
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Get config value by dot-notation key.
-
-        Args:
-            key: Dot-notation key (e.g., "movement.base_speed")
-            default: Default value if key not found
-
-        Returns:
-            Config value or default
-        """
+        """Get config value by dot-notation key (e.g., 'movement.base_speed')."""
         keys = key.split(".")
         value: Any = self._config
         for k in keys:
@@ -174,12 +94,7 @@ class ConfigManager:
         return value
 
     def set(self, key: str, value: Any) -> None:
-        """Set config value by dot-notation key.
-
-        Args:
-            key: Dot-notation key (e.g., "movement.base_speed")
-            value: Value to set
-        """
+        """Set config value by dot-notation key and persist to disk."""
         keys = key.split(".")
         config = self._config
         for k in keys[:-1]:
@@ -195,10 +110,10 @@ class ConfigManager:
 
     def reset(self) -> None:
         """Reset configuration to defaults."""
-        self._config = copy.deepcopy(self.DEFAULT_CONFIG)
+        self._config = copy.deepcopy(DEFAULT_CONFIG)
         self._save()
 
-    # Profile management methods
+    # Profile management — delegated to ProfileManager mixin
 
     @property
     def profiles_dir(self) -> Path:
@@ -206,75 +121,64 @@ class ConfigManager:
         return self._config_dir / "profiles"
 
     def list_profiles(self) -> list[str]:
-        """List available profile names.
-
-        Returns:
-            List of profile names (without .json extension)
-        """
-        if not self.profiles_dir.exists():
-            return []
-        profiles = []
-        for f in self.profiles_dir.glob("*.json"):
-            profiles.append(f.stem)
-        return sorted(profiles)
+        """List available profile names."""
+        return _list_profiles(self.profiles_dir)
 
     def save_profile(self, name: str) -> None:
-        """Save current configuration as a named profile.
-
-        Args:
-            name: Profile name (will be sanitized)
-        """
-        # Sanitize name: only allow alphanumeric, dash, underscore
-        safe_name = "".join(c for c in name if c.isalnum() or c in "-_")
-        if not safe_name:
-            safe_name = "profile"
-
-        self.profiles_dir.mkdir(parents=True, exist_ok=True)
-        os.chmod(self.profiles_dir, 0o700)
-
-        profile_path = self.profiles_dir / f"{safe_name}.json"
-        with open(profile_path, "w", encoding="utf-8") as f:
-            json.dump(self._config, f, indent=2)
-        os.chmod(profile_path, 0o600)
+        """Save current configuration as a named profile."""
+        _save_profile(self.profiles_dir, name, self._config)
 
     def load_profile(self, name: str) -> bool:
-        """Load a named profile as current configuration.
-
-        Args:
-            name: Profile name to load
-
-        Returns:
-            True if profile loaded successfully, False otherwise
-        """
-        profile_path = self.profiles_dir / f"{name}.json"
-        if not profile_path.exists():
+        """Load a named profile as current configuration."""
+        loaded = _load_profile(self.profiles_dir, name)
+        if loaded is None:
             return False
-
-        try:
-            with open(profile_path, encoding="utf-8") as f:
-                loaded = json.load(f)
-            # Merge with defaults to handle any missing keys
-            self._config = self._merge_defaults(loaded, self.DEFAULT_CONFIG)
-            self._save()
-            return True
-        except (json.JSONDecodeError, OSError):
-            return False
+        self._config = self._merge_defaults(loaded, DEFAULT_CONFIG)
+        self._save()
+        return True
 
     def delete_profile(self, name: str) -> bool:
-        """Delete a named profile.
+        """Delete a named profile."""
+        return _delete_profile(self.profiles_dir, name)
 
-        Args:
-            name: Profile name to delete
 
-        Returns:
-            True if profile deleted, False if not found
-        """
-        profile_path = self.profiles_dir / f"{name}.json"
-        if not profile_path.exists():
-            return False
+def _list_profiles(profiles_dir: Path) -> list[str]:
+    """List available profile names (without .json extension)."""
+    if not profiles_dir.exists():
+        return []
+    return sorted(f.stem for f in profiles_dir.glob("*.json"))
 
-        try:
-            profile_path.unlink()
-            return True
-        except OSError:
-            return False
+
+def _save_profile(profiles_dir: Path, name: str, config: dict[str, Any]) -> None:
+    """Save config dict as a named profile."""
+    safe_name = "".join(c for c in name if c.isalnum() or c in "-_") or "profile"
+    profiles_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(profiles_dir, 0o700)
+    profile_path = profiles_dir / f"{safe_name}.json"
+    with open(profile_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+    os.chmod(profile_path, 0o600)
+
+
+def _load_profile(profiles_dir: Path, name: str) -> dict[str, Any] | None:
+    """Load a named profile. Returns config dict or None."""
+    profile_path = profiles_dir / f"{name}.json"
+    if not profile_path.exists():
+        return None
+    try:
+        with open(profile_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _delete_profile(profiles_dir: Path, name: str) -> bool:
+    """Delete a named profile. Returns True if deleted."""
+    profile_path = profiles_dir / f"{name}.json"
+    if not profile_path.exists():
+        return False
+    try:
+        profile_path.unlink()
+        return True
+    except OSError:
+        return False

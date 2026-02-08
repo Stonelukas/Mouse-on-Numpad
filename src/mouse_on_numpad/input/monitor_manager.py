@@ -1,24 +1,12 @@
 """Multi-monitor management using X11/Xrandr."""
 
 import logging
-from typing import TypedDict
 
-from Xlib import X, display
-from Xlib.ext import randr
+from Xlib import display
+
+from .display_detection import MonitorInfo, create_fallback_monitor, query_monitors_xrandr
 
 _logger = logging.getLogger(__name__)
-
-
-class MonitorInfo(TypedDict):
-    """Monitor information dictionary."""
-
-    index: int
-    name: str
-    x: int
-    y: int
-    width: int
-    height: int
-    is_primary: bool
 
 
 class MonitorManager:
@@ -41,76 +29,7 @@ class MonitorManager:
 
     def _refresh_monitors(self) -> None:
         """Refresh monitor list from Xrandr."""
-        try:
-            # Get screen resources
-            resources = randr.get_screen_resources(self._root)
-
-            # Get primary output
-            primary_output = randr.get_output_primary(self._root).output
-
-            monitors = []
-            for i, output in enumerate(resources.outputs):
-                try:
-                    output_info = randr.get_output_info(
-                        self._root, output, resources.config_timestamp
-                    )
-
-                    # Skip disconnected outputs
-                    if output_info.connection != randr.Connected:
-                        continue
-
-                    # Get CRTC info for geometry
-                    if output_info.crtc:
-                        crtc_info = randr.get_crtc_info(
-                            self._root, output_info.crtc, resources.config_timestamp
-                        )
-
-                        monitor: MonitorInfo = {
-                            "index": i,
-                            "name": output_info.name,
-                            "x": crtc_info.x,
-                            "y": crtc_info.y,
-                            "width": crtc_info.width,
-                            "height": crtc_info.height,
-                            "is_primary": output == primary_output,
-                        }
-                        monitors.append(monitor)
-
-                except Exception:
-                    _logger.exception("Failed to query output %d", i)
-
-            self._monitors = monitors
-            _logger.info("Detected %d monitors", len(self._monitors))
-
-            # Fallback if no monitors detected
-            if not self._monitors:
-                _logger.warning("No monitors detected, using fallback")
-                self._monitors = [
-                    {
-                        "index": 0,
-                        "name": "default",
-                        "x": 0,
-                        "y": 0,
-                        "width": self._screen.width_in_pixels,
-                        "height": self._screen.height_in_pixels,
-                        "is_primary": True,
-                    }
-                ]
-
-        except Exception:
-            _logger.exception("Failed to query monitors, using fallback")
-            # Fallback to single screen
-            self._monitors = [
-                {
-                    "index": 0,
-                    "name": "default",
-                    "x": 0,
-                    "y": 0,
-                    "width": self._screen.width_in_pixels,
-                    "height": self._screen.height_in_pixels,
-                    "is_primary": True,
-                }
-            ]
+        self._monitors = query_monitors_xrandr(self._display, self._screen, self._root)
 
     def get_monitors(self) -> list[MonitorInfo]:
         """Get list of all connected monitors.
@@ -137,15 +56,7 @@ class MonitorManager:
             return self._monitors[0]
 
         # Ultimate fallback
-        return {
-            "index": 0,
-            "name": "default",
-            "x": 0,
-            "y": 0,
-            "width": self._screen.width_in_pixels,
-            "height": self._screen.height_in_pixels,
-            "is_primary": True,
-        }
+        return create_fallback_monitor(self._screen)
 
     def get_monitor_at(self, x: int, y: int) -> MonitorInfo | None:
         """Find monitor containing the given coordinates.

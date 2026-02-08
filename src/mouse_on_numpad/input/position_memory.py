@@ -13,24 +13,11 @@ _logger = logging.getLogger(__name__)
 
 
 class PositionMemory:
-    """Manage 9 position slots with per-monitor-config persistence.
-
-    Features:
-    - 9 position slots (Numpad 1-9)
-    - Per-monitor configuration storage (keyed by monitor hash)
-    - Auto-clamp to valid screen area if monitor changed
-    - JSON persistence in ~/.config/mouse-on-numpad/positions.json
-    """
+    """Manage 9 position slots with per-monitor-config persistence."""
 
     SLOT_COUNT = 9  # Numpad 1-9
 
     def __init__(self, config: ConfigManager, monitor_manager: MonitorManager) -> None:
-        """Initialize PositionMemory.
-
-        Args:
-            config: ConfigManager instance for accessing config directory
-            monitor_manager: MonitorManager for monitor info and clamping
-        """
         self._config = config
         self._monitor_manager = monitor_manager
         self._positions_file = config.config_dir / "positions.json"
@@ -80,11 +67,7 @@ class PositionMemory:
             _logger.error("Failed to save positions: %s", e)
 
     def get_monitor_config_hash(self) -> str:
-        """Get hash of current monitor configuration.
-
-        Returns:
-            SHA256 hash of monitor arrangement (positions and sizes)
-        """
+        """Get SHA256 hash of current monitor arrangement for keying positions."""
         monitors = self._monitor_manager.get_monitors()
 
         # Sort by position to ensure consistent ordering

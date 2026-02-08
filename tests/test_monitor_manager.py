@@ -10,8 +10,8 @@ from mouse_on_numpad.input.monitor_manager import MonitorManager
 @pytest.fixture
 def mock_xlib():
     """Mock Xlib display and randr."""
-    with patch("mouse_on_numpad.input.monitor_manager.display.Display") as mock_display, \
-         patch("mouse_on_numpad.input.monitor_manager.randr") as mock_randr:
+    with patch("mouse_on_numpad.input.display_detection.display.Display") as mock_display, \
+         patch("mouse_on_numpad.input.display_detection.randr") as mock_randr:
 
         # Setup mock display
         mock_disp_instance = MagicMock()
@@ -156,7 +156,7 @@ def test_clamp_to_screens_negative(mock_xlib):
 
 def test_fallback_on_xrandr_error():
     """Test fallback to single screen when Xrandr fails."""
-    with patch("mouse_on_numpad.input.monitor_manager.display.Display") as mock_display:
+    with patch("mouse_on_numpad.input.display_detection.display.Display") as mock_display:
         mock_disp_instance = MagicMock()
         mock_screen = MagicMock()
         mock_screen.width_in_pixels = 1024
@@ -168,7 +168,7 @@ def test_fallback_on_xrandr_error():
         mock_display.return_value = mock_disp_instance
 
         # Make randr calls raise exception
-        with patch("mouse_on_numpad.input.monitor_manager.randr.get_screen_resources") as mock_randr:
+        with patch("mouse_on_numpad.input.display_detection.randr.get_screen_resources") as mock_randr:
             mock_randr.side_effect = Exception("Xrandr error")
 
             manager = MonitorManager()
